@@ -1,7 +1,7 @@
 {
   "name": "spec-mirror",
-  "version": "0.1.0",
-  "description": "Generate layered + flow E2E specs from current implementation. Acts as a safety net by mirroring frontend actions, backend use cases, queries, and domain features into cross-referenced markdown.",
+  "version": "0.2.0",
+  "description": "Generate and drift-check layered + flow E2E specs against the current implementation. Acts as a safety net by mirroring frontend actions, backend use cases, queries, and domain features into cross-referenced markdown, and reporting when code and spec diverge.",
   "author": {
     "name": "Donghyun",
     "email": "edonghyun@hankyopa.com"

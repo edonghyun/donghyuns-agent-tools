@@ -27,6 +27,7 @@ Generate end-to-end specification markdown that mirrors the current implementati
 | Command | Description |
 |---|---|
 | `/spec-mirror:generate` | Full pipeline: detect stack → confirm architecture → write layered + flow specs |
+| `/spec-mirror:compare`  | Drift-check current code against existing `specs/`. Writes `specs/DRIFT.md` only (never modifies existing specs). Safe in CI. |
 
 ## Layout
 

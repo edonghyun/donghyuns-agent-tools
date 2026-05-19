@@ -174,6 +174,8 @@ On a second invocation in the same project:
 - On update: keep human-edited sections marked `<!-- KEEP -->` ... `<!-- /KEEP -->` untouched.
 - Report a diff summary at the end: "N elements added, M removed, K changed."
 
+For **read-only drift detection** (no spec edits, safe in CI), use the companion skill `/spec-mirror:compare` instead — it produces `specs/DRIFT.md` without modifying any existing spec file.
+
 ---
 
 ## Done criteria
