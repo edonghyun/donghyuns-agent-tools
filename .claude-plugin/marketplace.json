@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "donghyuns-claude",
+  "version": "0.1.0",
+  "description": "Donghyun's personal plugin marketplace for Claude Code",
+  "owner": {
+    "name": "Donghyun",
+    "email": "edonghyun@hankyopa.com"
+  },
+  "plugins": [
+    {
+      "name": "spec-mirror",
+      "description": "Generate layered + flow E2E specs (frontend → backend → domain) from current implementation as a safety net against drift",
+      "version": "0.1.0",
+      "source": "./plugins/spec-mirror",
+      "category": "productivity"
+    }
+  ]
+}
