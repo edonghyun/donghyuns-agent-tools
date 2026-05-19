@@ -25,7 +25,7 @@ Invoke this skill when the user says any of:
 
 ## Output contract
 
-This skill MUST produce the following structure under `specs/` at the project root:
+This skill MUST produce the following structure at the project root:
 
 ```
 specs/
@@ -38,7 +38,20 @@ specs/
     ├── 01-<flow-slug>.md           # E.g. 01-user-signup.md
     ├── 02-<flow-slug>.md
     └── ...
+
+refs/                               # Human-curated knowledge (scaffolded, not auto-managed)
+├── README.md                       # Explains the refs/ family
+├── designs/
+│   └── README.md                   # Conventions + template (no design files yet)
+├── plans/
+│   └── README.md
+├── decisions/
+│   └── README.md
+└── lessons/
+    └── README.md
 ```
+
+**Why two trees:** `specs/` answers *what is* (auto-derived from code, regenerable). `refs/` answers *why and what's next* (human-written, irretrievable from code). Both are needed for a real safety net. See `docs/CONCEPTS.md`.
 
 **Style rules:**
 
@@ -141,15 +154,22 @@ For each user flow confirmed in Phase 1, write `specs/flows/NN-<slug>.md` with s
 
 Cross-link is **mandatory** — flow docs without links to layered docs fail the contract.
 
-### Phase 4 — Index & verification
+### Phase 4 — Index, refs/ scaffold & verification
 
 1. Write `specs/README.md`:
    - Last generated: `<ISO timestamp>`
    - Stack summary (one block)
    - TOC: links to each layered file and each flow file
+   - Pointer to `refs/` ("Why and what's next — see `../refs/`")
    - Glossary of any domain terms used
 
-2. **Self-verify before reporting done:**
+2. **Scaffold `refs/`** (only if not already present — never overwrite human content):
+   - Create `refs/`, `refs/designs/`, `refs/plans/`, `refs/decisions/`, `refs/lessons/`.
+   - Copy the README templates from this skill's `assets/refs/` into the corresponding subdirs (e.g. `assets/refs/designs-README.md` → `refs/designs/README.md`).
+   - Copy `assets/refs/README.md` → `refs/README.md`.
+   - If any of these files already exist, skip them — do not overwrite.
+
+3. **Self-verify before reporting done:**
    - Every flow step has at least one cross-reference.
    - Every layered element has a source file reference.
    - No `[INFERENCE]` markers without a one-line justification.
@@ -182,8 +202,9 @@ For **read-only drift detection** (no spec edits, safe in CI), use the companion
 
 You are done when:
 
-- [ ] `specs/README.md` exists and links to every other file.
+- [ ] `specs/README.md` exists and links to every other file under `specs/`.
 - [ ] All three layered files exist with at least one element each (or an explicit "none found" note).
 - [ ] Each confirmed flow has its own file with cross-references resolved.
 - [ ] Every claim is sourced or explicitly marked `[INFERENCE]`.
+- [ ] `refs/` and its four subdirectories exist, each containing a README.md (templates from `assets/refs/`). Existing files left untouched.
 - [ ] You reported a one-paragraph summary back to the user: stack, # of flows, # of elements per layer, anything suspicious.

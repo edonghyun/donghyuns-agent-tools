@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "donghyuns-claude",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Donghyun's personal plugin marketplace for Claude Code",
   "owner": {
     "name": "Donghyun",
@@ -10,8 +10,8 @@
   "plugins": [
     {
       "name": "spec-mirror",
-      "description": "Generate and drift-check layered + flow E2E specs (frontend → backend → domain) against the current implementation",
-      "version": "0.2.0",
+      "description": "Six-skill safety net: generate, drift-check, lint, test-stub, coverage-audit, and scope-walk E2E specs against the current implementation",
+      "version": "0.3.0",
       "source": "./plugins/spec-mirror",
       "category": "productivity"
     }
