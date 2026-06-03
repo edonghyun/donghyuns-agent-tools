@@ -59,6 +59,13 @@ Validates, hashes, persists. Throws `EmailAlreadyExists` if conflict.
 ## Failure modes
 - Duplicate email → backend returns 409, form shows inline error → `src/routes/auth.ts:54`
 - Weak password (server reject) → 400 → `src/services/auth.ts:18`
+
+## Acceptance Criteria
+- A valid signup creates an account and lands the user on `/dashboard`.
+- Duplicate email keeps the user on the form and shows an inline conflict message.
+
+## Testing Notes
+- Use a scenario helper for form submission details.
 ```
 
 ---
@@ -110,6 +117,9 @@ Validates, hashes, persists. Throws `EmailAlreadyExists` if conflict.
 | Orphaned <!-- KEEP --> blocks    | 0 |
 | Broken refs/ links               | 0 |
 | Heading-anchor collisions        | 0 |
+| Invalid source line targets      | 0 |
+| Non-behavior acceptance criteria | 0 |
+| Stub collection mismatches       | 0 |
 
 ## 🟡 Warnings
 
@@ -126,14 +136,16 @@ Validates, hashes, persists. Throws `EmailAlreadyExists` if conflict.
 
 Generated: 2026-05-19T14:30:00Z
 Framework: vitest + playwright
+Default test command: pnpm test
+Stub collection: mixed
 
 ## Stubs created (3)
 
-| Target | Stub file | Status |
-|---|---|---|
-| `POST /api/auth/oauth` | `tests/spec-mirror/integration/auth-oauth.spec-stub.ts` | TODO |
-| Flow: oauth-link | `tests/spec-mirror/e2e/05-oauth-link.spec-stub.ts` | TODO |
-| `User.email uniqueness invariant` | `tests/spec-mirror/unit/user-email.spec-stub.ts` | TODO |
+| Target | Stub file | Collection | Status |
+|---|---|---|---|
+| `POST /api/auth/oauth` | `tests/spec-mirror/integration/auth-oauth.spec-stub.ts` | active todo | TODO |
+| Flow: oauth-link | `tests/spec-mirror/e2e/05-oauth-link.spec-stub.ts` | inactive planning stub | TODO |
+| `User.email uniqueness invariant` | `tests/spec-mirror/unit/user-email.spec-stub.ts` | active todo | TODO |
 
 ## Already covered (skipped) (12)
 
@@ -160,6 +172,14 @@ Framework: vitest + playwright
 | flows   | 6  | 5  | 83% |
 | domain  | 9  | 4  | 44% |
 | **Total** | **33** | **23** | **70%** |
+
+## Stub status
+
+| Status | Count | Meaning |
+|---|---:|---|
+| active todo | 2 | Collected by a test command, but not real coverage yet |
+| inactive planning stub | 1 | Not collected by default; planning artifact only |
+| real assertion coverage | 23 | Existing tests with executable assertions |
 
 ## Uncovered (🔴)
 

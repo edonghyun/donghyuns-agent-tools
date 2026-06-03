@@ -2,15 +2,17 @@
 
 Generate, audit, and maintain layered + flow-based E2E specifications that mirror the **current implementation** as a safety net. Six skills working together to keep code, spec, tests, and team knowledge in sync.
 
+The plugin is intentionally strict about provenance and execution status: every behavior claim needs a source line, every flow needs behavior-level acceptance criteria, and generated test stubs are reported as planned coverage until real assertions are collected by the normal test command.
+
 ## Skills
 
 | Command | Purpose | Writes |
 |---|---|---|
-| `/spec-mirror:generate` | Detect stack → confirm architecture with user → emit layered specs + cross-referenced flow specs. Scaffolds `refs/`. | `specs/**`, `refs/<dir>/README.md` |
+| `/spec-mirror:generate` | Detect stack → confirm architecture with user → emit sourced layered specs + cross-referenced flow specs. Scaffolds `refs/`. | `specs/**`, `refs/<dir>/README.md` |
 | `/spec-mirror:compare`  | Drift-check current code against existing `specs/`. Severity-tagged findings. Safe in CI. | `specs/DRIFT.md` only |
-| `/spec-mirror:lint`     | Audit `specs/` for internal hygiene: dead cross-refs, missing sources, stale `[INFERENCE]` markers. | `specs/LINT.md` only |
-| `/spec-mirror:gen-tests`| Turn the spec into a real safety net by emitting test stubs in the project's existing framework. Never overwrites. | `tests/spec-mirror/**` |
-| `/spec-mirror:coverage` | Cross-reference existing tests against spec elements. Find untested flows / endpoints / invariants. | `specs/COVERAGE.md` only |
+| `/spec-mirror:lint`     | Audit `specs/` for internal hygiene: dead cross-refs, missing sources, invalid source lines, weak acceptance criteria, stub collection mismatches. | `specs/LINT.md` only |
+| `/spec-mirror:gen-tests`| Turn the spec into planned executable safety by emitting test stubs with collection status. Never overwrites. | `tests/spec-mirror/**` |
+| `/spec-mirror:coverage` | Cross-reference existing tests against spec elements. Separates real assertion coverage from todo/stub planning. | `specs/COVERAGE.md` only |
 | `/spec-mirror:scope`    | Walk the spec graph from a target → focused mini-spec of "everything you need to read before changing X". | `specs/scope/<target>.md` |
 
 ## Output structure

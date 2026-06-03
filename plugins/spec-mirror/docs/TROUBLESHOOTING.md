@@ -54,6 +54,58 @@ Common failure modes and how to recover.
 
 ---
 
+## Generated stubs exist, but `npm test` or `pnpm test` never sees them
+
+**Symptom:** `tests/spec-mirror/STUBS.md` lists TODO files, but the normal test command does not collect them.
+
+**Likely cause:** the project uses package-scoped test config, a custom include pattern, or framework-specific test folders. Root `tests/spec-mirror/**` may be outside the configured discovery path.
+
+**Fix:**
+1. Open `STUBS.md` and check the `Stub collection` field.
+2. If it says `inactive planning stubs`, either move/fill the tests into the collected package/app test location or add an explicit test command for spec-mirror stubs.
+3. Re-run `/spec-mirror:coverage`. The coverage percent should only rise after real assertions are collected.
+
+---
+
+## Coverage looks high because TODO stubs were counted
+
+**Symptom:** `/spec-mirror:coverage` reports a behavior as covered, but the matching file only contains `it.todo`, skip markers, or a spec-mirror header.
+
+**Likely cause:** coverage matching treated "linked to a spec" as "asserts the spec".
+
+**Fix:**
+1. Re-run `/spec-mirror:coverage` with the current skill. Todo/skip/spec-stub files should appear as planned coverage, not covered.
+2. Fill the TODO with executable assertions.
+3. Confirm the test command collects the file.
+
+---
+
+## Flow acceptance criteria describe test helpers instead of behavior
+
+**Symptom:** `## Acceptance Criteria` says things like `BackendClientForTest`, `Screen Object`, fixture layout, or file names, but not what the user/system should observe.
+
+**Likely cause:** test architecture notes were mixed into the behavior contract during manual generation.
+
+**Fix:**
+1. Move helper/file-layout details to `## Testing Notes` or `## Test Implementation Contract`.
+2. Rewrite `## Acceptance Criteria` as observable outcomes.
+3. Run `/spec-mirror:lint`; C9 should clear.
+
+---
+
+## Event-driven read model tests are flaky
+
+**Symptom:** a command succeeds, but the following read-model query sometimes sees stale data.
+
+**Likely cause:** the spec/test treats projection catch-up as optional or implicit.
+
+**Fix:**
+1. In `specs/layers/backend.md`, document command -> event -> projection -> query.
+2. In the flow, add a named catch-up expectation after write commands observed through read models.
+3. Fill tests with an eventually/assert loop, deterministic projection runner, or projection-position check.
+
+---
+
 ## `/spec-mirror:lint` flags lots of "missing source refs" on a fresh generate
 
 **Symptom:** lint runs immediately after generate and finds many C2 (missing source) findings.

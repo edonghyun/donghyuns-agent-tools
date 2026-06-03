@@ -19,10 +19,10 @@ You inherited a codebase with no spec, no docs, and patchy tests. You want a saf
    → See what % of the spec your current tests cover. Likely low.
 
 4. /spec-mirror:gen-tests
-   → Scaffold stubs for everything uncovered. Fill them in over time.
+   → Scaffold stubs for everything uncovered. The report says whether each stub is collected by the normal test command or only an inactive planning artifact.
 
 5. /spec-mirror:coverage  (again)
-   → Verify the stubs were detected, watch the % climb.
+   → Verify planned coverage is detected. The % only climbs after real assertions are filled and collected.
 ```
 
 After step 1, fill `refs/decisions/` with at least the top 5 ADRs you can recover from team memory. Without those, the spec is descriptive but missing the **why**.
@@ -74,9 +74,36 @@ Add to your PR pipeline. Both skills are non-interactive and produce single-file
 
 `compare` and `lint` should always pass on `main`. If they don't, you have a real drift problem.
 
+`coverage` should never count todo-only stubs as covered. Treat them as backlog until the tests contain executable assertions.
+
 ---
 
-## D — Capturing a near-miss
+## D — Event-driven read-model safety
+
+You have CQRS, projections, or event-sourced read models. You want acceptance tests that do not randomly pass or fail depending on projection timing.
+
+```
+1. /spec-mirror:generate
+   → Backend layer must document command -> event -> projection -> read-model query links.
+
+2. /spec-mirror:lint
+   → Fails or warns if event-driven flows assert read models without a catch-up expectation.
+
+3. /spec-mirror:gen-tests
+   → Integration/e2e stubs include TODOs for named projection catch-up after write commands.
+
+4. Fill the tests.
+   → Use an eventually/assert loop, projection-position check, or deterministic test projection runner.
+
+5. /spec-mirror:coverage
+   → Counts only the filled assertions as covered.
+```
+
+If the read model is updated synchronously inside the same transaction, cite the source line. Otherwise, the spec should assume eventual consistency and test for catch-up explicitly.
+
+---
+
+## E — Capturing a near-miss
 
 A bug almost shipped because the spec didn't mention an invariant.
 
@@ -99,7 +126,7 @@ A bug almost shipped because the spec didn't mention an invariant.
 
 ---
 
-## E — Investigating drift you didn't cause
+## F — Investigating drift you didn't cause
 
 `compare` flagged something as 🟡 but you didn't change that file.
 
@@ -123,7 +150,7 @@ The point of cross-referencing `refs/decisions/` here: drift without a decision 
 
 ---
 
-## F — Onboarding a teammate
+## G — Onboarding a teammate
 
 Hand them:
 

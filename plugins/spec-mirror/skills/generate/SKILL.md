@@ -59,6 +59,9 @@ refs/                               # Human-curated knowledge (scaffolded, not a
 - **Every claim has a source.** Use the format `→ src/path/to/file.ts:42` after each described element. If a claim cannot be sourced, mark it `[INFERENCE]` and explain in one line.
 - **Flow docs cross-reference layered docs** using markdown links to the layered section anchors, e.g. `[POST /api/auth/signup](../layers/backend.md#post-apiauthsignup)`.
 - **No hallucinated symbols.** If unsure, omit rather than guess.
+- **One canonical source per behavior.** If you create both a long scenario book and a compact flow file, name which one owns behavior text and which one is the mirror. Repeated HP-01 style lists without an ownership rule are a drift source.
+- **Behavior criteria before test architecture.** Flow `Acceptance Criteria` must describe user/system outcomes. Put helper shape, page-object/screen-object structure, and test file layout under `Testing Notes` or `Test Implementation Contract`.
+- **Real timestamps only.** Use the actual current timestamp, or use `YYYY-MM-DD` when only a date is intended. Never write placeholder times such as `00:00:00` unless the source explicitly contains that value.
 
 ---
 
@@ -111,12 +114,20 @@ For each layer, scan the relevant directories and extract elements. Write the th
 - Use cases / handlers (input → output → side effects)
 - Services / repositories
 - Middlewares / guards
+- Event / projection contract when the implementation uses domain events, CQRS, read models, or event sourcing:
+  - command or handler
+  - emitted event name(s)
+  - transaction boundary / unit of work owner
+  - projection(s) updated
+  - required catch-up signal for tests
+  - idempotency or ordering rule if visible in code
 
 **`specs/layers/domain.md`** — sections:
 - Entities & aggregates (with invariants)
 - Value objects
 - Domain events (if any)
 - Queries (read models, projections)
+- Context map when more than one bounded context participates in the flows. Include at least the participating contexts, actor identity source, ownership boundary, and cross-context handoff.
 - If no explicit domain layer exists, write a "Domain-by-convention" section that derives the domain model from DB schema + service code.
 
 Each element follows this micro-template:
@@ -150,15 +161,25 @@ For each user flow confirmed in Phase 1, write `specs/flows/NN-<slug>.md` with s
 
 ## Failure modes
 - <error condition> → <how the system responds, with source>
+
+## Acceptance Criteria
+- <user/system observable outcome, not test helper structure>
+
+## Testing Notes
+- <optional: scenario object, page/screen object, fixture, helper, or command/query client shape>
 ```
 
 Cross-link is **mandatory** — flow docs without links to layered docs fail the contract.
+
+If a flow depends on event-driven read models, include a step-level note for projection catch-up. Do not mark catch-up as optional unless the read model is synchronously updated in the same request and the source line proves it.
 
 ### Phase 4 — Index, refs/ scaffold & verification
 
 1. Write `specs/README.md`:
    - Last generated: `<ISO timestamp>`
    - Stack summary (one block)
+   - Canonical source rule: which file family owns behavior text and which mirrors it
+   - Safety-net status: `descriptive`, `stubs planned`, or `active tests`, with the command that verifies it when known
    - TOC: links to each layered file and each flow file
    - Pointer to `refs/` ("Why and what's next — see `../refs/`")
    - Glossary of any domain terms used
@@ -172,6 +193,10 @@ Cross-link is **mandatory** — flow docs without links to layered docs fail the
 3. **Self-verify before reporting done:**
    - Every flow step has at least one cross-reference.
    - Every layered element has a source file reference.
+   - Every `→ path:line` points to an existing file and a non-empty line.
+   - Every flow has behavior-level acceptance criteria, not only test architecture notes.
+   - Every event-driven command that is asserted via a read model has a documented catch-up expectation.
+   - Every multi-context flow has context/actor ownership documented in either `domain.md` or a linked context-map section.
    - No `[INFERENCE]` markers without a one-line justification.
    - Run a final pass to drop any element that has zero references and zero callers (likely dead code; mention in README under "Possibly unused").
 
@@ -182,6 +207,7 @@ Cross-link is **mandatory** — flow docs without links to layered docs fail the
 - Never invent file paths. If you cannot find the file, say `[NOT FOUND]` and describe where you looked.
 - Never assert behavior you have not read. If extracted only from naming/types, mark `[INFERENCE — from signature]`.
 - Prefer omission over guessing. The spec is a **safety net**; false content is worse than missing content.
+- Never call generated test stubs a safety net until `/spec-mirror:coverage` reports executable tests covering the behavior.
 
 ---
 

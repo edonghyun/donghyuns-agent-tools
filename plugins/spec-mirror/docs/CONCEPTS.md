@@ -13,8 +13,9 @@ A "safety net" has three properties this plugin enforces:
 1. **Sourced.** Every claim in the spec points to a file:line. If you can't source it, you can't claim it.
 2. **Cross-referenced.** Flows link to layers, layers link to layers. Breaking a link is detectable.
 3. **Comparable to code.** A scan can re-derive the spec at any time; differences are findings.
+4. **Executable or honestly planned.** Test stubs are useful, but they are not coverage. The tool must say whether a behavior is actively asserted, represented by a collected todo, or only planned in an inactive stub.
 
-Without these three properties, a "spec" is just prose — useful for onboarding, useless as a safety net.
+Without these properties, a "spec" is just prose — useful for onboarding, useless as a safety net.
 
 ---
 
@@ -60,15 +61,29 @@ The id is derived from the heading text + the layer file the heading lives in. R
 
 ---
 
-## 5. Source reference
+## 5. Canonical behavior source
+
+When a project has both a scenario book and compact flow files, exactly one artifact must own the behavior text.
+
+- The canonical behavior source contains the full user/system outcomes.
+- The mirror files summarize and link back to that source.
+- Test implementation notes belong in a separate section, not in acceptance criteria.
+
+This rule exists because repeated HP-style lists drift quickly. If a test stub points to a coverage matrix or helper-layout section instead of the scenario body, the spec looks traceable but is not actually traceable.
+
+---
+
+## 6. Source reference
 
 A trailing line of the form `→ <relative-path>:<line>` after a heading body. Every heading in `specs/layers/**` must have one, or an explicit `[NOT FOUND]` / `[INFERENCE]` marker.
 
 `lint`'s C2 check enforces this rule. A spec with elements missing source refs is not a safety net — it's a guess.
 
+The referenced line must exist and should point to the behavior being claimed, not to a summary table that merely mentions it.
+
 ---
 
-## 6. `[INFERENCE]` marker
+## 7. `[INFERENCE]` marker
 
 Use when behavior is derived from a signature/type but not directly read from code (e.g. "this endpoint *probably* returns 401 on missing token — derived from the auth-middleware type, not the handler code").
 
@@ -78,7 +93,22 @@ Format: `[INFERENCE — <one-line justification>]`. Bare `[INFERENCE]` is a lint
 
 ---
 
-## 7. `<!-- KEEP -->` blocks
+## 8. Event-driven read model contract
+
+When a codebase uses domain events, CQRS, read models, projections, or event sourcing, the backend spec must name the contract between write side and read side:
+
+- command or handler
+- emitted event(s)
+- transaction/unit-of-work boundary
+- projection(s) updated
+- read-model catch-up expectation for tests
+- idempotency, ordering, or replay rule if visible in code
+
+If a flow command is verified through a query, the flow spec should say how the test knows the read model has caught up. Marking catch-up as optional is only valid when the source proves synchronous update in the same request.
+
+---
+
+## 9. `<!-- KEEP -->` blocks
 
 Human-edited content preserved across regens. Anything between `<!-- KEEP -->` and `<!-- /KEEP -->` is treated as opaque by every skill — `generate --update` won't overwrite it, `compare` won't diff inside it, `lint` only checks the orphan condition (block exists but its parent heading is gone).
 
@@ -92,7 +122,21 @@ Do not use for:
 
 ---
 
-## 8. Severity rubric (shared across skills)
+## 10. Active coverage vs planned coverage
+
+The plugin distinguishes three states:
+
+| State | Meaning |
+|---|---|
+| `active coverage` | A normal test command collects executable assertions for the spec element. |
+| `active todo` | A normal test command collects todo/skip tests. Useful signal, but not coverage. |
+| `inactive planning stub` | A file under `tests/spec-mirror/**` or similar that is not collected by default. Useful backlog, not a safety net. |
+
+`coverage` counts only active coverage as covered. `gen-tests` records the collection state so teams do not mistake generated TODO files for protection.
+
+---
+
+## 11. Severity rubric (shared across skills)
 
 | Symbol | Name | Meaning |
 |---|---|---|
@@ -104,7 +148,7 @@ Do not use for:
 
 ---
 
-## 9. Skill responsibilities (one paragraph each)
+## 12. Skill responsibilities (one paragraph each)
 
 - **`generate`** — derives the spec from code. The only skill that **writes** layered files and flow files. Asks for architecture confirmation before writing.
 - **`compare`** — re-derives the spec in memory and diffs against the existing one. Writes only `DRIFT.md`. Non-interactive.

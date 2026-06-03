@@ -43,6 +43,14 @@ Writes **exactly one file**: `specs/COVERAGE.md`. Never modifies tests or specs.
 | flows    | N        | N       | N%         |
 | **Total** | **N**   | **N**   | **N%**     |
 
+## Stub status
+
+| Status | Count | Meaning |
+|---|---:|---|
+| active todo | N | Collected by a test command, but not real coverage yet |
+| inactive planning stub | N | Not collected by default; planning artifact only |
+| real assertion coverage | N | Existing tests with executable assertions |
+
 ## Uncovered (🔴)
 
 ### Backend endpoints
@@ -94,6 +102,10 @@ Scan all test files (project-conventional patterns: `*.test.*`, `*.spec.*`, `tes
 - File path + line.
 - The full string of every `describe(...)` / `it(...)` / `test(...)` / `def test_*` / `func Test*` / etc.
 - File imports — knowing what's imported is signal about what's tested.
+- Whether each test is executable coverage, todo/skip-only, or inactive planning stub.
+- Any top-of-file `Spec source`, `Test command`, and `Collection` headers written by `/spec-mirror:gen-tests`.
+
+`it.todo`, `it.skip`, `xit`, `describe.skip`, skipped pytest tests, or `*.spec-stub.*` files with no real assertions are not covered. They are planned coverage.
 
 ### Phase 2 — Index spec elements
 
@@ -112,7 +124,7 @@ Heuristic matching, in priority order:
 3. **Name match** — test describe contains the entity/flow name as a substring (case-insensitive).
 4. **Spec-mirror header** — a test file whose top-of-file comment contains `Spec source: specs/...` is an explicit match (this is what `/spec-mirror:gen-tests` writes).
 
-A spec element with no match → uncovered. A test with no match → possibly obsolete.
+A spec element with no executable match → uncovered. A spec element with only todo/skip/stub matches → planned, not covered. A test with no match → possibly obsolete.
 
 ### Phase 4 — Scenario sub-coverage
 
@@ -123,6 +135,8 @@ For elements that matched at the file level, check whether every documented **sc
 
 Missing scenarios → "Partially covered" finding.
 
+Todo-only scenarios → "Planned but not covered" finding. Do not include them in the covered count.
+
 ### Phase 5 — Write report & report back
 
 Render `specs/COVERAGE.md`. Post a chat summary: verdict, overall %, top 3 uncovered items, path to the full report.
@@ -132,6 +146,7 @@ Render `specs/COVERAGE.md`. Post a chat summary: verdict, overall %, top 3 uncov
 ## Hallucination guardrails
 
 - A "covered" claim must cite the specific test file:line. If you can't cite it, mark uncovered instead.
+- A "covered" claim must point to executable assertions or a filled test body. A todo/skip/stub citation is planned coverage only.
 - A "possibly obsolete" claim is always 🔵 (info) — never flag a human-written test as broken without evidence.
 - When heuristic matching is ambiguous, prefer the conservative answer (uncovered) and note the ambiguity.
 
@@ -146,5 +161,6 @@ Safe for CI / pre-commit. Never prompts.
 - [ ] `specs/COVERAGE.md` exists with the summary table.
 - [ ] Every uncovered finding has a spec source link.
 - [ ] Every covered finding has a test file:line citation.
+- [ ] Todo/skip/spec-stub files are reported as planned coverage, not covered.
 - [ ] No other file modified.
 - [ ] One-paragraph chat summary posted.

@@ -41,6 +41,9 @@ Writes **exactly one file**: `specs/LINT.md`. Never modifies any other file unde
 | Orphaned <!-- KEEP --> blocks    | N     |
 | Broken refs/ links               | N     |
 | Heading-anchor collisions        | N     |
+| Invalid source line targets      | N     |
+| Non-behavior acceptance criteria | N     |
+| Stub collection mismatches       | N     |
 
 ## 🔴 Critical
 …
@@ -92,13 +95,37 @@ Within a single layered file, two `### ` headings must not normalize to the same
 
 A layered file with zero elements (only the section scaffolding) is suspicious — either generation failed for that layer or the layer truly doesn't exist. Report so the user can decide.
 
+### C8 — Invalid source line targets (🔴 critical)
+
+Every source line of the form `→ <path>:<line>` must point to an existing file and a non-empty line. If the line points to a generated summary, coverage matrix, or unrelated section while claiming to source behavior, report it as a warning with the nearest heading.
+
+This check prevents believable-but-wrong references such as a test stub pointing at a coverage table instead of the scenario it claims to defend.
+
+### C9 — Non-behavior acceptance criteria (🟡 warning)
+
+In every `specs/flows/*.md`, `## Acceptance Criteria` must contain user/system observable outcomes. It must not contain only test architecture details such as `BackendClientForTest`, `Screen Object`, fixture names, file paths, or `Spec source` headers.
+
+If those details are present, require a separate `## Testing Notes` or `## Test Implementation Contract` section. The acceptance criteria can mention tests only after at least one behavior criterion is present.
+
+### C10 — Stub collection mismatches (🟡 warning)
+
+If `tests/spec-mirror/STUBS.md` or `*.spec-stub.*` files exist, verify each stub declares one of:
+
+- `Collection: active todo`
+- `Collection: inactive planning stub`
+- `Collection: unknown`
+
+Also inspect the normal test command/config when feasible. If root test config appears package-scoped or excludes `tests/spec-mirror/**`, but `STUBS.md` presents the stubs as active or omits collection status, report a warning.
+
+This check keeps "we generated TODO files" separate from "the normal test suite sees this safety net."
+
 ---
 
 ## Pipeline
 
 1. **Validate** `specs/` exists. Bail out with a helpful message if not.
 2. **Index headings & anchors** across `specs/layers/*.md` (in-memory map: `file → anchor → line`).
-3. **Run C1–C7** in a single pass per file where possible.
+3. **Run C1–C10** in a single pass per file where possible.
 4. **Render `specs/LINT.md`** using the structure above. Group findings by severity, then by file.
 5. **Verdict logic:**
    - `CLEAN` — zero findings.
@@ -113,6 +140,7 @@ A layered file with zero elements (only the section scaffolding) is suspicious �
 - Never invent a "missing source" finding for a heading whose body you didn't read.
 - Never report a dead link without showing both the link text and the resolved-but-missing anchor.
 - When normalizing anchors, document the rule applied in the finding so the user can reproduce it.
+- Never mark a stub as collected unless the test command/config evidence supports it. If evidence is unclear, report `unknown`.
 
 ---
 
