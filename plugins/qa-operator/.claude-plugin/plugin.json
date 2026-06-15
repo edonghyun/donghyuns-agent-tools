@@ -1,0 +1,9 @@
+{
+  "name": "qa-operator",
+  "version": "0.1.0",
+  "description": "Delegated browser QA operator: plan, run, monitor, triage, and optionally repair acceptance checks from requirements with evidence dashboards.",
+  "author": {
+    "name": "Donghyun",
+    "email": "edonghyun@hankyopa.com"
+  }
+}

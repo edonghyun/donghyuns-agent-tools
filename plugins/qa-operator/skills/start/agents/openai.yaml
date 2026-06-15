@@ -1,0 +1,4 @@
+interface:
+  display_name: "QA Operator Start"
+  short_description: "Start delegated browser QA"
+  default_prompt: "QA 맡겨줘. monitor 켜고 UI/UX 리스크까지 봐줘."

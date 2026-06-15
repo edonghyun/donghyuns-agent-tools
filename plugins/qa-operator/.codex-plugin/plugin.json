@@ -1,0 +1,38 @@
+{
+  "name": "qa-operator",
+  "version": "0.1.0",
+  "description": "Delegated browser QA operator that turns requirements into live monitored acceptance runs, UX risk reports, triage, and optional repair/retest.",
+  "author": {
+    "name": "Donghyun",
+    "email": "edonghyun@hankyopa.com",
+    "url": "https://github.com/edonghyun"
+  },
+  "homepage": "https://github.com/edonghyun/donghyuns-agent-tools/tree/main/plugins/qa-operator",
+  "repository": "https://github.com/edonghyun/donghyuns-agent-tools",
+  "license": "MIT",
+  "keywords": [
+    "qa",
+    "browser-testing",
+    "acceptance",
+    "ux-audit",
+    "monitoring"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "QA Operator",
+    "shortDescription": "Delegate browser QA with live evidence dashboards.",
+    "longDescription": "QA Operator turns requirement lists, sheets, issues, PRs, and feature ranges into browser-executed QA plans with live monitoring, screenshots, traces, UX risk reports, failure triage, and optional repair/retest.",
+    "developerName": "Donghyun",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "QA 맡겨줘. monitor 켜고 UI/UX 리스크까지 봐줘.",
+      "이 시트 범위 완전 QA 돌려줘.",
+      "FAIL/PARTIAL만 다시 확인하고 재검증해줘."
+    ],
+    "brandColor": "#166A71"
+  }
+}

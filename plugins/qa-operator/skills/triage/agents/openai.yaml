@@ -1,0 +1,4 @@
+interface:
+  display_name: "QA Operator Triage"
+  short_description: "Analyze QA failures and UX risks"
+  default_prompt: "실패 항목 원인 분석과 UX 리스크 리포트를 작성해줘."

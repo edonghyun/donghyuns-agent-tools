@@ -1,0 +1,4 @@
+interface:
+  display_name: "QA Operator Run"
+  short_description: "Run browser QA and update evidence"
+  default_prompt: "브라우저로 QA 실행하고 결과를 계속 업데이트해줘."

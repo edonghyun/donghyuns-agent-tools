@@ -1,0 +1,4 @@
+interface:
+  display_name: "QA Operator Repair"
+  short_description: "Fix verifiable defects and retest"
+  default_prompt: "명백한 버그는 고치고 해당 항목만 재검증해줘."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "QA Operator Monitor"
+  short_description: "Serve the live QA dashboard"
+  default_prompt: "QA 대시보드 열어서 진행상황 보이게 해줘."

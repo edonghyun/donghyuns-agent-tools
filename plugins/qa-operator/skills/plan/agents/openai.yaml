@@ -1,0 +1,4 @@
+interface:
+  display_name: "QA Operator Plan"
+  short_description: "Turn requirements into QA plans"
+  default_prompt: "요구사항을 qa-plan.json으로 정리해줘."
