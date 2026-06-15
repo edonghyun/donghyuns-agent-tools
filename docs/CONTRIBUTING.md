@@ -152,7 +152,18 @@ how it composes with existing skills.>
 This is a personal marketplace; releases happen by pushing to `main`. Once the repo has a GitHub remote, users add it with:
 
 ```bash
-/plugin marketplace add donghyuns-agent-tools https://github.com/<owner>/donghyuns-agent-tools
+claude plugin marketplace add edonghyun/donghyuns-agent-tools
+codex plugin marketplace add edonghyun/donghyuns-agent-tools --ref main
+```
+
+After pushing plugin changes, refresh the marketplace snapshots and reinstall/update the affected plugin:
+
+```bash
+claude plugin marketplace update donghyuns-agent-tools
+claude plugin update <plugin-name>@donghyuns-agent-tools
+
+codex plugin marketplace upgrade donghyuns-agent-tools
+codex plugin add <plugin-name>@donghyuns-agent-tools
 ```
 
 Tag major versions (`v1.0.0`, `v2.0.0`) for milestone snapshots; everything else lives on `main`.

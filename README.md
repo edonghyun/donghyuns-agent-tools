@@ -11,24 +11,48 @@ A host-neutral personal plugin marketplace for coding agents, focused on **safet
 ### Claude Code
 
 ```bash
-# Add marketplace (once pushed to GitHub)
-/plugin marketplace add donghyuns-agent-tools https://github.com/<owner>/donghyuns-agent-tools
+# Add marketplace from GitHub.
+claude plugin marketplace add edonghyun/donghyuns-agent-tools
 
-# Or, during local development:
-/plugin marketplace add donghyuns-agent-tools ~/projects/donghyuns-agent-tools
+# Or, during local development.
+claude plugin marketplace add /Users/idonghyeon/projects/donghyuns-agent-tools
 
-# Install a plugin
-/plugin install spec-mirror@donghyuns-agent-tools
-/plugin install qa-operator@donghyuns-agent-tools
-/plugin install feature-intake@donghyuns-agent-tools
+# Install plugins.
+claude plugin install spec-mirror@donghyuns-agent-tools
+claude plugin install qa-operator@donghyuns-agent-tools
+claude plugin install feature-intake@donghyuns-agent-tools
+
+# Refresh after marketplace changes.
+claude plugin marketplace update donghyuns-agent-tools
+claude plugin update qa-operator@donghyuns-agent-tools
+claude plugin update feature-intake@donghyuns-agent-tools
 ```
 
 ### Codex
 
-Codex support should reuse the same `plugins/<plugin>/skills/` tree and add Codex-specific manifests next to the Claude manifests:
+Codex support reuses the same `plugins/<plugin>/skills/` tree and adds Codex-specific manifests next to the Claude manifests:
 
 - marketplace: `.agents/plugins/marketplace.json`
 - plugin: `plugins/<plugin>/.codex-plugin/plugin.json`
+
+```bash
+# Add marketplace from GitHub.
+codex plugin marketplace add edonghyun/donghyuns-agent-tools --ref main
+
+# Or, during local development.
+codex plugin marketplace add /Users/idonghyeon/projects/donghyuns-agent-tools
+
+# Install Codex-supported plugins.
+codex plugin add qa-operator@donghyuns-agent-tools
+codex plugin add feature-intake@donghyuns-agent-tools
+
+# Refresh after marketplace changes.
+codex plugin marketplace upgrade donghyuns-agent-tools
+codex plugin add qa-operator@donghyuns-agent-tools
+codex plugin add feature-intake@donghyuns-agent-tools
+```
+
+Start a new Codex thread after install or update so the refreshed plugin skills are loaded into the session.
 
 ---
 
