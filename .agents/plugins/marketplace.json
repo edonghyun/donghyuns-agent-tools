@@ -1,0 +1,32 @@
+{
+  "name": "donghyuns-agent-tools",
+  "interface": {
+    "displayName": "Donghyun's Agent Tools"
+  },
+  "plugins": [
+    {
+      "name": "qa-operator",
+      "source": {
+        "source": "local",
+        "path": "./plugins/qa-operator"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "feature-intake",
+      "source": {
+        "source": "local",
+        "path": "./plugins/feature-intake"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

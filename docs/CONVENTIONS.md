@@ -8,7 +8,9 @@ Rules every plugin in this marketplace follows. New plugins MUST comply; existin
 
 ```
 plugins/<plugin-name>/
-├── .claude-plugin/
+├── .claude-plugin/                 # Claude Code manifest, when supported
+│   └── plugin.json
+├── .codex-plugin/                  # Codex manifest, when supported
 │   └── plugin.json
 ├── README.md                       # required
 ├── docs/                           # required for any plugin with >1 skill
@@ -23,7 +25,7 @@ plugins/<plugin-name>/
         └── CHANGELOG.md            # optional; required once the skill has >1 version
 ```
 
-A single-skill plugin may skip `docs/` and put everything in its README.
+At least one host manifest is required. Add additional host manifest directories only when the plugin supports that runtime. A single-skill plugin may skip `docs/` and put everything in its README.
 
 ---
 
@@ -50,11 +52,11 @@ Versioning is **strict semver**:
 ```yaml
 ---
 name: <skill-name>
-description: <plain text — used by Claude's skill router. Must contain the trigger phrases (English + Korean) and a one-line description of what the skill writes.>
+description: <plain text — used by the host skill router. Must contain the trigger phrases (English + Korean) and a one-line description of what the skill writes.>
 ---
 ```
 
-The `description` is what the AI reads to decide whether to fire the skill. It should:
+The `description` is what the coding agent reads to decide whether to fire the skill. It should:
 
 - Lead with what the skill does in one phrase.
 - List **trigger phrases** the user might say (English + Korean).

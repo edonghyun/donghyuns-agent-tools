@@ -1,6 +1,6 @@
 # Philosophy
 
-What `donghyuns-claude` is for and the design principles every plugin in it shares.
+What `donghyuns-agent-tools` is for and the design principles every plugin in it shares.
 
 ---
 

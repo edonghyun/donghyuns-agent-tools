@@ -1,6 +1,6 @@
 # Contributing
 
-How to add a new plugin or a new skill to `donghyuns-claude`. The conventions in [`CONVENTIONS.md`](CONVENTIONS.md) are normative; this doc is the recipe.
+How to add a new plugin or a new skill to `donghyuns-agent-tools`. The conventions in [`CONVENTIONS.md`](CONVENTIONS.md) are normative; this doc is the recipe.
 
 ---
 
@@ -14,7 +14,9 @@ Re-read [`PHILOSOPHY.md`](PHILOSOPHY.md). A plugin earns its place by **reducing
 
 ```
 plugins/<plugin-name>/
-├── .claude-plugin/
+├── .claude-plugin/         # Claude Code manifest, when supported
+│   └── plugin.json
+├── .codex-plugin/          # Codex manifest, when supported
 │   └── plugin.json
 ├── README.md
 ├── docs/
@@ -27,7 +29,7 @@ plugins/<plugin-name>/
         └── SKILL.md
 ```
 
-Single-skill plugins may omit `docs/` until they grow.
+At least one host manifest is required. Add another host manifest directory only when the plugin supports that runtime. Single-skill plugins may omit `docs/` until they grow.
 
 ### 3. Write `plugin.json`
 
@@ -42,7 +44,12 @@ Single-skill plugins may omit `docs/` until they grow.
 
 ### 4. Register in the marketplace
 
-Add an entry to `.claude-plugin/marketplace.json`:
+Add an entry to the host marketplace manifest:
+
+- Claude Code: `.claude-plugin/marketplace.json`
+- Codex: `.agents/plugins/marketplace.json`
+
+Claude Code entry shape:
 
 ```json
 {
@@ -95,7 +102,7 @@ Use the section structure required by [`CONVENTIONS.md`](CONVENTIONS.md) §4:
 4. Hallucination guardrails
 5. Done criteria
 
-The frontmatter `description` must be precise enough that Claude's skill router will fire it on the right user phrases (and only those). Include Korean triggers.
+The frontmatter `description` must be precise enough that each host's skill router will fire it on the right user phrases (and only those). Include Korean triggers.
 
 ### 4. Update the plugin README
 
@@ -145,7 +152,7 @@ how it composes with existing skills.>
 This is a personal marketplace; releases happen by pushing to `main`. Once the repo has a GitHub remote, users add it with:
 
 ```bash
-/plugin marketplace add donghyuns-claude https://github.com/<owner>/donghyuns-claude
+/plugin marketplace add donghyuns-agent-tools https://github.com/<owner>/donghyuns-agent-tools
 ```
 
 Tag major versions (`v1.0.0`, `v2.0.0`) for milestone snapshots; everything else lives on `main`.

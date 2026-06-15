@@ -1,6 +1,6 @@
-# Donghyun's Claude Plugins
+# Donghyun's Agent Tools
 
-A personal plugin marketplace for Claude Code, focused on **safety nets** — plugins that keep code, spec, tests, and team knowledge in sync rather than generating net-new content.
+A host-neutral personal plugin marketplace for coding agents, focused on **safety nets** — plugins that keep code, spec, tests, and team knowledge in sync rather than generating net-new content.
 
 > Read [`docs/PHILOSOPHY.md`](docs/PHILOSOPHY.md) for the mission, [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) for the rules every plugin follows, and [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) to add a new plugin or skill.
 
@@ -8,20 +8,105 @@ A personal plugin marketplace for Claude Code, focused on **safety nets** — pl
 
 ## Installation
 
+### Claude Code
+
 ```bash
 # Add marketplace (once pushed to GitHub)
-/plugin marketplace add donghyuns-claude https://github.com/<owner>/donghyuns-claude
+/plugin marketplace add donghyuns-agent-tools https://github.com/<owner>/donghyuns-agent-tools
 
 # Or, during local development:
-/plugin marketplace add donghyuns-claude ~/projects/donghyuns-claude
+/plugin marketplace add donghyuns-agent-tools ~/projects/donghyuns-agent-tools
 
 # Install a plugin
-/plugin install spec-mirror@donghyuns-claude
+/plugin install spec-mirror@donghyuns-agent-tools
+/plugin install qa-operator@donghyuns-agent-tools
+/plugin install feature-intake@donghyuns-agent-tools
 ```
+
+### Codex
+
+Codex support should reuse the same `plugins/<plugin>/skills/` tree and add Codex-specific manifests next to the Claude manifests:
+
+- marketplace: `.agents/plugins/marketplace.json`
+- plugin: `plugins/<plugin>/.codex-plugin/plugin.json`
 
 ---
 
 ## Plugins
+
+### [feature-intake](plugins/feature-intake/README.md)
+
+Turn external feature artifacts into product integration analysis packages. `feature-intake` takes VoC-driven PoCs, demo apps, Figma prototypes, internal tools, AI experiments, or screenshots from another team and produces screenshot-backed user flows, user journeys, use cases, product framing, integration fit, risks, MVP boundaries, and handoff documentation.
+
+**Just say:**
+
+```text
+이 PoC를 feature-intake 해줘. 스크린샷 포함해서 유저플로우, 유저저니, 유즈케이스, 제품 편입 분석까지 정리해줘.
+```
+
+**Skills:**
+
+| Command | Description |
+|---------|-------------|
+| `/feature-intake:start`   | Natural-language entry. Runs inspect, capture, framing, analysis, mapping, and packaging. |
+| `/feature-intake:inspect` | Discover artifact structure, pages, controls, external calls, and capture targets. |
+| `/feature-intake:capture` | Capture page, interaction, modal/dialog, edge-case, and contact-sheet screenshots. |
+| `/feature-intake:frame`   | Generalize product framing: actors, placement, output, quality bar, MVP, data/AI/storage, operations, risks. |
+| `/feature-intake:analyze` | Write user flows, journeys, use cases, inventories, and screen-by-screen annotations. |
+| `/feature-intake:map`     | Map the artifact into the existing product's IA, modules, data, APIs, permissions, storage, and backlog. |
+| `/feature-intake:package` | Assemble the final screenshot-backed handoff README and coverage matrix. |
+
+**Workflow:**
+
+```
+/feature-intake:start
+  ├─ inspect
+  ├─ capture
+  ├─ frame
+  ├─ analyze
+  ├─ map
+  └─ package
+```
+
+**Plugin docs:** [CONCEPTS](plugins/feature-intake/docs/CONCEPTS.md) · [WORKFLOW-GUIDE](plugins/feature-intake/docs/WORKFLOW-GUIDE.md) · [EXAMPLES](plugins/feature-intake/docs/EXAMPLES.md) · [TROUBLESHOOTING](plugins/feature-intake/docs/TROUBLESHOOTING.md)
+
+---
+
+### [qa-operator](plugins/qa-operator/README.md)
+
+Delegate browser QA from natural language. `qa-operator` turns requirement lists, spreadsheets, issues, PRs, or feature ranges into a QA plan, starts a live monitor dashboard, executes browser checks, captures screenshots/logs/traces, flags UI/UX risks, triages failures, and can repair obvious local defects when allowed.
+
+**Just say:**
+
+```text
+이 시트 31~43번 QA 맡겨줘. monitor 켜고 UI/UX 문제까지 봐줘.
+```
+
+**Skills:**
+
+| Command | Description |
+|---------|-------------|
+| `/qa-operator:start`   | Natural-language entry. Plans, starts monitor, runs QA, triages failures, and optionally repairs. |
+| `/qa-operator:plan`    | Convert requirements into `qa-plan.json` and initialize the artifact tree. |
+| `/qa-operator:run`     | Execute browser QA and incrementally update `qa-results.json`, screenshots, traces, and logs. |
+| `/qa-operator:monitor` | Serve the dashboard that polls latest QA results. |
+| `/qa-operator:triage`  | Analyze failures, blockers, and UI/UX risks into issue reports. |
+| `/qa-operator:repair`  | Fix scoped, verifiable defects and rerun affected QA items when allowed. |
+
+**Workflow:**
+
+```
+/qa-operator:start
+  ├─ plan
+  ├─ monitor  ← reads latest results
+  ├─ run      → writes latest results
+  ├─ triage
+  └─ repair, if allowed
+```
+
+**Plugin docs:** [CONCEPTS](plugins/qa-operator/docs/CONCEPTS.md) · [WORKFLOW-GUIDE](plugins/qa-operator/docs/WORKFLOW-GUIDE.md) · [EXAMPLES](plugins/qa-operator/docs/EXAMPLES.md) · [TROUBLESHOOTING](plugins/qa-operator/docs/TROUBLESHOOTING.md)
+
+---
 
 ### [spec-mirror](plugins/spec-mirror/README.md)
 
@@ -100,7 +185,7 @@ project-root/
 ## Layout
 
 ```
-donghyuns-claude/
+donghyuns-agent-tools/
 ├── .claude-plugin/
 │   └── marketplace.json
 ├── docs/                              # marketplace-level
@@ -108,21 +193,25 @@ donghyuns-claude/
 │   ├── CONVENTIONS.md
 │   └── CONTRIBUTING.md
 ├── plugins/
+│   ├── qa-operator/
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── .codex-plugin/plugin.json
+│   │   ├── README.md
+│   │   ├── assets/
+│   │   ├── docs/
+│   │   ├── scripts/
+│   │   └── skills/{start,plan,run,monitor,triage,repair}/
+│   ├── feature-intake/
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── .codex-plugin/plugin.json
+│   │   ├── README.md
+│   │   ├── docs/
+│   │   └── skills/{start,inspect,capture,frame,analyze,map,package}/
 │   └── spec-mirror/
 │       ├── .claude-plugin/plugin.json
 │       ├── README.md
-│       ├── docs/                      # plugin-level
-│       │   ├── CONCEPTS.md
-│       │   ├── EXAMPLES.md
-│       │   ├── WORKFLOW-GUIDE.md
-│       │   └── TROUBLESHOOTING.md
-│       └── skills/
-│           ├── generate/   (+ assets/refs/* — README templates for the refs/ scaffold)
-│           ├── compare/
-│           ├── lint/
-│           ├── gen-tests/
-│           ├── coverage/
-│           └── scope/
+│       ├── docs/
+│       └── skills/{generate,compare,lint,gen-tests,coverage,scope}/
 └── README.md
 ```
 

@@ -1,8 +1,8 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "donghyuns-claude",
-  "version": "0.2.0",
-  "description": "Donghyun's personal plugin marketplace for Claude Code",
+  "name": "donghyuns-agent-tools",
+  "version": "0.2.1",
+  "description": "Donghyun's personal plugin marketplace for coding agents",
   "owner": {
     "name": "Donghyun",
     "email": "edonghyun@hankyopa.com"
@@ -13,6 +13,20 @@
       "description": "Six-skill safety net: generate, drift-check, lint, test-stub, coverage-audit, and scope-walk E2E specs against the current implementation",
       "version": "0.3.0",
       "source": "./plugins/spec-mirror",
+      "category": "productivity"
+    },
+    {
+      "name": "qa-operator",
+      "description": "Delegated browser QA operator: plan, run, monitor, triage, and optionally repair acceptance checks from requirements with evidence dashboards",
+      "version": "0.1.0",
+      "source": "./plugins/qa-operator",
+      "category": "productivity"
+    },
+    {
+      "name": "feature-intake",
+      "description": "Screenshot-backed product intake for external PoCs, demos, prototypes, and VoC experiments before product integration",
+      "version": "0.1.0",
+      "source": "./plugins/feature-intake",
       "category": "productivity"
     }
   ]
