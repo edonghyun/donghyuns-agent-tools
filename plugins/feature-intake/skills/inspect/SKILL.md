@@ -7,6 +7,8 @@ description: Inspect a feature artifact before product intake. Use for PoCs, dem
 
 Discover what the artifact contains and what evidence must be captured.
 
+For generalized wireframe/page-state and button-reaction categories, read `../../docs/STATE-TAXONOMY.md` when the artifact is interactive or the user asks for wireframes, all pages, button reactions, or implementation-ready flows.
+
 ## When to use
 
 Use when starting intake on an unknown artifact, especially before browser capture.
@@ -45,6 +47,8 @@ Never modify artifact source code or product source code.
 2. Inventory surfaces
    - List pages/routes/views.
    - List controls: buttons, tabs, inputs, uploads, dropdowns, menus, export/download/copy actions.
+   - For each important button/control, record handler/function/source evidence when available.
+   - Classify expected reaction type: toggle, navigation, async/API, modal/dialog, guard/error, output/download/copy.
    - List modals, alerts, confirmations, toasts, empty/loading/error states.
 
 3. Identify integration signals
@@ -55,7 +59,9 @@ Never modify artifact source code or product source code.
 
 4. Mark capture targets
    - Page screenshots.
+   - Wireframe page-state screenshots: empty, configured, loading, result, modal, disabled, error, editing, and review/submit states where applicable.
    - Interaction screenshots.
+   - Button reaction screenshots or explicit source-confirmed blockers.
    - Dialog screenshots/logs.
    - Edge states.
    - Contact sheets.
@@ -75,4 +81,4 @@ Never modify artifact source code or product source code.
 
 - `intake-manifest.json` contains artifact source, existing product source if known, runtime status, mock policy, page targets, interaction targets, dialog targets, edge targets, and known blockers.
 - `page-inventory.md` lists pages/views with evidence status.
-- `feature-inventory.md` lists controls/actions/features and capture priority.
+- `feature-inventory.md` lists controls/actions/features, capture priority, and whether button reactions need evidence.

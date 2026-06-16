@@ -7,6 +7,8 @@ description: Write screenshot-backed user flow, user journey, use case, screen a
 
 Turn evidence and product framing into readable product analysis.
 
+For generalized state names and button-reaction categories, read `../../docs/STATE-TAXONOMY.md` before writing `button-handling.md` or wireframe-oriented screen annotations.
+
 ## When to use
 
 Use after at least partial `inspect`, `capture`, and `frame`.
@@ -24,6 +26,7 @@ docs/feature-intake/<slug>/analysis/
 ├── use-cases.md
 ├── page-inventory.md
 ├── feature-inventory.md
+├── button-handling.md
 └── screen-by-screen.md
 ```
 
@@ -61,6 +64,13 @@ Never modify source code.
 6. Screen-by-screen annotations
    - For each important screenshot, explain visible controls, user intent, state, data dependency, and open product questions.
 
+7. Button handling and reactions
+   - Write `button-handling.md` when the artifact has meaningful buttons, tabs, CTAs, modals, AI actions, exports, or wizard controls.
+   - Group controls by screen.
+   - For each important control, include label, handler/source evidence if available, reaction type, click result, screenshot evidence, and wireframe notes.
+   - Cover disabled, loading, success, failure, modal, copy/download/export, and back/navigation reactions.
+   - Mark uncaptured reactions as `source-confirmed`, `blocked`, or `unknown`; do not imply visual evidence exists when it does not.
+
 ## Hallucination guardrails
 
 - Do not say a journey is "student-facing", "admin-facing", or similar unless framed as known or assumed.
@@ -74,4 +84,5 @@ Never modify source code.
 - User journeys exist for all known/assumed actor slots.
 - Use cases include normal, exception, operational, regeneration/editing, and output destination paths where relevant.
 - Screen annotations cite screenshots.
+- Button handling exists for interactive artifacts and maps controls to reaction states/evidence.
 - Inventories use statuses consistently.

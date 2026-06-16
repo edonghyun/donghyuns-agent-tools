@@ -1,6 +1,6 @@
 {
   "name": "feature-intake",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Turn external feature artifacts, PoCs, demos, prototypes, and VoC experiments into screenshot-backed product integration analysis packages.",
   "author": {
     "name": "Donghyun",
@@ -21,7 +21,7 @@
   "interface": {
     "displayName": "Feature Intake",
     "shortDescription": "Analyze PoCs and prototypes for product integration with screenshots.",
-    "longDescription": "Feature Intake turns external feature artifacts such as VoC-driven PoCs, demo apps, Figma prototypes, and experimental tools into product handoff packages: screenshots, contact sheets, product framing, user flows, journeys, use cases, screen annotations, integration fit, risks, MVP boundaries, and backlog.",
+    "longDescription": "Feature Intake turns external feature artifacts such as VoC-driven PoCs, demo apps, Figma prototypes, and experimental tools into product handoff packages: screenshots, page-state and button-reaction evidence, contact sheets, product framing, user flows, journeys, use cases, screen annotations, integration fit, risks, MVP boundaries, and backlog.",
     "developerName": "Donghyun",
     "category": "Productivity",
     "capabilities": [
@@ -31,6 +31,7 @@
     "defaultPrompt": [
       "이 PoC를 feature-intake 해줘. 스크린샷 포함해서 유저플로우, 유저저니, 유즈케이스, 제품 편입 분석까지 정리해줘.",
       "비즈니스팀에서 준 데모 앱 분석해줘. 외부 AI/API는 mock 처리하고 모든 버튼/모달 상태를 캡처해줘.",
+      "와이어프레임 설계용으로 모든 페이지 상태와 버튼 클릭 반응까지 한 번에 정리해줘.",
       "이 prototype을 기존 서비스에 붙인다고 가정하고 product framing과 MVP/backlog까지 만들어줘."
     ],
     "brandColor": "#5B5F97"

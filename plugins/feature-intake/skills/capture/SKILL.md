@@ -7,6 +7,8 @@ description: Capture screenshot evidence for feature intake. Use when the user a
 
 Capture the visual evidence that product analysis will cite.
 
+For generalized page-state and button-reaction coverage, read `../../docs/STATE-TAXONOMY.md` when the capture will inform wireframes, implementation planning, or "all pages/buttons" coverage.
+
 ## When to use
 
 Use when an artifact is runnable, browser-visible, or supplied as images and the intake package needs visual evidence.
@@ -51,11 +53,15 @@ Never modify application source. Mock/intercept external calls from outside the 
 
 2. Capture page states
    - One full-page screenshot per stable page/view.
+   - Capture wireframe-critical variants for each page when reachable: empty, configured, loading, result, modal open, disabled guard, validation error, editing, submitted/review state.
    - Name files with sequence numbers and short slugs.
 
 3. Capture interactions
    - Capture after each important button/tab/control click.
    - Include before/after when the state change is subtle.
+   - For async/API buttons, capture at least loading plus success or failure, mocking external calls by default.
+   - For disabled buttons, capture the disabled state and record the disabled reason.
+   - For output buttons such as copy/download/export, capture the surrounding state and record native dialog, download, clipboard, or permission behavior.
 
 4. Capture dialogs
    - Capture modals where possible.
@@ -71,6 +77,7 @@ Never modify application source. Mock/intercept external calls from outside the 
 
 6. Build contact sheets
    - Create overview images for quick review.
+   - When the intake will inform wireframes, create a separate page-state or wireframe contact sheet that groups stable pages and state variants apart from granular interaction screenshots.
    - Keep originals full-size.
 
 ## Hallucination guardrails
@@ -79,11 +86,13 @@ Never modify application source. Mock/intercept external calls from outside the 
 - Do not rely only on DOM state when visual layout matters.
 - Do not use live external calls unless explicitly requested.
 - Do not overwrite existing screenshots unless this is an intentional rerun.
+- Do not collapse button behavior into a single "clicked" note; record the visible reaction or mark it source-confirmed only.
 
 ## Done criteria
 
 - Screenshot folders contain originals.
 - `screenshots/README.md` indexes screenshot families.
 - Contact sheets exist for review.
+- Wireframe-critical page states are either captured or listed as blockers.
 - Dialog text is recorded where native screenshots are not possible.
 - Uncaptured targets are listed with blocker reasons.

@@ -60,12 +60,13 @@ Start a new Codex thread after install or update so the refreshed plugin skills 
 
 ### [feature-intake](plugins/feature-intake/README.md)
 
-Turn external feature artifacts into product integration analysis packages. `feature-intake` takes VoC-driven PoCs, demo apps, Figma prototypes, internal tools, AI experiments, or screenshots from another team and produces screenshot-backed user flows, user journeys, use cases, product framing, integration fit, risks, MVP boundaries, and handoff documentation.
+Turn external feature artifacts into product integration analysis packages. `feature-intake` takes VoC-driven PoCs, demo apps, Figma prototypes, internal tools, AI experiments, or screenshots from another team and produces screenshot-backed user flows, user journeys, use cases, page-state/button-reaction coverage, product framing, integration fit, risks, MVP boundaries, and handoff documentation.
 
 **Just say:**
 
 ```text
 이 PoC를 feature-intake 해줘. 스크린샷 포함해서 유저플로우, 유저저니, 유즈케이스, 제품 편입 분석까지 정리해줘.
+와이어프레임 설계용으로 모든 페이지 상태와 버튼 클릭 반응까지 한 번에 정리해줘.
 ```
 
 **Skills:**
@@ -73,10 +74,10 @@ Turn external feature artifacts into product integration analysis packages. `fea
 | Command | Description |
 |---------|-------------|
 | `/feature-intake:start`   | Natural-language entry. Runs inspect, capture, framing, analysis, mapping, and packaging. |
-| `/feature-intake:inspect` | Discover artifact structure, pages, controls, external calls, and capture targets. |
-| `/feature-intake:capture` | Capture page, interaction, modal/dialog, edge-case, and contact-sheet screenshots. |
+| `/feature-intake:inspect` | Discover artifact structure, pages, controls, button reactions, external calls, and capture targets. |
+| `/feature-intake:capture` | Capture page, page-state/wireframe, button-reaction, interaction, modal/dialog, edge-case, and contact-sheet screenshots. |
 | `/feature-intake:frame`   | Generalize product framing: actors, placement, output, quality bar, MVP, data/AI/storage, operations, risks. |
-| `/feature-intake:analyze` | Write user flows, journeys, use cases, inventories, and screen-by-screen annotations. |
+| `/feature-intake:analyze` | Write user flows, journeys, use cases, inventories, button-handling matrices, and screen-by-screen annotations. |
 | `/feature-intake:map`     | Map the artifact into the existing product's IA, modules, data, APIs, permissions, storage, and backlog. |
 | `/feature-intake:package` | Assemble the final screenshot-backed handoff README and coverage matrix. |
 
@@ -92,7 +93,7 @@ Turn external feature artifacts into product integration analysis packages. `fea
   └─ package
 ```
 
-**Plugin docs:** [CONCEPTS](plugins/feature-intake/docs/CONCEPTS.md) · [WORKFLOW-GUIDE](plugins/feature-intake/docs/WORKFLOW-GUIDE.md) · [EXAMPLES](plugins/feature-intake/docs/EXAMPLES.md) · [TROUBLESHOOTING](plugins/feature-intake/docs/TROUBLESHOOTING.md)
+**Plugin docs:** [CONCEPTS](plugins/feature-intake/docs/CONCEPTS.md) · [STATE-TAXONOMY](plugins/feature-intake/docs/STATE-TAXONOMY.md) · [WORKFLOW-GUIDE](plugins/feature-intake/docs/WORKFLOW-GUIDE.md) · [EXAMPLES](plugins/feature-intake/docs/EXAMPLES.md) · [TROUBLESHOOTING](plugins/feature-intake/docs/TROUBLESHOOTING.md)
 
 ---
 

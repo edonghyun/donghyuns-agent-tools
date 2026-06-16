@@ -1,5 +1,7 @@
 # Feature Intake Workflow Guide
 
+For generalized page-state and button-reaction coverage, use [STATE-TAXONOMY](STATE-TAXONOMY.md).
+
 ## 1. Start From The Artifact
 
 Collect the artifact location:
@@ -21,6 +23,7 @@ Use `feature-intake:inspect` to discover:
 - entry points and setup commands
 - routes/pages/views
 - buttons, menus, dialogs, and stateful controls
+- button labels, handlers/source evidence, expected reaction type, and required before/after states
 - uploads/downloads/exports
 - external calls
 - storage/cache/local state
@@ -34,12 +37,14 @@ Write `intake-manifest.json` and inventory notes.
 Use `feature-intake:capture` to collect screenshot evidence:
 
 - page-level screenshots
+- wireframe-critical page-state screenshots: empty, configured, loading, result, modal, disabled, error, editing, submitted/review where relevant
 - interaction screenshots after clicks
+- button-reaction screenshots or explicit blockers/source-confirmed notes
 - modal/dialog screenshots
 - edge/error/loading/empty screenshots
 - contact sheets
 
-Do not stop at the first happy path. If a control changes state, capture the before and after. If a native alert appears, log the dialog text and capture where possible.
+Do not stop at the first happy path. If a control changes state, capture the before and after. If an async control calls AI/API, capture loading plus success or failure. If a native alert appears, log the dialog text and capture where possible.
 
 ## 4. Frame
 
@@ -63,6 +68,7 @@ Use `feature-intake:analyze` to write:
 - user flow with screenshot references
 - user journeys by actor
 - use cases: normal, exception, operational, regeneration, export/share
+- button handling and reactions: label, handler/source, reaction type, click result, evidence, wireframe notes
 - page and feature inventories
 - screen-by-screen annotations
 
@@ -88,6 +94,8 @@ Use `feature-intake:package` to assemble:
 - top-level README
 - screenshot indexes
 - contact sheets
+- wireframe/page-state sheet when available
+- button-handling matrix when the artifact is interactive
 - analysis index
 - QA/coverage matrix
 - risks and blockers
