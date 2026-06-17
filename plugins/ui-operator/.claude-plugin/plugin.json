@@ -1,0 +1,9 @@
+{
+  "name": "ui-operator",
+  "version": "0.1.0",
+  "description": "Evidence-backed UI iteration operator for comparing baseline and current web, mobile web, native mobile, and local session-derived UI states during product UI changes.",
+  "author": {
+    "name": "Donghyun",
+    "email": "edonghyun@hankyopa.com"
+  }
+}

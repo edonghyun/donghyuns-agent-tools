@@ -21,11 +21,13 @@ claude plugin marketplace add /Users/idonghyeon/projects/donghyuns-agent-tools
 claude plugin install spec-mirror@donghyuns-agent-tools
 claude plugin install qa-operator@donghyuns-agent-tools
 claude plugin install feature-intake@donghyuns-agent-tools
+claude plugin install ui-operator@donghyuns-agent-tools
 
 # Refresh after marketplace changes.
 claude plugin marketplace update donghyuns-agent-tools
 claude plugin update qa-operator@donghyuns-agent-tools
 claude plugin update feature-intake@donghyuns-agent-tools
+claude plugin update ui-operator@donghyuns-agent-tools
 ```
 
 ### Codex
@@ -45,11 +47,13 @@ codex plugin marketplace add /Users/idonghyeon/projects/donghyuns-agent-tools
 # Install Codex-supported plugins.
 codex plugin add qa-operator@donghyuns-agent-tools
 codex plugin add feature-intake@donghyuns-agent-tools
+codex plugin add ui-operator@donghyuns-agent-tools
 
 # Refresh after marketplace changes.
 codex plugin marketplace upgrade donghyuns-agent-tools
 codex plugin add qa-operator@donghyuns-agent-tools
 codex plugin add feature-intake@donghyuns-agent-tools
+codex plugin add ui-operator@donghyuns-agent-tools
 ```
 
 Start a new Codex thread after install or update so the refreshed plugin skills are loaded into the session.
@@ -57,6 +61,46 @@ Start a new Codex thread after install or update so the refreshed plugin skills 
 ---
 
 ## Plugins
+
+### [ui-operator](plugins/ui-operator/README.md)
+
+Run evidence-backed UI iteration loops for changes already inside a product. `ui-operator` turns a web, mobile web, native mobile UI task, branch, PR, diff, local Codex session, or paired baseline/current targets into affected page/screen/state planning, route and modal screenshot capture, native app screenshot collection, side-by-side comparison reports, UI/UX findings, and recapture notes after improvements.
+
+**Just say:**
+
+```text
+이번 UI 변경 diff 기준으로 영향받는 페이지/모달 스샷 계획 잡고 baseline/current 비교해줘.
+baseline은 localhost:3002, current는 localhost:3004야. 관리자 화면들 before/after 비교 리포트 만들어줘.
+iOS/Android 앱 화면도 baseline/current로 스크린샷 수집해서 비교해줘.
+이전 로컬 Codex session id에서 UI 작업 맥락을 뽑아서 capture plan 만들어줘.
+UI 개선 중간 확인용으로 작업 내용에 따른 캡처와 리뷰 남겨줘.
+```
+
+**Skills:**
+
+| Command | Description |
+|---------|-------------|
+| `/ui-operator:start`   | Natural-language entry. Plans affected surfaces, captures, compares, reviews, and optionally iterates. |
+| `/ui-operator:plan`    | Map a task, diff, PR, local session id, or changed files into page/screen/state capture recipes. |
+| `/ui-operator:capture` | Capture current or paired baseline/current screenshots for web routes, mobile screens, modals, dropdowns, and responsive states. |
+| `/ui-operator:compare` | Generate side-by-side comparison reports from URLs or existing capture folders. |
+| `/ui-operator:review`  | Write screenshot-backed UI/UX findings grounded in comparison evidence. |
+| `/ui-operator:iterate` | Rerun affected captures after code changes and preserve iteration evidence. |
+
+**Workflow:**
+
+```
+/ui-operator:start
+  ├─ plan
+  ├─ capture
+  ├─ compare
+  ├─ review
+  └─ iterate, after changes
+```
+
+**Plugin docs:** [CONCEPTS](plugins/ui-operator/docs/CONCEPTS.md) · [WORKFLOW-GUIDE](plugins/ui-operator/docs/WORKFLOW-GUIDE.md) · [EXAMPLES](plugins/ui-operator/docs/EXAMPLES.md) · [TROUBLESHOOTING](plugins/ui-operator/docs/TROUBLESHOOTING.md)
+
+---
 
 ### [feature-intake](plugins/feature-intake/README.md)
 
@@ -233,6 +277,13 @@ donghyuns-agent-tools/
 │   │   ├── README.md
 │   │   ├── docs/
 │   │   └── skills/{start,inspect,capture,frame,analyze,map,package}/
+│   ├── ui-operator/
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── .codex-plugin/plugin.json
+│   │   ├── README.md
+│   │   ├── docs/
+│   │   ├── scripts/
+│   │   └── skills/{start,plan,capture,compare,review,iterate}/
 │   └── spec-mirror/
 │       ├── .claude-plugin/plugin.json
 │       ├── README.md

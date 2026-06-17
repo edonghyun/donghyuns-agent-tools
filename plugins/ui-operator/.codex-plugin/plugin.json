@@ -1,0 +1,43 @@
+{
+  "name": "ui-operator",
+  "version": "0.1.0",
+  "description": "Evidence-backed UI iteration operator for comparing baseline and current web, mobile web, native mobile, and local session-derived UI states during product UI changes.",
+  "author": {
+    "name": "Donghyun",
+    "email": "edonghyun@hankyopa.com",
+    "url": "https://github.com/edonghyun"
+  },
+  "homepage": "https://github.com/edonghyun/donghyuns-agent-tools/tree/main/plugins/ui-operator",
+  "repository": "https://github.com/edonghyun/donghyuns-agent-tools",
+  "license": "MIT",
+  "keywords": [
+    "ui-review",
+    "visual-regression",
+    "browser-screenshots",
+    "mobile-screenshots",
+    "native-mobile",
+    "design-iteration",
+    "comparison-report"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "UI Operator",
+    "shortDescription": "Plan, capture, compare, and review web or mobile UI changes with evidence.",
+    "longDescription": "UI Operator turns an in-progress web, mobile web, or native mobile UI change, diff, PR, redesign task, or local Codex session into an evidence trail: affected page/screen/state planning, baseline/current screenshots, modal and dropdown recipes, local session capture-plan mapping, native mobile capture adapters, side-by-side comparison reports, visual UX findings, and iteration notes.",
+    "developerName": "Donghyun",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "이번 UI 변경 diff 기준으로 affected pages랑 모달 캡처 계획 잡고 비교 리포트 만들어줘.",
+      "baseline/current 서버 두 개 띄워서 페이지별, 모달별 스크린샷 비교해줘.",
+      "iOS/Android 앱 화면도 baseline/current로 스크린샷 수집해서 비교해줘.",
+      "로컬 Codex session id에서 UI 작업 맥락을 뽑아 capture plan 만들어줘.",
+      "UI 개선 중간 확인용으로 작업 내용에 맞는 캡처와 before/after 분석을 남겨줘.",
+      "이 디자인 수정 반복하면서 스샷 찍고 비교하고 리뷰까지 이어가줘."
+    ],
+    "brandColor": "#2F6F5E"
+  }
+}
