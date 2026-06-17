@@ -37,6 +37,30 @@ Prioritize:
 
 Create `capture-priority.md` if not everything can be captured in one pass.
 
+## Page Walk Finds Too Much
+
+Bound the crawl before increasing screenshots:
+
+- start from explicit seed routes instead of `/`
+- lower `--crawl-depth`
+- lower `--max-routes`
+- use `--include-text` or `--exclude-text` for focused passes
+- split admin/user/public surfaces into separate runs
+
+Do not call the run exhaustive unless `page-walk-results.json` shows every discovered route/control was captured or explicitly blocked.
+
+## Page Walk Skips Important Actions
+
+The helper defaults to mutation-safe mode. It skips labels that look like save, delete, send, schedule, activate, deduct, compensate, approve, or similar final mutations. For product intake, this is usually correct: capture the modal, form, disabled state, validation guard, or confirmation point without changing real data.
+
+Use `--allow-mutations` only when:
+
+- the app is running on disposable data
+- destructive actions are mocked/intercepted
+- the user explicitly authorized live mutations
+
+Document the chosen policy in `tools/README.md`.
+
 ## User Roles Are Unclear
 
 Do not force personas. Use actor slots:

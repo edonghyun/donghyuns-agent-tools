@@ -23,6 +23,7 @@ Use `feature-intake:inspect` to discover:
 - entry points and setup commands
 - routes/pages/views
 - buttons, menus, dialogs, and stateful controls
+- seed routes and safe crawl boundaries for page-walk capture
 - button labels, handlers/source evidence, expected reaction type, and required before/after states
 - uploads/downloads/exports
 - external calls
@@ -37,6 +38,7 @@ Write `intake-manifest.json` and inventory notes.
 Use `feature-intake:capture` to collect screenshot evidence:
 
 - page-level screenshots
+- page-walk traversal screenshots from explicit routes or bounded same-origin crawl
 - wireframe-critical page-state screenshots: empty, configured, loading, result, modal, disabled, error, editing, submitted/review where relevant
 - interaction screenshots after clicks
 - button-reaction screenshots or explicit blockers/source-confirmed notes
@@ -45,6 +47,18 @@ Use `feature-intake:capture` to collect screenshot evidence:
 - contact sheets
 
 Do not stop at the first happy path. If a control changes state, capture the before and after. If an async control calls AI/API, capture loading plus success or failure. If a native alert appears, log the dialog text and capture where possible.
+
+For broad "all pages / all buttons" requests, use the bundled page-walk helper as the first pass, then manually fill important gaps:
+
+```bash
+node plugins/feature-intake/scripts/page_walk_capture.mjs \
+  --base-url http://localhost:3000 \
+  --routes / \
+  --crawl-depth 2 \
+  --out docs/feature-intake/<slug>/screenshots
+```
+
+Keep the default mutation-safe mode unless the target uses disposable data or the user explicitly authorizes live mutations. The helper writes `screenshots/page-walk-results.json` and `screenshots/page-walk-index.md`; use those files as the capture checklist, not as a replacement for human judgment.
 
 ## 4. Frame
 
@@ -96,6 +110,7 @@ Use `feature-intake:package` to assemble:
 - contact sheets
 - wireframe/page-state sheet when available
 - button-handling matrix when the artifact is interactive
+- page-walk index and results when traversal capture was used
 - analysis index
 - QA/coverage matrix
 - risks and blockers

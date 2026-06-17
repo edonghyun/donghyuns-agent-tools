@@ -7,7 +7,7 @@ description: Write screenshot-backed user flow, user journey, use case, screen a
 
 Turn evidence and product framing into readable product analysis.
 
-For generalized state names and button-reaction categories, read `../../docs/STATE-TAXONOMY.md` before writing `button-handling.md` or wireframe-oriented screen annotations.
+For generalized state names, page-walk targets, and control-reaction categories, read `../../docs/STATE-TAXONOMY.md` before writing `button-handling.md` or wireframe-oriented screen annotations.
 
 ## When to use
 
@@ -67,6 +67,7 @@ Never modify source code.
 7. Button handling and reactions
    - Write `button-handling.md` when the artifact has meaningful buttons, tabs, CTAs, modals, AI actions, exports, or wizard controls.
    - Group controls by screen.
+   - If page-walk capture was used, summarize reachable routes, discovered links, skipped mutation controls, and blocked targets from `screenshots/page-walk-results.json`.
    - For each important control, include label, handler/source evidence if available, reaction type, click result, screenshot evidence, and wireframe notes.
    - Cover disabled, loading, success, failure, modal, copy/download/export, and back/navigation reactions.
    - Mark uncaptured reactions as `source-confirmed`, `blocked`, or `unknown`; do not imply visual evidence exists when it does not.

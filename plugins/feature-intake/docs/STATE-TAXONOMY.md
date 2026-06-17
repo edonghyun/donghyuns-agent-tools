@@ -1,6 +1,6 @@
 # Feature Intake State Taxonomy
 
-Use this taxonomy when an intake package will inform wireframes, product specs, implementation planning, or QA. It generalizes page/screen states and button reactions across PoCs, prototypes, SaaS tools, AI workflows, admin consoles, education products, checkout flows, and internal tools.
+Use this taxonomy when an intake package will inform wireframes, product specs, implementation planning, or QA. It generalizes page/screen states, page traversal, and control reactions across PoCs, prototypes, SaaS tools, AI workflows, admin consoles, education products, checkout flows, and internal tools.
 
 ## Core Principle
 
@@ -40,7 +40,20 @@ Capture the variants that materially affect layout, user decisions, downstream i
 | `permission` | User lacks access or role-specific control is hidden/blocked | Role-gated surfaces, auth, tenant boundaries | Capture if product fit depends on roles. |
 | `quota` | Usage/credit/token limits affect availability | AI generation, paid flows, rate limits | Capture cost preview, insufficient balance, refund/failure policy. |
 
-## Button Reaction Types
+## Page Walk Targets
+
+Treat a product surface as a graph of reachable pages and states, not a flat list of screenshots.
+
+| Target | Meaning | Evidence To Capture |
+| --- | --- | --- |
+| `route` | A URL or view reached directly or through a same-origin link | Full-page screenshot, route/source, blocker if unreachable. |
+| `link` | In-app navigation affordance | Before/source page plus destination route or blocked state. |
+| `tab` | In-page view switch | Before/after selected state and changed content. |
+| `button` | Command control | Reaction type, modal/guard/async/output/mutation evidence. |
+| `row-click` | Table/list row opens detail or navigation | Detail modal/page and selected row context. |
+| `menu-disclosure` | Menu, dropdown, summary, popover, or drawer trigger | Open state, available actions, close path where relevant. |
+
+## Control Reaction Types
 
 | Reaction Type | Meaning | Evidence To Capture |
 | --- | --- | --- |
@@ -58,14 +71,15 @@ Capture the variants that materially affect layout, user decisions, downstream i
 For each primary page/view:
 
 1. Default/entry state.
-2. Configured or populated state.
-3. Primary CTA loading state when async.
-4. Primary CTA success/result state.
-5. Primary CTA error/guard state.
-6. Any modal/drawer opened from the page.
-7. Edit mode if content can be edited.
-8. Disabled state for important blocked controls.
-9. Output action state for copy/download/export/share/send.
+2. Reachable same-origin child routes when traversal is in scope.
+3. Configured or populated state.
+4. Primary CTA loading state when async.
+5. Primary CTA success/result state.
+6. Primary CTA error/guard state.
+7. Any modal/drawer opened from the page.
+8. Edit mode if content can be edited.
+9. Disabled state for important blocked controls.
+10. Output action state for copy/download/export/share/send.
 
 If a state is not reachable, document why in the screenshot index and coverage matrix.
 
@@ -85,6 +99,7 @@ If a state is not reachable, document why in the screenshot index and coverage m
 When using this taxonomy, include:
 
 - `screenshots/contact-sheets/<wireframe-or-page-state>.png` when useful.
+- `screenshots/page-walk-results.json` and `screenshots/page-walk-index.md` when traversal capture is used.
 - `analysis/button-handling.md` for interactive artifacts.
 - `qa/feature-coverage-matrix.md` rows that reference state coverage.
 - Explicit blockers for states not captured.

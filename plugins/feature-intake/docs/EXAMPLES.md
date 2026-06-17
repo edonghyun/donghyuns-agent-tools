@@ -14,6 +14,11 @@
 ```
 
 ```text
+시작 페이지부터 접근 가능한 페이지를 순회하면서 링크, 탭, 버튼, 모달, disabled/error 상태까지 스크린샷으로 남겨줘.
+실제 저장/삭제/발송 같은 최종 액션은 누르지 말고 직전 상태까지만 봐줘.
+```
+
+```text
 이 Figma prototype을 실제 제품 기능 후보로 intake 해줘.
 사용자, 사용 맥락, output destination, quality bar, MVP/backlog까지 일반화해서 정리해줘.
 ```
@@ -41,6 +46,29 @@
 | Interaction | screenshots/interactions/04-generate-clicked.png | Loading and generated state |
 | Dialog | screenshots/dialogs/02-copy-alert.png | Native copy confirmation |
 | Edge | screenshots/edge-cases/03-invalid-file.png | Upload validation |
+```
+
+## Page Walk Command
+
+```bash
+node plugins/feature-intake/scripts/page_walk_capture.mjs \
+  --base-url http://localhost:3000 \
+  --routes /admin \
+  --crawl-depth 1 \
+  --out docs/feature-intake/admin-surface/screenshots
+```
+
+```md
+## Page Walk Outputs
+
+| Artifact | Purpose |
+|---|---|
+| screenshots/page-walk-results.json | Machine-readable route, target, screenshot, dialog, and blocker inventory. |
+| screenshots/page-walk-index.md | Reviewer-friendly index of pages and interaction evidence. |
+| screenshots/pages/ | Full-page screenshots for each reached route. |
+| screenshots/interactions/ | Non-dialog interaction screenshots. |
+| screenshots/dialogs/ | Modal and native dialog evidence. |
+| screenshots/edge-cases/ | Disabled, skipped mutation, and click-error evidence. |
 ```
 
 ## Use Case Table

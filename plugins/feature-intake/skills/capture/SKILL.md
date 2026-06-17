@@ -1,6 +1,6 @@
 ---
 name: capture
-description: Capture screenshot evidence for feature intake. Use when the user asks for page-by-page screenshots, button click states, modal/dialog screenshots, edge/error/loading/empty states, contact sheets, or "스크린샷 포함" analysis of a PoC/prototype/demo; triggers include "스크린샷 찍어줘", "버튼 눌렀을 때 화면", "모달 캡처", "contact sheet", "capture PoC", "page screenshots". Writes docs/feature-intake/SLUG/screenshots/ and screenshot indexes. Do not use for screenshot-free static analysis.
+description: Capture screenshot evidence for feature intake. Use when the user asks for page-by-page screenshots, page traversal, button/control click states, modal/dialog screenshots, edge/error/loading/empty states, contact sheets, or "스크린샷 포함" analysis of a PoC/prototype/demo; triggers include "스크린샷 찍어줘", "페이지 순회", "버튼들 다 눌러봐", "버튼 눌렀을 때 화면", "모달 캡처", "contact sheet", "capture PoC", "page screenshots". Writes docs/feature-intake/SLUG/screenshots/ and screenshot indexes. Do not use for screenshot-free static analysis.
 ---
 
 # Feature Intake - Capture
@@ -16,7 +16,9 @@ Use when an artifact is runnable, browser-visible, or supplied as images and the
 Use especially for:
 
 - pages
+- route/page traversal
 - buttons and tabs
+- links, menus, summaries, and other visible controls
 - modal/dialog/toast/native alert states
 - upload/download/export states
 - loading, empty, error, disabled, blocked states
@@ -33,6 +35,8 @@ docs/feature-intake/<slug>/screenshots/
 ├── dialogs/
 ├── edge-cases/
 ├── contact-sheets/
+├── page-walk-results.json
+├── page-walk-index.md
 └── README.md
 ```
 
@@ -44,6 +48,14 @@ docs/feature-intake/<slug>/tools/
 
 Never modify application source. Mock/intercept external calls from outside the artifact when possible.
 
+Bundled helper:
+
+```text
+plugins/feature-intake/scripts/page_walk_capture.mjs
+```
+
+Use this helper when the user asks to traverse pages or click through "all buttons/controls" at scale. Copy it into `docs/feature-intake/<slug>/tools/` or run it from the plugin path, and document the command in `tools/README.md`.
+
 ## Pipeline
 
 1. Prepare runtime
@@ -51,23 +63,31 @@ Never modify application source. Mock/intercept external calls from outside the 
    - Mock or intercept external AI/API calls by default.
    - Document commands in `tools/README.md`.
 
-2. Capture page states
+2. Walk pages/routes
+   - Use explicit route lists when known.
+   - When the user asks for general traversal, seed from the entry page and discover same-origin links with a bounded crawl depth.
+   - Capture one stable screenshot per reached route.
+   - Keep external links blocked by default unless the user explicitly wants them.
+
+3. Capture page states
    - One full-page screenshot per stable page/view.
    - Capture wireframe-critical variants for each page when reachable: empty, configured, loading, result, modal open, disabled guard, validation error, editing, submitted/review state.
    - Name files with sequence numbers and short slugs.
 
-3. Capture interactions
+4. Capture interactions
    - Capture after each important button/tab/control click.
+   - Treat links, tabs, menus, disclosure controls, and explicit `data-testid` controls as interaction targets, not only `<button>`.
    - Include before/after when the state change is subtle.
    - For async/API buttons, capture at least loading plus success or failure, mocking external calls by default.
    - For disabled buttons, capture the disabled state and record the disabled reason.
    - For output buttons such as copy/download/export, capture the surrounding state and record native dialog, download, clipboard, or permission behavior.
+   - In mutation-safe mode, stop before likely final save/delete/send/submit actions unless the user explicitly allows mutations on disposable data.
 
-4. Capture dialogs
+5. Capture dialogs
    - Capture modals where possible.
    - For native browser dialogs, log dialog type and text; capture surrounding before/after page state.
 
-5. Capture edge cases
+6. Capture edge cases
    - Validation errors.
    - Failed upload.
    - External call failure.
@@ -75,7 +95,7 @@ Never modify application source. Mock/intercept external calls from outside the 
    - Disabled guard.
    - Loading state.
 
-6. Build contact sheets
+7. Build contact sheets
    - Create overview images for quick review.
    - When the intake will inform wireframes, create a separate page-state or wireframe contact sheet that groups stable pages and state variants apart from granular interaction screenshots.
    - Keep originals full-size.

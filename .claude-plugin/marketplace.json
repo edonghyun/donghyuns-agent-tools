@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "donghyuns-agent-tools",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Donghyun's personal plugin marketplace for coding agents",
   "owner": {
     "name": "Donghyun",
@@ -24,8 +24,8 @@
     },
     {
       "name": "feature-intake",
-      "description": "Screenshot-backed product intake for external PoCs, demos, prototypes, and VoC experiments before product integration, now with page-state and button-reaction coverage",
-      "version": "0.1.1",
+      "description": "Screenshot-backed product intake for external PoCs, demos, prototypes, and VoC experiments before product integration, now with page-walk and control-reaction coverage",
+      "version": "0.2.0",
       "source": "./plugins/feature-intake",
       "category": "productivity"
     }

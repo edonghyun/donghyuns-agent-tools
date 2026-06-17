@@ -1,6 +1,6 @@
 ---
 name: inspect
-description: Inspect a feature artifact before product intake. Use for PoCs, demos, prototypes, VoC artifacts, screenshots, local projects, or URLs when the user needs page/route/control/external-call inventory before screenshots and analysis; triggers include "PoC 구조 파악", "페이지 목록 뽑아줘", "외부 호출 찾아줘", "기능 인벤토리", "inspect artifact", "route inventory". Writes docs/feature-intake/SLUG/intake-manifest.json and analysis/page-inventory.md plus feature-inventory.md. Do not use for final analysis without capture/framing.
+description: Inspect a feature artifact before product intake. Use for PoCs, demos, prototypes, VoC artifacts, screenshots, local projects, or URLs when the user needs page/route/control/external-call inventory before screenshots, page traversal, and analysis; triggers include "PoC 구조 파악", "페이지 목록 뽑아줘", "페이지 순회 타겟 잡아줘", "외부 호출 찾아줘", "기능 인벤토리", "inspect artifact", "route inventory". Writes docs/feature-intake/SLUG/intake-manifest.json and analysis/page-inventory.md plus feature-inventory.md. Do not use for final analysis without capture/framing.
 ---
 
 # Feature Intake - Inspect
@@ -46,6 +46,7 @@ Never modify artifact source code or product source code.
 
 2. Inventory surfaces
    - List pages/routes/views.
+   - Mark seed routes and crawl boundaries for page-walk capture.
    - List controls: buttons, tabs, inputs, uploads, dropdowns, menus, export/download/copy actions.
    - For each important button/control, record handler/function/source evidence when available.
    - Classify expected reaction type: toggle, navigation, async/API, modal/dialog, guard/error, output/download/copy.
@@ -59,6 +60,7 @@ Never modify artifact source code or product source code.
 
 4. Mark capture targets
    - Page screenshots.
+   - Page-walk traversal screenshots for seed routes and bounded same-origin discovered routes.
    - Wireframe page-state screenshots: empty, configured, loading, result, modal, disabled, error, editing, and review/submit states where applicable.
    - Interaction screenshots.
    - Button reaction screenshots or explicit source-confirmed blockers.

@@ -1,13 +1,13 @@
 ---
 name: start
-description: Default feature-intake entry for turning PoCs, demos, prototypes, VoC experiments, screenshots, or design artifacts into screenshot-backed product integration analysis packages. Triggers include "feature-intake 해줘", "PoC 분석", "제품 편입 분석", "스크린샷 포함 유저플로우", "유저저니 유즈케이스 정리", "비즈니스팀 데모 분석", "prototype intake", "PoC to product", "feature handoff". Writes docs/feature-intake/SLUG/ and routes through inspect, capture, frame, analyze, map, and package. Do not use for already-integrated implementation QA; use qa-operator for that.
+description: Default feature-intake entry for turning PoCs, demos, prototypes, VoC experiments, screenshots, or design artifacts into screenshot-backed product integration analysis packages. Triggers include "feature-intake 해줘", "PoC 분석", "제품 편입 분석", "페이지 순회 캡처", "스크린샷 포함 유저플로우", "유저저니 유즈케이스 정리", "비즈니스팀 데모 분석", "prototype intake", "PoC to product", "feature handoff". Writes docs/feature-intake/SLUG/ and routes through inspect, capture, frame, analyze, map, and package. Do not use for already-integrated implementation QA; use qa-operator for that.
 ---
 
 # Feature Intake - Start
 
 `start` is the natural-language entry point. It turns "이 PoC를 제품 편입 분석해줘" into a complete handoff package.
 
-When the request mentions wireframes, all pages, button reactions, implementation flow, or design handoff, use `../../docs/STATE-TAXONOMY.md` as the generalized coverage standard throughout inspect, capture, analyze, and package.
+When the request mentions wireframes, all pages, page traversal, button/control reactions, implementation flow, or design handoff, use `../../docs/STATE-TAXONOMY.md` as the generalized coverage standard throughout inspect, capture, analyze, and package.
 
 ## When to use
 
@@ -28,6 +28,7 @@ Common prompts:
 - "이 PoC를 feature-intake 해줘. 스크린샷 포함해서 유저플로우, 유저저니, 유즈케이스까지."
 - "비즈니스팀에서 준 데모 앱을 기존 서비스에 붙인다고 보고 분석해줘."
 - "외부 AI 호출은 mock 처리하고 모든 버튼/모달 상태 캡처해줘."
+- "시작 페이지부터 페이지 순회하면서 링크, 탭, 버튼, 모달 상태 캡처해줘."
 - "와이어프레임 설계에 필요하니까 모든 페이지/상태와 버튼 클릭 반응까지 정리해줘."
 - "이 prototype을 제품화한다고 가정하고 MVP/backlog까지 정리해줘."
 
@@ -57,10 +58,10 @@ May read the artifact project and existing product repo. May create helper scrip
    - Default external API/AI calls to mock/intercept.
 
 2. Inspect
-   - Apply `feature-intake:inspect` to inventory structure, pages, controls, button handlers/reactions, external calls, state, data, and dead paths.
+   - Apply `feature-intake:inspect` to inventory structure, seed routes, pages, controls, button handlers/reactions, external calls, state, data, and dead paths.
 
 3. Capture
-   - Apply `feature-intake:capture` to collect page, page-state/wireframe, interaction, button-reaction, dialog, edge-state, and contact-sheet screenshots.
+   - Apply `feature-intake:capture` to collect page-walk traversal, page-state/wireframe, interaction, control-reaction, dialog, edge-state, and contact-sheet screenshots.
 
 4. Frame
    - Apply `feature-intake:frame` to fill generalized product-framing slots.

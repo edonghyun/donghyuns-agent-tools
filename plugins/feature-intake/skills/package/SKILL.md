@@ -23,6 +23,8 @@ docs/feature-intake/<slug>/
 ├── intake-manifest.json
 ├── screenshots/README.md
 ├── screenshots/contact-sheets/README.md
+├── screenshots/page-walk-index.md
+├── screenshots/page-walk-results.json
 └── qa/
     └── feature-coverage-matrix.md
 ```
@@ -45,6 +47,7 @@ Never modify artifact or product source code.
    - Edge screenshots.
    - Contact sheets.
    - Wireframe/page-state contact sheet when available.
+   - Page-walk index and results when traversal capture was used.
 
 3. Build feature coverage matrix
    - Feature/action.
@@ -89,6 +92,7 @@ Never modify artifact or product source code.
 - Top-level README is the single starting point.
 - Contact sheets are linked prominently when available.
 - Wireframe/page-state and button-handling artifacts are linked when the intake includes interactive UI evidence.
+- Page-walk traversal artifacts are linked when the intake includes route crawling or all-control capture.
 - Coverage matrix exists.
 - Every major claim has evidence, assumption status, or explicit unknown.
 - Final response links package root and key screenshot sheets.

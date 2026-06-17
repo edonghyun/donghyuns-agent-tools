@@ -124,7 +124,8 @@ PoCs often contain exploration code. Intake should protect engineering from blin
 Capture screenshots by family:
 
 - Pages: each stable view.
-- Interactions: buttons, tabs, menus, toggles, state changes.
+- Page walk: routes reached from explicit seeds or bounded same-origin crawl.
+- Interactions: links, buttons, tabs, row clicks, menus, toggles, state changes.
 - Dialogs: modal, alert, confirmation, toast, native browser dialog.
 - Edge cases: validation, error, empty, loading, disabled, blocked.
 - Contact sheets: quick visual index for reviewers.

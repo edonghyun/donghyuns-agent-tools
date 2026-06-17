@@ -19,7 +19,7 @@ The hard part is not just "does the PoC run?" The hard part is product translati
 - Who is the real user?
 - Where does the feature enter the current product?
 - What screens, buttons, modals, states, and errors exist?
-- What happens after each important button or CTA is clicked?
+- What pages can be reached from the entry route, and what happens after each important link/control/button is clicked?
 - Which page states are needed for wireframes?
 - Where does the output go after generation?
 - What is the quality bar?
@@ -50,6 +50,7 @@ A prompt chain, model demo, or AI-assisted output generator exists. The team nee
 
 - "이 PoC를 feature-intake 해줘. 스크린샷 포함해서 유저플로우, 유저저니, 유즈케이스, 제품 편입 분석까지 정리해줘."
 - "비즈니스팀에서 준 데모 앱 분석해줘. 외부 AI/API는 mock 처리하고 모든 버튼/모달 상태를 캡처해줘."
+- "시작 페이지부터 같은 서비스 안의 페이지를 순회하면서 링크, 탭, 버튼, 모달 상태까지 캡처해줘."
 - "와이어프레임 설계용으로 모든 페이지 상태와 버튼 클릭 반응까지 한 번에 정리해줘."
 - "이 Figma prototype을 기존 서비스에 붙인다고 가정하고 feature-intake 패키지 만들어줘."
 - "VoC 기반 실험물을 받아서 기존 제품에 어디에 붙일지, MVP는 뭔지, 리스크는 뭔지 정리해줘."
@@ -61,7 +62,7 @@ A prompt chain, model demo, or AI-assisted output generator exists. The team nee
 |---|---|
 | `/feature-intake:start` | Natural-language entry. Runs the whole intake pipeline and packages the result. |
 | `/feature-intake:inspect` | Inspect artifact structure, run path, pages/routes, controls, button reactions, feature surfaces, state, and external calls. |
-| `/feature-intake:capture` | Capture page, page-state/wireframe, button-reaction, interaction, modal/dialog, edge-state, and contact-sheet screenshots. |
+| `/feature-intake:capture` | Capture page-walk traversal, page-state/wireframe, link/control/button reactions, modal/dialog, edge-state, and contact-sheet screenshots. |
 | `/feature-intake:frame` | General product framing: actors, placement, output destination, quality bar, MVP boundary, data/AI/storage, operations, risks. |
 | `/feature-intake:analyze` | Write user flows, user journeys, use cases, feature inventory, button-handling matrix, and screen-by-screen annotations. |
 | `/feature-intake:map` | Map the artifact into the existing product: information architecture, bounded contexts, data/API/permission/storage needs, migration/backlog. |
@@ -72,7 +73,7 @@ A prompt chain, model demo, or AI-assisted output generator exists. The team nee
 ```text
 start
   ├─ inspect   discover artifact structure and evidence targets
-  ├─ capture   collect screenshots, page states, button reactions, and contact sheets
+  ├─ capture   collect page-walk screenshots, page states, control reactions, and contact sheets
   ├─ frame     define product assumptions and unknowns
   ├─ analyze   write flows, journeys, use cases, button handling, screen annotations
   ├─ map       map into the existing service and implementation surface
@@ -90,7 +91,9 @@ docs/feature-intake/<slug>/
 │   ├── interactions/
 │   ├── dialogs/
 │   ├── edge-cases/
-│   └── contact-sheets/
+│   ├── contact-sheets/
+│   ├── page-walk-results.json
+│   └── page-walk-index.md
 ├── analysis/
 │   ├── product-framing.md
 │   ├── user-roles.md
@@ -120,7 +123,7 @@ Every intake should classify product knowledge as `Known`, `Assumed`, `Unknown`,
 | Actors | Who operates, receives, reviews, approves, or administers this feature? |
 | Placement | Where does it enter the existing product or workflow? |
 | Output destination | Is the result saved, copied, sent, downloaded, embedded, or only viewed? |
-| Button reactions | What changes after each important click, including disabled/loading/success/failure states? |
+| Page/control reactions | What pages are reachable, and what changes after each important click, including disabled/loading/success/failure states? |
 | Quality bar | What makes a good result, and what must be reviewed? |
 | MVP boundary | What ships first, later, never, or as manual ops? |
 | Data/AI/storage | What inputs, external calls, persistence, history, and approval states are needed? |
