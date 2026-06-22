@@ -2,6 +2,8 @@
 
 For generalized page-state and button-reaction coverage, use [STATE-TAXONOMY](STATE-TAXONOMY.md).
 
+For PoC-to-product parity, use [POC-FIDELITY-GATE](POC-FIDELITY-GATE.md). This is required when the artifact will be used as an implementation baseline or when the user says the current product does not match the delivered PoC/screenshots.
+
 ## 1. Start From The Artifact
 
 Collect the artifact location:
@@ -15,6 +17,11 @@ Collect the artifact location:
 - mixed bundle
 
 If the artifact is runnable, run it locally when safe. If it calls external AI/API services, mock or intercept those calls by default unless the user explicitly wants live calls.
+
+If a current implementation already exists, collect both:
+
+- baseline artifact evidence: original PoC runtime, screenshots, source files, or product feedback
+- current implementation evidence: app route/build, screenshots, and interaction states
 
 ## 2. Inspect
 
@@ -47,6 +54,14 @@ Use `feature-intake:capture` to collect screenshot evidence:
 - contact sheets
 
 Do not stop at the first happy path. If a control changes state, capture the before and after. If an async control calls AI/API, capture loading plus success or failure. If a native alert appears, log the dialog text and capture where possible.
+
+For PoC parity, capture baseline/current pairs for every requirement-critical screen and interaction. Pay attention to:
+
+- data richness and grouped option sets
+- status badges and recommended/disabled/approved states
+- automatic AI commands and generated candidates
+- editable apply/cancel/regenerate flows
+- final generated reports and next-step advice
 
 For broad "all pages / all buttons" requests, use the bundled page-walk helper as the first pass, then manually fill important gaps:
 
@@ -85,8 +100,11 @@ Use `feature-intake:analyze` to write:
 - button handling and reactions: label, handler/source, reaction type, click result, evidence, wireframe notes
 - page and feature inventories
 - screen-by-screen annotations
+- PoC fidelity matrix when baseline/current parity is in scope
 
 Keep the artifact visible through screenshots. A reader should understand the workflow without rerunning the PoC.
+
+The fidelity matrix should distinguish `match`, `partial`, `missing`, `intentional-deviation`, and `blocked`. Do not treat a route title or button label match as behavior parity.
 
 ## 6. Map
 
@@ -110,6 +128,7 @@ Use `feature-intake:package` to assemble:
 - contact sheets
 - wireframe/page-state sheet when available
 - button-handling matrix when the artifact is interactive
+- PoC fidelity matrix when parity is in scope
 - page-walk index and results when traversal capture was used
 - analysis index
 - QA/coverage matrix

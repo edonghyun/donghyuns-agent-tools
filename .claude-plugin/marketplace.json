@@ -24,15 +24,15 @@
     },
     {
       "name": "feature-intake",
-      "description": "Screenshot-backed product intake for external PoCs, demos, prototypes, and VoC experiments before product integration, now with page-walk and control-reaction coverage",
-      "version": "0.2.0",
+      "description": "Screenshot-backed product intake for external PoCs, demos, prototypes, and VoC experiments before product integration, with page-walk, control-reaction, and PoC fidelity coverage",
+      "version": "0.2.1",
       "source": "./plugins/feature-intake",
       "category": "productivity"
     },
     {
       "name": "ui-operator",
-      "description": "Evidence-backed UI iteration operator for baseline/current web, mobile web, native mobile, and local session-derived state comparisons during product UI changes",
-      "version": "0.1.0",
+      "description": "Evidence-backed UI iteration operator for baseline/current web, mobile web, native mobile, local session, and requirement parity comparisons during product UI changes",
+      "version": "0.1.1",
       "source": "./plugins/ui-operator",
       "category": "productivity"
     }

@@ -9,6 +9,8 @@ Turn evidence and product framing into readable product analysis.
 
 For generalized state names, page-walk targets, and control-reaction categories, read `../../docs/STATE-TAXONOMY.md` before writing `button-handling.md` or wireframe-oriented screen annotations.
 
+If the feature artifact is being used as a baseline for implementation, or the user reports that the current product differs from the PoC/screenshots, read `../../docs/POC-FIDELITY-GATE.md` and write `poc-fidelity-matrix.md`.
+
 ## When to use
 
 Use after at least partial `inspect`, `capture`, and `frame`.
@@ -27,7 +29,8 @@ docs/feature-intake/<slug>/analysis/
 ├── page-inventory.md
 ├── feature-inventory.md
 ├── button-handling.md
-└── screen-by-screen.md
+├── screen-by-screen.md
+└── poc-fidelity-matrix.md   # when PoC/current parity is in scope
 ```
 
 May update `qa/feature-coverage-matrix.md` only to add analysis coverage statuses, not browser QA results.
@@ -72,12 +75,21 @@ Never modify source code.
    - Cover disabled, loading, success, failure, modal, copy/download/export, and back/navigation reactions.
    - Mark uncaptured reactions as `source-confirmed`, `blocked`, or `unknown`; do not imply visual evidence exists when it does not.
 
+8. PoC fidelity matrix
+   - Write `poc-fidelity-matrix.md` when a PoC, supplied screenshot, or previous analysis package is a source of truth for implementation.
+   - Compare PoC baseline evidence against current implementation evidence screen by screen and interaction by interaction.
+   - Include data richness and generated output depth, not just visible labels.
+   - Use statuses `match`, `partial`, `missing`, `intentional-deviation`, and `blocked`.
+   - Treat "same button label but different clicked behavior" as `partial` or `missing`, never `match`.
+
 ## Hallucination guardrails
 
 - Do not say a journey is "student-facing", "admin-facing", or similar unless framed as known or assumed.
 - Do not hide screenshot gaps.
 - Do not merge product decisions into use case facts.
 - Do not overfit to one domain-specific PoC; keep reusable structure.
+- Do not merge intentional product decisions with accidental omissions; label intentional deviations separately.
+- Do not call a current implementation faithful unless baseline evidence and current evidence both exist.
 
 ## Done criteria
 
@@ -86,4 +98,5 @@ Never modify source code.
 - Use cases include normal, exception, operational, regeneration/editing, and output destination paths where relevant.
 - Screen annotations cite screenshots.
 - Button handling exists for interactive artifacts and maps controls to reaction states/evidence.
+- When relevant, `poc-fidelity-matrix.md` lists every important PoC screen/control/output with parity status and fix direction.
 - Inventories use statuses consistently.

@@ -9,6 +9,8 @@ Assemble the intake output into a reviewer-friendly handoff package.
 
 For wireframe/page-state and button-reaction package expectations, use `../../docs/STATE-TAXONOMY.md` when present in the intake.
 
+If `analysis/poc-fidelity-matrix.md` exists or the task involved PoC/current parity, read `../../docs/POC-FIDELITY-GATE.md` and surface the fidelity status prominently in README and coverage summaries.
+
 ## When to use
 
 Use at the end of intake, or when the user asks for a shareable summary with screenshots.
@@ -58,6 +60,7 @@ Never modify artifact or product source code.
    - Product interpretation.
    - Remaining question.
    - Link to `analysis/button-handling.md` when present.
+   - Link to `analysis/poc-fidelity-matrix.md` when present, and include `match/partial/missing/intentional-deviation/blocked` counts.
 
 4. Write top-level README
    - Artifact source.
@@ -68,6 +71,7 @@ Never modify artifact or product source code.
    - Product framing highlights.
    - User flow/journey/use case links.
    - Button handling/reaction matrix link when available.
+   - PoC fidelity matrix link and the highest-risk partial/missing rows when available.
    - Integration recommendation.
    - Risks/blockers.
    - MVP/backlog.
@@ -86,6 +90,7 @@ Never modify artifact or product source code.
 - Do not bury unknowns; list them near the top.
 - Do not summarize away blockers.
 - Do not pretend a product decision was made by the artifact.
+- Do not hide PoC fidelity gaps under general UX notes; list them as implementation gaps or intentional deviations.
 
 ## Done criteria
 
@@ -94,5 +99,6 @@ Never modify artifact or product source code.
 - Wireframe/page-state and button-handling artifacts are linked when the intake includes interactive UI evidence.
 - Page-walk traversal artifacts are linked when the intake includes route crawling or all-control capture.
 - Coverage matrix exists.
+- PoC fidelity status is linked and summarized when parity was in scope.
 - Every major claim has evidence, assumption status, or explicit unknown.
 - Final response links package root and key screenshot sheets.

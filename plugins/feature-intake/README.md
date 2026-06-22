@@ -25,6 +25,7 @@ The hard part is not just "does the PoC run?" The hard part is product translati
 - What is the quality bar?
 - Which parts are MVP, later, blocked, or throwaway?
 - What data, AI, storage, permission, and review requirements are implied?
+- Which PoC behaviors must be preserved, and which productized differences are intentional?
 
 `feature-intake` creates the missing bridge: screenshot evidence plus product framing, user flows, journeys, use cases, integration fit, risks, and MVP/backlog.
 
@@ -55,6 +56,7 @@ A prompt chain, model demo, or AI-assisted output generator exists. The team nee
 - "이 Figma prototype을 기존 서비스에 붙인다고 가정하고 feature-intake 패키지 만들어줘."
 - "VoC 기반 실험물을 받아서 기존 제품에 어디에 붙일지, MVP는 뭔지, 리스크는 뭔지 정리해줘."
 - "페이지별 스크린샷과 함께 화면별 기능 해설, 유저저니, use case를 만들어줘."
+- "기존 전달받은 PoC랑 현재 구현이 다른 것 같은데, 요구사항 충실도 매트릭스로 비교해줘."
 
 ## Skills
 
@@ -104,6 +106,7 @@ docs/feature-intake/<slug>/
 │   ├── page-inventory.md
 │   ├── feature-inventory.md
 │   ├── screen-by-screen.md
+│   ├── poc-fidelity-matrix.md
 │   ├── integration-fit.md
 │   ├── data-ai-storage.md
 │   ├── risks-and-blockers.md
@@ -129,6 +132,7 @@ Every intake should classify product knowledge as `Known`, `Assumed`, `Unknown`,
 | Data/AI/storage | What inputs, external calls, persistence, history, and approval states are needed? |
 | Operational fit | Who handles failures, support, monitoring, and recovery? |
 | Risks and unknowns | What product, UX, technical, data, legal, or security questions remain? |
+| PoC fidelity | Which original screens, data richness, control reactions, and generated outputs must match or be intentionally changed? |
 
 ## Status Language
 
@@ -152,6 +156,7 @@ Use product-intake statuses consistently:
 
 - [CONCEPTS](docs/CONCEPTS.md)
 - [STATE-TAXONOMY](docs/STATE-TAXONOMY.md)
+- [POC-FIDELITY-GATE](docs/POC-FIDELITY-GATE.md)
 - [WORKFLOW-GUIDE](docs/WORKFLOW-GUIDE.md)
 - [EXAMPLES](docs/EXAMPLES.md)
 - [TROUBLESHOOTING](docs/TROUBLESHOOTING.md)

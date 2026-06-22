@@ -1,6 +1,6 @@
 {
   "name": "ui-operator",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Evidence-backed UI iteration operator for comparing baseline and current web, mobile web, native mobile, and local session-derived UI states during product UI changes.",
   "author": {
     "name": "Donghyun",
@@ -23,7 +23,7 @@
   "interface": {
     "displayName": "UI Operator",
     "shortDescription": "Plan, capture, compare, and review web or mobile UI changes with evidence.",
-    "longDescription": "UI Operator turns an in-progress web, mobile web, or native mobile UI change, diff, PR, redesign task, or local Codex session into an evidence trail: affected page/screen/state planning, baseline/current screenshots, modal and dropdown recipes, local session capture-plan mapping, native mobile capture adapters, side-by-side comparison reports, visual UX findings, and iteration notes.",
+    "longDescription": "UI Operator turns an in-progress web, mobile web, or native mobile UI change, diff, PR, redesign task, local Codex session, or requirement parity review into an evidence trail: affected page/screen/state planning, baseline/current screenshots, modal and dropdown recipes, original PoC/current parity checks, local session capture-plan mapping, native mobile capture adapters, side-by-side comparison reports, visual UX findings, and iteration notes.",
     "developerName": "Donghyun",
     "category": "Productivity",
     "capabilities": [
@@ -36,7 +36,8 @@
       "iOS/Android 앱 화면도 baseline/current로 스크린샷 수집해서 비교해줘.",
       "로컬 Codex session id에서 UI 작업 맥락을 뽑아 capture plan 만들어줘.",
       "UI 개선 중간 확인용으로 작업 내용에 맞는 캡처와 before/after 분석을 남겨줘.",
-      "이 디자인 수정 반복하면서 스샷 찍고 비교하고 리뷰까지 이어가줘."
+      "이 디자인 수정 반복하면서 스샷 찍고 비교하고 리뷰까지 이어가줘.",
+      "PoC 스크린샷과 현재 구현을 비교해서 요구사항 누락, 데이터 밀도 손실, 버튼 동작 차이를 리뷰해줘."
     ],
     "brandColor": "#2F6F5E"
   }

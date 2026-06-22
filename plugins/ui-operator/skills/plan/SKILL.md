@@ -9,6 +9,8 @@ description: Map a web/mobile UI task, current diff, changed files, PR, branch, 
 
 Use before capture when the user provides a UI change task, changed files, a git diff, PR, or route list and wants page/state coverage planned.
 
+If the task compares current UI against an original PoC, screenshot, product note, or implementation requirement, read `../../docs/REQUIREMENT-PARITY-REVIEW.md` and plan requirement-level evidence pairs, not only affected routes.
+
 ## Output contract
 
 Writes only:
@@ -26,6 +28,7 @@ Never modify source code, screenshots, comparison reports, or QA artifacts.
    - Read the task wording, changed files, diff summary, PR notes, local Codex session id, or user-provided route list.
    - For repo work, prefer `git diff --name-only <base>...HEAD` or the current unstaged/staged diff.
    - Record baseline/current URLs if known.
+   - For parity work, list requirement sources separately: PoC screenshots/runtime, supplied images, feature-intake package, Notion/spec feedback, and current app URL.
 
 2. Draft affected surfaces
    - Prefer the helper:
@@ -52,6 +55,8 @@ node plugins/ui-operator/scripts/session_surface_mapper.mjs \
    - Include default `list` or `page` states.
    - Add modal, drawer, dropdown, tab, filter, empty, error, loading, and responsive states when the diff or task mentions them.
    - Leave selector-dependent actions empty or marked with `pendingSelector` until the running UI is inspected.
+   - Add state recipes for every requirement-critical control reaction: before, loading, result, modal/detail, auto-generated candidate, apply/cancel/regenerate, final report, disabled/error state.
+   - For AI or generated flows, include the expected command source in the state notes: preset, user input, or system recommendation.
 
 4. Normalize output
    - For web, include `schemaVersion`, `plugin`, `slug`, `title`, `createdAt`, `baselineUrl`, `currentUrl`, `viewports`, and `routes`.
@@ -65,6 +70,7 @@ node plugins/ui-operator/scripts/session_surface_mapper.mjs \
 - Do not invent selectors for hidden states.
 - Do not drop a changed UI component just because no route is obvious; mark it as needing route confirmation.
 - Do not overwrite a human-refined `capture-plan.json` unless the user asks.
+- Do not plan only the current route when baseline screenshots/specs define expected behavior; plan baseline evidence references too.
 
 ## Done criteria
 
@@ -72,4 +78,5 @@ node plugins/ui-operator/scripts/session_surface_mapper.mjs \
 - Every route or screen has at least one state.
 - Every inferred route or state is marked with confidence or notes.
 - Viewports are explicit.
+- Requirement-critical states are explicit when parity is in scope.
 - `manifest.json` points to the plan.

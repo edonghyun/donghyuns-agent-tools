@@ -9,6 +9,8 @@ description: Default UI iteration entry for ui-operator across web, mobile web, 
 
 Use when the user asks to verify or review an in-product UI change with browser or mobile screenshot evidence.
 
+If the user references an original PoC, supplied screenshots, Notion/product feedback, previous feature-intake package, or says the current UI is "different from what was delivered", read `../../docs/REQUIREMENT-PARITY-REVIEW.md` and run the UI review as a requirement parity review, not only a visual comparison.
+
 Common prompts:
 
 - "이번 UI 변경 diff 기준으로 페이지/모달 스샷 비교해줘."
@@ -17,6 +19,8 @@ Common prompts:
 - "이전 Codex session id 보고 화면/모달 캡처 계획 만들어줘."
 - "UI 개선 중간 확인하자. 작업 내용에 따른 캡처랑 리뷰 남겨줘."
 - "디자인 수정 반복하면서 스샷 찍고 비교해줘."
+- "PoC랑 현재 구현이 다른 것 같은데 요구사항 반영 여부를 스크린샷으로 비교해줘."
+- "이 이미지/기존 UI처럼 동작해야 하는데 현재 버전이 빈약한지 봐줘."
 
 Do not use for external prototype intake; use `feature-intake`. Do not use for requirements-only acceptance QA; use `qa-operator`.
 
@@ -45,6 +49,7 @@ Never modify application code. If code changes are needed, perform them outside 
    - If the user gives a native mobile app, ask the project for or infer the command that opens each screen/state and writes a screenshot to `UI_OPERATOR_SCREENSHOT_PATH`.
    - If the user gives a local Codex session id, use `session_surface_mapper.mjs` to draft the plan from `~/.codex/sessions`.
    - If the current workspace is not the intended repo, confirm before writing artifacts.
+   - If requirement parity is in scope, collect baseline sources: PoC screenshots/runtime, supplied images, feature-intake analysis, Notion feedback, product spec, and current implementation URL.
 
 2. Plan
    - Use `ui-operator:plan` behavior.
@@ -58,6 +63,7 @@ Never modify application code. If code changes are needed, perform them outside 
 4. Review
    - Use `ui-operator:review` to write `review.md`.
    - Classify observations as confirmed regression, UX risk, intentional design change, missing coverage, or blocker.
+   - If parity is in scope, include `requirement-mismatch`, `density-loss`, `interaction-mismatch`, and `state-missing` findings from `REQUIREMENT-PARITY-REVIEW.md`.
 
 5. Iterate when requested
    - After code changes, rerun the same state recipes with `ui-operator:iterate`.
@@ -70,6 +76,7 @@ Never modify application code. If code changes are needed, perform them outside 
 - Do not invent selectors for modals or dropdowns; inspect the running UI or mark the state as needing selector work.
 - Do not treat a product/design preference as a bug unless it blocks, hides, or misleads a real workflow.
 - Do not modify product source files inside this skill.
+- Do not treat matching labels/routes/buttons as requirement parity. Compare data richness, generated output depth, and clicked behavior.
 
 ## Done criteria
 
@@ -78,4 +85,5 @@ Never modify application code. If code changes are needed, perform them outside 
 - Screenshots or blockers exist for each planned web or mobile state.
 - `comparison-data.json` and `report.html` exist when baseline/current comparison is possible.
 - `review.md` exists when the user asked for findings.
+- Requirement parity matrix/findings exist when original PoC/screenshots/specs were used as the expected behavior.
 - Final response names evidence paths and any blockers.

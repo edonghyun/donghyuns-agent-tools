@@ -25,6 +25,16 @@ screenshot command: project script or xcrun/adb command that writes UI_OPERATOR_
 
 If the baseline server is broken, record it as a blocker and still capture current states when useful.
 
+If the baseline is an original PoC or supplied screenshots rather than a previous product build, switch to requirement parity mode:
+
+```text
+baseline evidence: PoC screenshots/runtime, feature-intake package, Notion/spec feedback
+current evidence: current product URL/build
+review mode: requirement parity
+```
+
+In this mode, do not only compare visual layout. Build a parity matrix for section presence, data richness, generated output depth, badges/status indicators, and click reactions.
+
 ## 2. Plan Affected Surfaces
 
 Use `plan` or the mapper script to create a first draft:
@@ -49,6 +59,17 @@ node plugins/ui-operator/scripts/session_surface_mapper.mjs \
 ```
 
 Then refine selectors for modal, dropdown, tab, drawer, and responsive states. Do not invent selectors; inspect the running UI when needed.
+
+For requirement parity, add one state recipe for each expected interaction:
+
+- before state
+- loading state
+- result state
+- modal/detail state
+- editable AI candidate
+- apply/cancel/regenerate
+- final generated report
+- disabled/error state
 
 ## 3. Capture And Compare
 
@@ -114,6 +135,12 @@ Findings should separate:
 - intentional design change
 - missing capture coverage
 - blocked state
+- requirement mismatch
+- density loss
+- interaction mismatch
+- missing required state
+
+When the user supplied PoC screenshots or product feedback, add a `Requirement Parity Matrix` section to `review.md`.
 
 ## 5. Iterate
 

@@ -9,6 +9,8 @@ description: Write screenshot-backed web or mobile UI/UX findings from a ui-oper
 
 Use after capture/compare when the user wants a concise review of UI improvements, regressions, UX risks, and missing coverage.
 
+If the user is comparing current UI to a PoC, supplied screenshot, Notion/product feedback, or prior feature-intake package, read `../../docs/REQUIREMENT-PARITY-REVIEW.md` before writing findings.
+
 ## Output contract
 
 Writes only:
@@ -32,11 +34,16 @@ Never modify screenshots, comparison data, reports, or application code.
    - `intentional-change`: visible change matches the task or design direction.
    - `coverage-gap`: a planned state was not captured.
    - `blocked`: server, auth, selector, data, or browser prevented evidence.
+   - `requirement-mismatch`: current UI omits or contradicts a PoC/spec/screenshot requirement.
+   - `density-loss`: current UI has the same concept but materially thinner data, sections, generated content, or option sets.
+   - `interaction-mismatch`: a control exists, but clicked behavior differs from the baseline requirement.
+   - `state-missing`: required empty/loading/result/modal/disabled/error/editing/submitted state is not implemented or not captured.
 
 3. Write review
    - Include severity, status, affected route/screen/state/viewport/device, evidence paths, observed behavior, impact, and next action.
    - Keep product/design judgment separate from factual browser evidence.
    - Prefer short findings over broad design essays.
+   - For parity work, include a `Requirement Parity Matrix` with baseline evidence, current evidence, status, finding type, and required fix.
 
 4. Record limits
    - State missing routes, missing viewports, missing modals, broken baseline, or inconsistent data.
@@ -47,6 +54,8 @@ Never modify screenshots, comparison data, reports, or application code.
 - Do not infer user impact beyond the target workflow.
 - Do not call an intentional visual change a bug unless it breaks usability or consistency.
 - Do not claim accessibility compliance unless accessibility tooling was run.
+- Do not treat matching route names, section titles, or button labels as requirement parity.
+- Do not bury PoC fidelity gaps as generic UX risks; classify them as requirement mismatch, density loss, interaction mismatch, or intentional deviation.
 
 ## Done criteria
 
@@ -54,3 +63,4 @@ Never modify screenshots, comparison data, reports, or application code.
 - Every finding has evidence paths or a blocker.
 - Coverage gaps and limits are explicit.
 - Review distinguishes facts from judgment.
+- Requirement parity matrix exists when original PoC/screenshots/specs were a baseline.

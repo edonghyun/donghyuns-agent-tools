@@ -9,6 +9,8 @@ description: Generate a ui-operator side-by-side baseline/current comparison rep
 
 Use when baseline and current captures should be compared, either by running the capture script or by reading existing output folders.
 
+When the baseline is an original PoC, supplied screenshot set, or product requirement rather than a previous production build, read `../../docs/REQUIREMENT-PARITY-REVIEW.md` and label the report as a requirement parity comparison.
+
 ## Output contract
 
 Writes only:
@@ -35,6 +37,7 @@ If it must capture missing screenshots, it may also write under `screenshots/` i
    - Review side-by-side screenshots.
    - Compare final URLs, document titles, visible text metrics, button/link/input counts, dialogs, console errors, and network errors.
    - Treat script-reported metric changes as prompts for inspection, not automatic bugs.
+   - For requirement parity, compare visible section presence, data richness, option set size, generated output depth, badges/status indicators, and post-click behavior.
 
 4. Write report
    - Include route, state, viewport, baseline image, current image, status, errors, and metric deltas.
@@ -46,6 +49,7 @@ If it must capture missing screenshots, it may also write under `screenshots/` i
 - Do not hide states that failed to capture.
 - Do not claim pixel-perfect comparison unless a pixel diff tool was actually run.
 - Do not compare screenshots from different viewport sizes, device profiles, app builds, or data states.
+- Do not call a current screen matched when only the label matches but the baseline data or interaction depth is missing.
 
 ## Done criteria
 

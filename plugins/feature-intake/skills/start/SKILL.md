@@ -9,6 +9,8 @@ description: Default feature-intake entry for turning PoCs, demos, prototypes, V
 
 When the request mentions wireframes, all pages, page traversal, button/control reactions, implementation flow, or design handoff, use `../../docs/STATE-TAXONOMY.md` as the generalized coverage standard throughout inspect, capture, analyze, and package.
 
+When the request mentions a source PoC/prototype/screenshot that must guide later implementation, or the user says the current build differs from the delivered PoC, also read `../../docs/POC-FIDELITY-GATE.md` and create a baseline fidelity matrix. Do this before accepting a productized simplification as correct.
+
 ## When to use
 
 Use when the user provides or points to:
@@ -56,6 +58,7 @@ May read the artifact project and existing product repo. May create helper scrip
    - Identify artifact path/URL and existing product repo.
    - Determine slug, output directory, whether runtime capture is possible, and whether external calls must be mocked.
    - Default external API/AI calls to mock/intercept.
+   - If implementation parity is expected, identify baseline evidence: original PoC runtime, supplied screenshots, source files, Notion/product notes, and current implementation URL.
 
 2. Inspect
    - Apply `feature-intake:inspect` to inventory structure, seed routes, pages, controls, button handlers/reactions, external calls, state, data, and dead paths.
@@ -69,6 +72,7 @@ May read the artifact project and existing product repo. May create helper scrip
 
 5. Analyze
    - Apply `feature-intake:analyze` to write user flows, journeys, use cases, inventories, screen annotations, and button-handling/reaction notes.
+   - If a PoC/product implementation comparison is in scope, write `analysis/poc-fidelity-matrix.md` with baseline evidence, current evidence, parity status, gaps, and fix direction.
 
 6. Map
    - Apply `feature-intake:map` to map the artifact into the existing product surface, modules, data, APIs, permissions, and storage.
@@ -84,6 +88,8 @@ May read the artifact project and existing product repo. May create helper scrip
 - Do not call the artifact production-ready.
 - Do not hide unreachable code paths. Mark them `blocked`.
 - Do not use live external AI/API calls unless explicitly requested.
+- Do not treat a matching page title, card label, or button label as PoC parity. Verify data richness and clicked behavior.
+- Do not silently simplify PoC behavior. Mark it as `intentional-deviation` with rationale or as a gap.
 
 ## Done criteria
 
@@ -91,5 +97,6 @@ May read the artifact project and existing product repo. May create helper scrip
 - Screenshots or explicit capture blockers are present.
 - Product framing has statuses for actors, placement, output, quality, MVP, data/AI/storage, operations, and risks.
 - User flow, user journeys, use cases, screen-by-screen annotations, button-handling reactions, integration fit, risks, and MVP/backlog exist for interactive artifacts.
+- If PoC fidelity was in scope, `analysis/poc-fidelity-matrix.md` exists and every high-risk screen/control is `match`, `intentional-deviation`, `blocked`, or has a concrete fix direction.
 - Final README links the most useful screenshots and contact sheets.
 - Final response states what was verified, assumed, unknown, and blocked.

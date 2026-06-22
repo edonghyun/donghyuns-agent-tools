@@ -9,6 +9,8 @@ Capture the visual evidence that product analysis will cite.
 
 For generalized page-state and button-reaction coverage, read `../../docs/STATE-TAXONOMY.md` when the capture will inform wireframes, implementation planning, or "all pages/buttons" coverage.
 
+For PoC-to-product parity or "current UI differs from the delivered PoC" work, read `../../docs/POC-FIDELITY-GATE.md`. Capture the original PoC/source screenshots and the current implementation states as separate baseline/current evidence, not as one undifferentiated gallery.
+
 ## When to use
 
 Use when an artifact is runnable, browser-visible, or supplied as images and the intake package needs visual evidence.
@@ -68,6 +70,7 @@ Use this helper when the user asks to traverse pages or click through "all butto
    - When the user asks for general traversal, seed from the entry page and discover same-origin links with a bounded crawl depth.
    - Capture one stable screenshot per reached route.
    - Keep external links blocked by default unless the user explicitly wants them.
+   - When a PoC is the source of truth, capture the original PoC route/state first, then capture the corresponding current implementation route/state with matching viewport and seed data where possible.
 
 3. Capture page states
    - One full-page screenshot per stable page/view.
@@ -82,6 +85,8 @@ Use this helper when the user asks to traverse pages or click through "all butto
    - For disabled buttons, capture the disabled state and record the disabled reason.
    - For output buttons such as copy/download/export, capture the surrounding state and record native dialog, download, clipboard, or permission behavior.
    - In mutation-safe mode, stop before likely final save/delete/send/submit actions unless the user explicitly allows mutations on disposable data.
+   - For parity checks, do not stop at "button exists"; capture the exact reaction that the PoC promised: modal/detail open, auto-filled command, loading, generated candidate, apply/cancel/regenerate, copied/downloaded output, or final report.
+   - For AI flows, record whether the command came from a preset, user input, or system recommendation, and capture whether the visible result reflects that command.
 
 5. Capture dialogs
    - Capture modals where possible.
@@ -107,6 +112,8 @@ Use this helper when the user asks to traverse pages or click through "all butto
 - Do not use live external calls unless explicitly requested.
 - Do not overwrite existing screenshots unless this is an intentional rerun.
 - Do not collapse button behavior into a single "clicked" note; record the visible reaction or mark it source-confirmed only.
+- Do not claim PoC fidelity from current-only screenshots.
+- Do not ignore density loss: if the PoC displayed grouped data, multiple analysis sections, or long generated output, capture enough of the current page to compare that richness.
 
 ## Done criteria
 
@@ -114,5 +121,6 @@ Use this helper when the user asks to traverse pages or click through "all butto
 - `screenshots/README.md` indexes screenshot families.
 - Contact sheets exist for review.
 - Wireframe-critical page states are either captured or listed as blockers.
+- PoC-critical baseline/current states are either captured in paired families or listed as blockers.
 - Dialog text is recorded where native screenshots are not possible.
 - Uncaptured targets are listed with blocker reasons.
