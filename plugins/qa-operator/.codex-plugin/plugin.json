@@ -1,6 +1,6 @@
 {
   "name": "qa-operator",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Delegated browser QA operator that turns requirements into live monitored acceptance runs, UX risk reports, triage, and optional repair/retest.",
   "author": {
     "name": "Donghyun",

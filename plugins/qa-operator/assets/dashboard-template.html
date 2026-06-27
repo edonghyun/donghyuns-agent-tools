@@ -96,12 +96,145 @@
       background: #fbfcfd;
     }
     .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    a.shot { cursor: zoom-in; text-decoration: none; }
+    .shot-viewer[hidden] { display: none; }
+    .shot-viewer {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .shot-viewer-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.74);
+    }
+    .shot-viewer-panel {
+      position: relative;
+      z-index: 1;
+      width: min(1280px, calc(100vw - 48px));
+      max-height: calc(100vh - 48px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 10px;
+      background: #0f172a;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+    }
+    .shot-viewer-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+    .shot-viewer-title {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
+    }
+    .shot-viewer-title strong,
+    .shot-viewer-title span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .shot-viewer-title span { color: #cbd5e1; font-size: 12px; }
+    .shot-viewer-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .shot-viewer-button,
+    .shot-viewer-link {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font: inherit;
+      font-size: 13px;
+      padding: 0 10px;
+      text-decoration: none;
+    }
+    .shot-viewer-button:hover,
+    .shot-viewer-link:hover { background: rgba(255, 255, 255, 0.14); }
+    .shot-viewer-frame {
+      min-height: 0;
+      overflow: auto;
+      background: #020617;
+    }
+    .shot-viewer-frame img {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: calc(100vh - 132px);
+      margin: 0 auto;
+      cursor: zoom-in;
+    }
+    .shot-viewer-frame.is-actual img {
+      max-width: none;
+      max-height: none;
+      cursor: zoom-out;
+    }
+    body.shot-viewer-open { overflow: hidden; }
     .notes, .risks, .meta-row { color: var(--muted); line-height: 1.55; font-size: 13px; white-space: pre-wrap; }
     .meta-row {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
     }
+    .requirement-block {
+      margin: 12px 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fbfcfd;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .requirement-title {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .requirement-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0;
+    }
+    .requirement-list {
+      margin: 8px 0 0 18px;
+      padding: 0;
+      color: var(--muted);
+    }
+    .requirement-list li { margin: 3px 0; }
+    .test-case-list {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+    .test-case-list ol {
+      margin: 6px 0 0 20px;
+      padding: 0;
+      color: var(--muted);
+    }
+    .test-case-list li { margin: 5px 0; }
     .pill {
       border: 1px solid var(--line);
       border-radius: 999px;
@@ -160,10 +293,30 @@
     <section class="summary" id="summary"></section>
     <section class="grid" id="cards"></section>
   </main>
+  <div class="shot-viewer" id="shot-viewer" role="dialog" aria-modal="true" aria-label="Screenshot preview" hidden>
+    <div class="shot-viewer-backdrop" data-shot-viewer-close></div>
+    <div class="shot-viewer-panel">
+      <div class="shot-viewer-bar">
+        <div class="shot-viewer-title">
+          <strong>Screenshot preview</strong>
+          <span id="shot-viewer-caption"></span>
+        </div>
+        <div class="shot-viewer-actions">
+          <button class="shot-viewer-button" id="shot-viewer-zoom" type="button">Actual size</button>
+          <a class="shot-viewer-link" id="shot-viewer-open" href="#" target="_blank" rel="noopener noreferrer">Open original</a>
+          <button class="shot-viewer-button" type="button" data-shot-viewer-close>Close</button>
+        </div>
+      </div>
+      <div class="shot-viewer-frame" id="shot-viewer-frame">
+        <img id="shot-viewer-image" alt="" />
+      </div>
+    </div>
+  </div>
   <script>
     const statuses = ["PENDING", "PASS", "PARTIAL", "FAIL", "BLOCKED", "N/A"];
     const cycleLabels = { server: "Server", login: "Login", feature: "Feature", validation: "Validation", ux: "UX" };
     let state = { manifest: null, plan: null, results: null };
+    let shotViewerActualSize = false;
 
     async function fetchJson(path) {
       const response = await fetch(path + "?t=" + Date.now(), { cache: "no-store" });
@@ -227,6 +380,7 @@
                 <span class="pill">${escapeHtml(lock)}</span>
                 <span class="pill">repair: ${escapeHtml(item.repairStatus || "not-started")}</span>
               </div>
+              ${renderPlanRequirements(plan, item)}
               <div class="cycle">
                 ${Object.entries(cycleLabels).map(([key, label]) => {
                   const cycleStatus = item.cycle?.[key] || "PENDING";
@@ -236,7 +390,7 @@
               <div class="shots">
                 ${shots.length ? shots.map(rawPath => {
                   const path = evidencePath(rawPath);
-                  return `<a class="shot" href="${escapeAttr(path)}"><img src="${escapeAttr(path)}" alt="${escapeAttr(rawPath)}"></a>`;
+                  return `<a class="shot" href="${escapeAttr(path)}" aria-label="Open screenshot preview: ${escapeAttr(rawPath)}" title="Click to enlarge"><img src="${escapeAttr(path)}" alt="${escapeAttr(rawPath)}"></a>`;
                 }).join("") : `<div class="shot">No screenshots yet</div>`}
               </div>
               ${risks.length ? `<div class="risks"><strong>UX risks</strong>\n${escapeHtml(risks.map(r => r.summary || JSON.stringify(r)).join("\n"))}</div>` : ""}
@@ -245,6 +399,53 @@
           </article>
         `;
       }).join("");
+    }
+
+    function renderPlanRequirements(plan, item) {
+      const requirement = String(plan.requirement || "").trim();
+      const expected = String(plan.expected || plan.expectedBehavior || "").trim();
+      const area = String(plan.area || "").trim();
+      const actors = normalizeList(plan.actors);
+      const acceptance = normalizeList(plan.acceptance);
+      const testCases = normalizeCaseList(plan.testCases || item.testCases);
+      const controller = plan.caseController || item.caseController || {};
+      const strategy = String(controller.strategy || "").trim();
+      if (!requirement && !expected && !area && !actors.length && !acceptance.length && !testCases.length) return "";
+      const meta = [
+        area ? `<span class="pill">area: ${escapeHtml(area)}</span>` : "",
+        actors.length ? `<span class="pill">actor: ${escapeHtml(actors.join(", "))}</span>` : "",
+        strategy ? `<span class="pill">case: ${escapeHtml(strategy)}</span>` : "",
+      ].filter(Boolean).join("");
+      return `
+        <div class="requirement-block">
+          ${requirement ? `<div class="requirement-title">Requirement<span class="pill">${escapeHtml(requirement)}</span></div>` : ""}
+          ${expected ? `<div><strong>Expected</strong><br>${escapeHtml(expected)}</div>` : ""}
+          ${meta ? `<div class="requirement-meta">${meta}</div>` : ""}
+          ${acceptance.length ? `<ul class="requirement-list">${acceptance.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+          ${testCases.length ? `<div class="test-case-list"><strong>Planned test cases</strong><ol>${testCases.map(testCase => `<li>${renderTestCase(testCase)}</li>`).join("")}</ol></div>` : ""}
+        </div>
+      `;
+    }
+
+    function normalizeList(value) {
+      if (Array.isArray(value)) return value.map(item => String(item || "").trim()).filter(Boolean);
+      const text = String(value || "").trim();
+      return text ? [text] : [];
+    }
+
+    function normalizeCaseList(value) {
+      if (!value) return [];
+      if (Array.isArray(value)) return value.filter(Boolean);
+      return [value];
+    }
+
+    function renderTestCase(testCase) {
+      const id = String(testCase.id || "").trim();
+      const title = String(testCase.title || testCase.expected || "Untitled test case").trim();
+      const expected = String(testCase.expected || "").trim();
+      const prefix = id ? `<strong>${escapeHtml(id)}</strong> ` : "";
+      const expectedText = expected && expected !== title ? `<br><span>${escapeHtml(expected)}</span>` : "";
+      return `${prefix}${escapeHtml(title)}${expectedText}`;
     }
 
     function render() {
@@ -279,8 +480,56 @@
       return path;
     }
 
+    function openShotViewer(src, caption) {
+      const viewer = document.querySelector("#shot-viewer");
+      const image = document.querySelector("#shot-viewer-image");
+      const openLink = document.querySelector("#shot-viewer-open");
+      document.querySelector("#shot-viewer-caption").textContent = caption || src;
+      image.src = src;
+      image.alt = caption || "Screenshot preview";
+      openLink.href = src;
+      setShotViewerZoom(false);
+      viewer.hidden = false;
+      document.body.classList.add("shot-viewer-open");
+      document.querySelector("#shot-viewer-zoom").focus();
+    }
+
+    function closeShotViewer() {
+      const viewer = document.querySelector("#shot-viewer");
+      viewer.hidden = true;
+      document.querySelector("#shot-viewer-image").removeAttribute("src");
+      document.body.classList.remove("shot-viewer-open");
+    }
+
+    function setShotViewerZoom(actualSize) {
+      shotViewerActualSize = actualSize;
+      document.querySelector("#shot-viewer-frame").classList.toggle("is-actual", actualSize);
+      document.querySelector("#shot-viewer-zoom").textContent = actualSize ? "Fit to screen" : "Actual size";
+    }
+
     document.querySelector("#refresh").addEventListener("click", loadData);
     document.querySelector("#filter").addEventListener("change", renderCards);
+    document.querySelector("#cards").addEventListener("click", event => {
+      const link = event.target.closest("a.shot");
+      if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      const image = link.querySelector("img");
+      openShotViewer(link.href, image?.alt || link.getAttribute("href"));
+    });
+    document.querySelector("#shot-viewer-zoom").addEventListener("click", () => {
+      setShotViewerZoom(!shotViewerActualSize);
+    });
+    document.querySelector("#shot-viewer-image").addEventListener("click", () => {
+      setShotViewerZoom(!shotViewerActualSize);
+    });
+    document.querySelectorAll("[data-shot-viewer-close]").forEach(element => {
+      element.addEventListener("click", closeShotViewer);
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !document.querySelector("#shot-viewer").hidden) {
+        closeShotViewer();
+      }
+    });
     loadData();
     setInterval(loadData, 3000);
   </script>

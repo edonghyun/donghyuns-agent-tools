@@ -187,6 +187,8 @@ def make_result_item(plan_item: dict[str, Any]) -> dict[str, Any]:
         "lock": None,
         "repairStatus": "not-started",
         "dataIsolation": copy.deepcopy(plan_item.get("dataIsolation", DEFAULT_DATA_ISOLATION)),
+        "caseController": copy.deepcopy(plan_item.get("caseController", {})),
+        "testCases": copy.deepcopy(plan_item.get("testCases", [])),
         "confidence": 0,
         "cycle": {key: "PENDING" for key in CYCLE_KEYS},
         "evidence": {
@@ -239,6 +241,7 @@ def refresh_summary(results: dict[str, Any]) -> None:
 
 def write_summary(path: Path, plan: dict[str, Any], results: dict[str, Any]) -> None:
     title = plan.get("title") or plan.get("slug") or results.get("slug", "QA run")
+    plan_items = {str(item.get("id")): item for item in plan.get("items", [])}
     lines = [
         f"# QA Summary: {title}",
         "",
@@ -251,8 +254,83 @@ def write_summary(path: Path, plan: dict[str, Any], results: dict[str, Any]) -> 
         "",
     ]
     lines.extend(f"- {status}: {results.get('summary', {}).get(status, 0)}" for status in STATUSES)
+    lines.extend(["", "## Items", ""])
+    for result_item in results.get("items", []):
+        item_id = str(result_item.get("id", ""))
+        plan_item = plan_items.get(item_id, {})
+        lines.extend(format_summary_item(plan_item, result_item))
     lines.extend(["", "## Notes", "", "This summary is generated from qa-results.json.", ""])
     write_text_atomic(path, "\n".join(lines))
+
+
+def format_summary_item(plan_item: dict[str, Any], result_item: dict[str, Any]) -> list[str]:
+    item_id = str(result_item.get("id") or plan_item.get("id") or "")
+    title = str(result_item.get("title") or plan_item.get("title") or f"QA item {item_id}")
+    lines = [
+        f"### {item_id}. {title}",
+        "",
+        f"- **Status:** {result_item.get('status', 'PENDING')}",
+    ]
+    requirement = plan_item.get("requirement")
+    if requirement:
+        lines.append(f"- **Requirement:** {requirement}")
+    expected = plan_item.get("expected") or plan_item.get("expectedBehavior")
+    if expected:
+        lines.append(f"- **Expected:** {expected}")
+    area = plan_item.get("area")
+    if area:
+        lines.append(f"- **Area:** {area}")
+    actors = format_summary_values(plan_item.get("actors"))
+    if actors:
+        lines.append(f"- **Actors:** {actors}")
+    acceptance = format_summary_list(plan_item.get("acceptance"))
+    if acceptance:
+        lines.append("- **Acceptance:**")
+        lines.extend(f"  - {item}" for item in acceptance)
+    test_cases = plan_item.get("testCases") or result_item.get("testCases") or []
+    if test_cases:
+        controller = plan_item.get("caseController") or result_item.get("caseController") or {}
+        strategy = controller.get("strategy")
+        reason = controller.get("reason")
+        if strategy:
+            detail = f"{strategy}"
+            if reason:
+                detail += f" ({reason})"
+            lines.append(f"- **Case Controller:** {detail}")
+        lines.append("- **Test Cases:**")
+        lines.extend(format_summary_test_case(test_case) for test_case in test_cases)
+    notes = result_item.get("notes")
+    if notes:
+        lines.append(f"- **Result Notes:** {notes}")
+    lines.append("")
+    return lines
+
+
+def format_summary_values(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        return ", ".join(str(item) for item in value if str(item).strip())
+    return str(value)
+
+
+def format_summary_list(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [str(item) for item in value if str(item).strip()]
+    return [str(value)] if str(value).strip() else []
+
+
+def format_summary_test_case(test_case: dict[str, Any]) -> str:
+    case_id = str(test_case.get("id", "")).strip()
+    title = str(test_case.get("title", "")).strip()
+    expected = str(test_case.get("expected", "")).strip()
+    prefix = f"{case_id}: " if case_id else ""
+    body = title or expected or "Untitled test case"
+    if expected and expected != title:
+        body += f" -> {expected}"
+    return f"  - {prefix}{body}"
 
 
 def parse_key_value(raw: str) -> tuple[str, str]:

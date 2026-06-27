@@ -51,6 +51,11 @@ Never modify application code.
 
 2. Normalize items
    - For each item, capture `id`, `title`, `requirement`, `area`, `actors`, `viewports`, `acceptance`, `screenshotPoints`, and `uxHeuristics`.
+   - Run the case-splitting controller before finalizing the plan:
+     - Use one test case only when a single observable behavior can prove the ticket.
+     - Split by acceptance criteria when each criterion needs separate evidence.
+     - Write explicit `testCases` when a ticket needs different inputs, roles, API calls, browsers, states, data fixtures, or generated-AI outputs.
+     - For AI/result-generation tickets, prefer 3-5 explicit `testCases` that vary inputs enough to catch stale context, hallucination, guardrail, and formatting regressions.
    - Also capture `dataIsolation` when parallel execution may touch mutable accounts, students, DB rows, files, queues, or external services.
    - Keep uncertain details as empty arrays or notes; do not invent account credentials or expected behavior.
 

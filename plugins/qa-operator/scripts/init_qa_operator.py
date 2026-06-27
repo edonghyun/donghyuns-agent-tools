@@ -49,13 +49,125 @@ def normalize_item(raw: Any, index: int) -> dict[str, Any]:
     item["title"] = str(title)
     item.setdefault("requirement", str(title))
     item.setdefault("area", "")
-    item.setdefault("actors", [])
+    item["actors"] = normalize_string_list(item.get("actors", []))
     item.setdefault("viewports", [])
-    item.setdefault("acceptance", [])
+    item["acceptance"] = normalize_string_list(item.get("acceptance", []))
     item.setdefault("dataIsolation", copy.deepcopy(DEFAULT_DATA_ISOLATION))
     item.setdefault("screenshotPoints", ["server", "login", "feature", "validation", "ux"])
     item.setdefault("uxHeuristics", ["discoverability", "state feedback", "responsive layout", "data safety", "error recovery"])
+    item["testCases"], item["caseController"] = plan_test_cases(item)
     return item
+
+
+def normalize_string_list(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    text = str(value).strip()
+    return [text] if text else []
+
+
+def plan_test_cases(item: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    explicit_cases = item.get("testCases") or item.get("test_cases") or item.get("cases") or item.get("scenarios")
+    if explicit_cases:
+        cases = normalize_test_cases(explicit_cases, item["id"], source="explicit")
+        return cases, {
+            "strategy": "explicit",
+            "reason": "item supplied explicit testCases/cases/scenarios",
+            "caseCount": len(cases),
+        }
+
+    requested_strategy = normalize_requested_case_strategy(item)
+    if requested_strategy == "single":
+        cases = [make_single_test_case(item)]
+        return cases, {
+            "strategy": "single",
+            "reason": "item requested a single case",
+            "caseCount": len(cases),
+        }
+
+    acceptance = item.get("acceptance", [])
+    if len(acceptance) > 1:
+        cases = [
+            normalize_test_case(
+                {
+                    "id": f"{item['id']}-C{index:02d}",
+                    "title": criterion,
+                    "expected": criterion,
+                    "acceptanceIndex": index - 1,
+                },
+                item["id"],
+                index,
+                source="acceptance",
+            )
+            for index, criterion in enumerate(acceptance, start=1)
+        ]
+        return cases, {
+            "strategy": "split-by-acceptance",
+            "reason": "multiple acceptance criteria should be validated separately",
+            "caseCount": len(cases),
+        }
+
+    cases = [make_single_test_case(item)]
+    return cases, {
+        "strategy": "single",
+        "reason": "single or unspecified acceptance criterion",
+        "caseCount": len(cases),
+    }
+
+
+def normalize_requested_case_strategy(item: dict[str, Any]) -> str:
+    controller = item.get("caseController") if isinstance(item.get("caseController"), dict) else {}
+    raw = item.get("caseStrategy") or item.get("caseMode") or controller.get("strategy") or controller.get("mode") or ""
+    value = str(raw).strip().lower()
+    if value in {"single", "one", "one-case"}:
+        return "single"
+    return value
+
+
+def normalize_test_cases(raw_cases: Any, item_id: str, source: str) -> list[dict[str, Any]]:
+    if isinstance(raw_cases, dict):
+        raw_cases = raw_cases.get("items") or raw_cases.get("cases") or raw_cases.get("testCases") or []
+    if not isinstance(raw_cases, list):
+        raw_cases = [raw_cases]
+    return [
+        normalize_test_case(raw_case, item_id, index, source=source)
+        for index, raw_case in enumerate(raw_cases, start=1)
+    ]
+
+
+def normalize_test_case(raw_case: Any, item_id: str, index: int, source: str) -> dict[str, Any]:
+    if isinstance(raw_case, str):
+        case = {"title": raw_case, "expected": raw_case}
+    elif isinstance(raw_case, dict):
+        case = dict(raw_case)
+    else:
+        case = {"title": str(raw_case), "expected": str(raw_case)}
+
+    case_id = case.get("id") or case.get("caseId") or f"{item_id}-C{index:02d}"
+    title = case.get("title") or case.get("summary") or case.get("expected") or f"Test case {index}"
+    expected = case.get("expected") or case.get("expectedBehavior") or title
+    case["id"] = str(case_id)
+    case["title"] = str(title)
+    case["expected"] = str(expected)
+    case.setdefault("source", source)
+    return case
+
+
+def make_single_test_case(item: dict[str, Any]) -> dict[str, Any]:
+    acceptance = item.get("acceptance", [])
+    expected = item.get("expected") or item.get("expectedBehavior") or (acceptance[0] if acceptance else item.get("requirement") or item["title"])
+    return normalize_test_case(
+        {
+            "id": f"{item['id']}-C01",
+            "title": item["title"],
+            "expected": expected,
+        },
+        item["id"],
+        1,
+        source="single",
+    )
 
 
 def load_items(path: str | None) -> list[dict[str, Any]]:

@@ -90,6 +90,12 @@ start
 
 `monitor` and `run` are designed to run in parallel after `plan`. `monitor` observes the files; `run` updates them.
 
+The monitor dashboard renders screenshot evidence as thumbnails. Click any screenshot to open an in-page preview, toggle between fit-to-screen and actual size, or open the original file in a new tab.
+
+`qa-summary.md` and the monitor dashboard keep ticket context visible for each item. They show the plan item's `requirement`, `area`, `actors`, and `acceptance` separately from runtime result notes so the original ticket scope remains readable without rewriting the expected checks used during validation.
+
+During planning, qa-operator also creates a lightweight case controller per item. If the input already includes `testCases`, those cases are preserved. Otherwise the controller splits multi-acceptance tickets into separate planned cases, or keeps a single case when one observable check is enough. For generated-AI/API result tickets, write 3-5 explicit `testCases` so the final report can compare multiple outputs instead of hiding risk behind one pass/fail row.
+
 ## Parallel Safety Rules
 
 - **Item claim/lock:** one item can have only one active owner for triage, repair, or retest. Agents claim with `update_qa_result.py --claim <owner>` and release when done.
