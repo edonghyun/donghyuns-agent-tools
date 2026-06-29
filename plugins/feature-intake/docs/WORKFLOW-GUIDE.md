@@ -2,7 +2,15 @@
 
 For generalized page-state and button-reaction coverage, use [STATE-TAXONOMY](STATE-TAXONOMY.md).
 
+For implementation-ready spec extraction, use [SPEC-EXTRACTION-PROTOCOL](SPEC-EXTRACTION-PROTOCOL.md). Build the action graph before finalizing user-flow, user-journey, use-case, QA, or merge-planning documents.
+
+For page entry conditions, action execution conditions, backend guards, permission rules, lifecycle rules, ownership, quota, or feature flags, use [CONDITION-INSPECT-PROTOCOL](CONDITION-INSPECT-PROTOCOL.md). Show the result as tables, JSON data, and Mermaid visuals.
+
 For PoC-to-product parity, use [POC-FIDELITY-GATE](POC-FIDELITY-GATE.md). This is required when the artifact will be used as an implementation baseline or when the user says the current product does not match the delivered PoC/screenshots.
+
+For implementation handoff, use `feature-intake:spec` after the evidence package exists. This compiles the analysis package into feature, action, condition, screen-state, data/API, acceptance-test, and open-decision specs.
+
+For reviewer-facing static HTML, use `feature-intake:report` after the evidence package and optional specs exist. This publishes `report.html`, readable source-document pages, Mermaid rendering, and screenshot-linked evidence navigation.
 
 ## 1. Start From The Artifact
 
@@ -30,6 +38,8 @@ Use `feature-intake:inspect` to discover:
 - entry points and setup commands
 - routes/pages/views
 - buttons, menus, dialogs, and stateful controls
+- static action candidates from handlers, submit functions, API clients, mutation hooks, storage writes, and output commands
+- page entry conditions and action execution conditions from frontend routes, backend routes, middleware, permission checks, ownership checks, lifecycle guards, validation schemas, feature flags, plan/quota checks, and tests
 - seed routes and safe crawl boundaries for page-walk capture
 - button labels, handlers/source evidence, expected reaction type, and required before/after states
 - uploads/downloads/exports
@@ -38,7 +48,7 @@ Use `feature-intake:inspect` to discover:
 - feature flags or passwords
 - obvious dead or unreachable functionality
 
-Write `intake-manifest.json` and inventory notes.
+Write `intake-manifest.json`, inventory notes, the first static action-candidate list that will feed `analysis/action-graph.md`, and the first condition inventory that will feed `analysis/condition-graph.md`.
 
 ## 3. Capture
 
@@ -54,6 +64,10 @@ Use `feature-intake:capture` to collect screenshot evidence:
 - contact sheets
 
 Do not stop at the first happy path. If a control changes state, capture the before and after. If an async control calls AI/API, capture loading plus success or failure. If a native alert appears, log the dialog text and capture where possible.
+
+Merge runtime targets with static action candidates. The goal is not merely "screenshots exist"; it is "every important action has a verified, source-confirmed, captured, blocked, unknown, or decision-needed status."
+
+For condition-sensitive flows, build a probe matrix before running checks. Probe unauthenticated users, wrong roles, wrong ownership/tenant, missing entities, lifecycle states, invalid input, quota exhaustion, feature-flag-off states, and direct API calls that bypass the UI.
 
 For PoC parity, capture baseline/current pairs for every requirement-critical screen and interaction. Pay attention to:
 
@@ -94,6 +108,9 @@ Every slot should be marked as `Known`, `Assumed`, `Unknown`, or `Decision Neede
 
 Use `feature-intake:analyze` to write:
 
+- action graph: normalized actions, states, transitions, outputs, evidence, status, and next check
+- condition graph: page/action availability, frontend/backend enforcement, data lifecycle conditions, evidence, status, and next probe
+- condition visuals: Mermaid graphs and role/data matrices for quick review
 - user flow with screenshot references
 - user journeys by actor
 - use cases: normal, exception, operational, regeneration, export/share
@@ -103,6 +120,10 @@ Use `feature-intake:analyze` to write:
 - PoC fidelity matrix when baseline/current parity is in scope
 
 Keep the artifact visible through screenshots. A reader should understand the workflow without rerunning the PoC.
+
+Derive flows from graph paths. Each user-flow step, use-case scenario, and journey moment should reference screenshots, source paths, or action/transition IDs from `analysis/action-graph.md`.
+
+Preconditions should reference `analysis/condition-graph.md`. Do not infer page entry or action execution conditions from UI visibility alone when backend evidence is available or required.
 
 The fidelity matrix should distinguish `match`, `partial`, `missing`, `intentional-deviation`, and `blocked`. Do not treat a route title or button label match as behavior parity.
 
@@ -126,6 +147,8 @@ Use `feature-intake:package` to assemble:
 - top-level README
 - screenshot indexes
 - contact sheets
+- action graph and spec extraction audit
+- condition graph, condition visuals, and condition probe matrix when condition inspect was used
 - wireframe/page-state sheet when available
 - button-handling matrix when the artifact is interactive
 - PoC fidelity matrix when parity is in scope
@@ -136,7 +159,45 @@ Use `feature-intake:package` to assemble:
 - MVP/backlog
 - next decisions
 
+Before packaging, write or update `qa/spec-extraction-audit.md` so reviewers can see which actions, flows, use cases, outputs, async states, screenshots, and assumptions are covered or blocked.
+
 The final answer should link the package root and the most useful contact sheets.
+
+## 8. Spec
+
+Use `feature-intake:spec` when the user asks for implementation-ready specs, test-code-ready acceptance criteria, or production merge planning.
+
+Compile:
+
+- `spec/FEATURE-SPEC.md`
+- `spec/USER-FLOW-SPEC.md`
+- `spec/ACTION-SPEC.md`
+- `spec/CONDITION-SPEC.md`
+- `spec/SCREEN-STATE-SPEC.md`
+- `spec/DATA-AI-API-SPEC.md`
+- `spec/USE-CASE-SCENARIOS.md`
+- `spec/ACCEPTANCE-TEST-SPEC.md`
+- `spec/OPEN-DECISIONS.md`
+- `spec/TOOLING-NOTES.md`
+
+This step should not rerun capture by default. It should preserve action IDs, condition IDs, screenshot IDs, statuses, blockers, and decision-needed items from the analysis package.
+
+When the user asks for a single web-view planning document or evidence-backed report, run `feature-intake:report` after this step.
+
+## 9. Report
+
+Use `feature-intake:report` when the user asks for a static web report, readable document view, screenshot-linked planning document, Mermaid rendering, or non-raw Markdown browsing.
+
+Publish:
+
+- `report.html`: primary reviewer-facing planning document.
+- `docs/index.html`: purpose-based reading paths and grouped document cards.
+- `docs/*.html`: one readable HTML page per source Markdown document.
+- `docs/all.html`: optional all-in-one view for search/scan only.
+- `docs-view.html`: compatibility router for old `docs-view.html#doc-*` links when needed.
+
+Route report/source links to `docs/*.html` pages or `docs/index.html`, while keeping optional raw Markdown links available inside each generated page.
+If source Markdown includes Mermaid fences, render those fences as diagrams in `docs/*.html` and `docs/all.html`. For local review packages, prefer a vendored `docs/assets/mermaid.min.js` runtime so `file://` browsing works without a server or network. When a Mermaid node maps to a captured screen/state, add `click` links from the node to the representative screenshot or evidence page.
 
 ## Recommended Order
 
@@ -148,6 +209,8 @@ start
   analyze
   map
   package
+  spec
+  report
 ```
 
 For very large artifacts, run `inspect` first and ask the user whether to prioritize the most important flows before capture.

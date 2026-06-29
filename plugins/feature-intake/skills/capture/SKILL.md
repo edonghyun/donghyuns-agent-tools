@@ -9,6 +9,10 @@ Capture the visual evidence that product analysis will cite.
 
 For generalized page-state and button-reaction coverage, read `../../docs/STATE-TAXONOMY.md` when the capture will inform wireframes, implementation planning, or "all pages/buttons" coverage.
 
+For spec extraction, read `../../docs/SPEC-EXTRACTION-PROTOCOL.md` and use capture to verify or block action candidates rather than merely collecting a gallery.
+
+For condition-sensitive flows, read `../../docs/CONDITION-INSPECT-PROTOCOL.md` and use browser/API probes to verify page entry and action execution conditions where safe.
+
 For PoC-to-product parity or "current UI differs from the delivered PoC" work, read `../../docs/POC-FIDELITY-GATE.md`. Capture the original PoC/source screenshots and the current implementation states as separate baseline/current evidence, not as one undifferentiated gallery.
 
 ## When to use
@@ -79,6 +83,7 @@ Use this helper when the user asks to traverse pages or click through "all butto
 
 4. Capture interactions
    - Capture after each important button/tab/control click.
+   - Merge runtime DOM targets with static action candidates from inspect so source-only actions are either verified, blocked, source-confirmed, or unknown.
    - Treat links, tabs, menus, disclosure controls, and explicit `data-testid` controls as interaction targets, not only `<button>`.
    - Include before/after when the state change is subtle.
    - For async/API buttons, capture at least loading plus success or failure, mocking external calls by default.
@@ -99,6 +104,8 @@ Use this helper when the user asks to traverse pages or click through "all butto
    - Empty input.
    - Disabled guard.
    - Loading state.
+   - Wrong auth/role/owner/tenant state.
+   - Missing entity, invalid lifecycle state, quota exhausted, or feature flag disabled state.
 
 7. Build contact sheets
    - Create overview images for quick review.
@@ -121,6 +128,8 @@ Use this helper when the user asks to traverse pages or click through "all butto
 - `screenshots/README.md` indexes screenshot families.
 - Contact sheets exist for review.
 - Wireframe-critical page states are either captured or listed as blockers.
+- High-priority action candidates are either captured, source-confirmed, blocked, or listed as unknown for analysis.
+- High-priority condition probes are either captured/API-verified, source-confirmed, blocked, or listed as unknown for analysis.
 - PoC-critical baseline/current states are either captured in paired families or listed as blockers.
 - Dialog text is recorded where native screenshots are not possible.
 - Uncaptured targets are listed with blocker reasons.

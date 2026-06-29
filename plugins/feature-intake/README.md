@@ -19,6 +19,7 @@ The hard part is not just "does the PoC run?" The hard part is product translati
 - Who is the real user?
 - Where does the feature enter the current product?
 - What screens, buttons, modals, states, and errors exist?
+- Which actions exist in source code and runtime, and how do they connect into a state graph?
 - What pages can be reached from the entry route, and what happens after each important link/control/button is clicked?
 - Which page states are needed for wireframes?
 - Where does the output go after generation?
@@ -28,6 +29,8 @@ The hard part is not just "does the PoC run?" The hard part is product translati
 - Which PoC behaviors must be preserved, and which productized differences are intentional?
 
 `feature-intake` creates the missing bridge: screenshot evidence plus product framing, user flows, journeys, use cases, integration fit, risks, and MVP/backlog.
+
+For implementation-ready specs, use the action-graph protocol in [SPEC-EXTRACTION-PROTOCOL](docs/SPEC-EXTRACTION-PROTOCOL.md). The protocol makes the agent collect source actions, runtime reactions, state transitions, outputs, and blockers before writing final user-flow, journey, and use-case prose. After the evidence package exists, use `/feature-intake:spec` to compile it into product, action, condition, screen-state, data/API, and acceptance-test specs. Use `/feature-intake:report` to publish the package as a static web report and readable document viewer.
 
 ## Common Scenarios
 
@@ -57,6 +60,7 @@ A prompt chain, model demo, or AI-assisted output generator exists. The team nee
 - "VoC 기반 실험물을 받아서 기존 제품에 어디에 붙일지, MVP는 뭔지, 리스크는 뭔지 정리해줘."
 - "페이지별 스크린샷과 함께 화면별 기능 해설, 유저저니, use case를 만들어줘."
 - "기존 전달받은 PoC랑 현재 구현이 다른 것 같은데, 요구사항 충실도 매트릭스로 비교해줘."
+- "분석 결과를 스크린샷과 연결된 웹 리포트/문서 뷰로 만들어줘."
 
 ## Skills
 
@@ -68,7 +72,9 @@ A prompt chain, model demo, or AI-assisted output generator exists. The team nee
 | `/feature-intake:frame` | General product framing: actors, placement, output destination, quality bar, MVP boundary, data/AI/storage, operations, risks. |
 | `/feature-intake:analyze` | Write user flows, user journeys, use cases, feature inventory, button-handling matrix, and screen-by-screen annotations. |
 | `/feature-intake:map` | Map the artifact into the existing product: information architecture, bounded contexts, data/API/permission/storage needs, migration/backlog. |
-| `/feature-intake:package` | Assemble the final handoff README, indexes, contact sheets, reports, and follow-up checklist. |
+| `/feature-intake:package` | Assemble the final handoff README, indexes, contact sheets, coverage summaries, and follow-up checklist. |
+| `/feature-intake:spec` | Compile an existing intake package into implementation-ready specs: feature, action, condition, screen-state, data/API, acceptance tests, and open decisions. |
+| `/feature-intake:report` | Publish an existing package as `report.html` plus readable `docs/*.html` pages with screenshots, Mermaid rendering, and evidence links. |
 
 ## Workflow
 
@@ -79,7 +85,9 @@ start
   ├─ frame     define product assumptions and unknowns
   ├─ analyze   write flows, journeys, use cases, button handling, screen annotations
   ├─ map       map into the existing service and implementation surface
-  └─ package   assemble the handoff bundle
+  ├─ package   assemble the handoff bundle
+  ├─ spec      compile implementation-ready specs from the evidence package
+  └─ report    publish static web report and readable document viewer
 ```
 
 ## Default Output
@@ -87,6 +95,14 @@ start
 ```text
 docs/feature-intake/<slug>/
 ├── README.md
+├── report.html
+├── docs-view.html
+├── docs/
+│   ├── index.html
+│   ├── all.html
+│   ├── assets/
+│   │   └── mermaid.min.js
+│   └── *.html
 ├── intake-manifest.json
 ├── screenshots/
 │   ├── pages/
@@ -99,6 +115,13 @@ docs/feature-intake/<slug>/
 ├── analysis/
 │   ├── product-framing.md
 │   ├── user-roles.md
+│   ├── action-graph.md
+│   ├── condition-graph.md
+│   ├── condition-graph.json
+│   ├── condition-visuals.md
+│   ├── page-entry-conditions.md
+│   ├── action-preconditions.md
+│   ├── server-guard-inventory.md
 │   ├── user-flow.md
 │   ├── user-journeys.md
 │   ├── use-cases.md
@@ -112,7 +135,21 @@ docs/feature-intake/<slug>/
 │   ├── risks-and-blockers.md
 │   └── mvp-backlog.md
 ├── qa/
-│   └── feature-coverage-matrix.md
+│   ├── feature-coverage-matrix.md
+│   ├── condition-probe-matrix.md
+│   └── spec-extraction-audit.md
+├── spec/
+│   ├── README.md
+│   ├── FEATURE-SPEC.md
+│   ├── USER-FLOW-SPEC.md
+│   ├── ACTION-SPEC.md
+│   ├── CONDITION-SPEC.md
+│   ├── SCREEN-STATE-SPEC.md
+│   ├── DATA-AI-API-SPEC.md
+│   ├── USE-CASE-SCENARIOS.md
+│   ├── ACCEPTANCE-TEST-SPEC.md
+│   ├── OPEN-DECISIONS.md
+│   └── TOOLING-NOTES.md
 └── tools/
     └── README.md
 ```
@@ -156,6 +193,8 @@ Use product-intake statuses consistently:
 
 - [CONCEPTS](docs/CONCEPTS.md)
 - [STATE-TAXONOMY](docs/STATE-TAXONOMY.md)
+- [SPEC-EXTRACTION-PROTOCOL](docs/SPEC-EXTRACTION-PROTOCOL.md)
+- [CONDITION-INSPECT-PROTOCOL](docs/CONDITION-INSPECT-PROTOCOL.md)
 - [POC-FIDELITY-GATE](docs/POC-FIDELITY-GATE.md)
 - [WORKFLOW-GUIDE](docs/WORKFLOW-GUIDE.md)
 - [EXAMPLES](docs/EXAMPLES.md)

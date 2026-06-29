@@ -1,6 +1,6 @@
 ---
 name: start
-description: Default feature-intake entry for turning PoCs, demos, prototypes, VoC experiments, screenshots, or design artifacts into screenshot-backed product integration analysis packages. Triggers include "feature-intake 해줘", "PoC 분석", "제품 편입 분석", "페이지 순회 캡처", "스크린샷 포함 유저플로우", "유저저니 유즈케이스 정리", "비즈니스팀 데모 분석", "prototype intake", "PoC to product", "feature handoff". Writes docs/feature-intake/SLUG/ and routes through inspect, capture, frame, analyze, map, and package. Do not use for already-integrated implementation QA; use qa-operator for that.
+description: Default feature-intake entry for turning PoCs, demos, prototypes, VoC experiments, screenshots, or design artifacts into screenshot-backed product integration analysis packages. Triggers include "feature-intake 해줘", "PoC 분석", "제품 편입 분석", "페이지 순회 캡처", "스크린샷 포함 유저플로우", "유저저니 유즈케이스 정리", "비즈니스팀 데모 분석", "prototype intake", "PoC to product", "feature handoff", "웹 리포트", "단일 기획 문서". Writes docs/feature-intake/SLUG/ and routes through inspect, capture, frame, analyze, map, package, spec, and report as requested. Do not use for already-integrated implementation QA; use qa-operator for that.
 ---
 
 # Feature Intake - Start
@@ -8,6 +8,12 @@ description: Default feature-intake entry for turning PoCs, demos, prototypes, V
 `start` is the natural-language entry point. It turns "이 PoC를 제품 편입 분석해줘" into a complete handoff package.
 
 When the request mentions wireframes, all pages, page traversal, button/control reactions, implementation flow, or design handoff, use `../../docs/STATE-TAXONOMY.md` as the generalized coverage standard throughout inspect, capture, analyze, and package.
+
+When the request asks to extract specs, user flows, user journeys, use cases, merge inputs, QA inputs, or implementation-ready documentation from code or a PoC, also read `../../docs/SPEC-EXTRACTION-PROTOCOL.md`. Build an evidence-backed action graph before finalizing prose specs.
+
+When the request asks for a web report, readable document view, single planning document, screenshot-linked report, Mermaid rendering, or "raw Markdown 말고 보기 좋게", route the final package through `feature-intake:report`.
+
+When the request mentions page entry conditions, action execution conditions, backend guards, permissions, roles, ownership, tenant boundaries, lifecycle states, quota, feature flags, or "when can this page/action happen", also read `../../docs/CONDITION-INSPECT-PROTOCOL.md`. Build condition tables, JSON data, and Mermaid visuals.
 
 When the request mentions a source PoC/prototype/screenshot that must guide later implementation, or the user says the current build differs from the delivered PoC, also read `../../docs/POC-FIDELITY-GATE.md` and create a baseline fidelity matrix. Do this before accepting a productized simplification as correct.
 
@@ -33,6 +39,7 @@ Common prompts:
 - "시작 페이지부터 페이지 순회하면서 링크, 탭, 버튼, 모달 상태 캡처해줘."
 - "와이어프레임 설계에 필요하니까 모든 페이지/상태와 버튼 클릭 반응까지 정리해줘."
 - "이 prototype을 제품화한다고 가정하고 MVP/backlog까지 정리해줘."
+- "분석 결과를 스크린샷이 붙은 웹 리포트와 문서 뷰로 만들어줘."
 
 Do not use when the user only wants acceptance QA on an already-integrated implementation. Use `qa-operator` instead.
 
@@ -43,6 +50,8 @@ Writes under:
 ```text
 docs/feature-intake/<slug>/
 ├── README.md
+├── report.html                 # when report is requested
+├── docs/                       # when report/readable docs are requested
 ├── intake-manifest.json
 ├── screenshots/
 ├── analysis/
@@ -61,7 +70,7 @@ May read the artifact project and existing product repo. May create helper scrip
    - If implementation parity is expected, identify baseline evidence: original PoC runtime, supplied screenshots, source files, Notion/product notes, and current implementation URL.
 
 2. Inspect
-   - Apply `feature-intake:inspect` to inventory structure, seed routes, pages, controls, button handlers/reactions, external calls, state, data, and dead paths.
+   - Apply `feature-intake:inspect` to inventory structure, seed routes, pages, controls, static action candidates, condition candidates, button handlers/reactions, external calls, state, data, and dead paths.
 
 3. Capture
    - Apply `feature-intake:capture` to collect page-walk traversal, page-state/wireframe, interaction, control-reaction, dialog, edge-state, and contact-sheet screenshots.
@@ -71,14 +80,21 @@ May read the artifact project and existing product repo. May create helper scrip
    - Use `Known`, `Assumed`, `Unknown`, and `Decision Needed`.
 
 5. Analyze
-   - Apply `feature-intake:analyze` to write user flows, journeys, use cases, inventories, screen annotations, and button-handling/reaction notes.
+   - Apply `feature-intake:analyze` to normalize the action graph and condition graph, then write user flows, journeys, use cases, inventories, screen annotations, and button-handling/reaction notes from those graphs.
    - If a PoC/product implementation comparison is in scope, write `analysis/poc-fidelity-matrix.md` with baseline evidence, current evidence, parity status, gaps, and fix direction.
 
 6. Map
    - Apply `feature-intake:map` to map the artifact into the existing product surface, modules, data, APIs, permissions, and storage.
 
 7. Package
-   - Apply `feature-intake:package` to assemble README, indexes, coverage matrix, screenshots, risks, MVP/backlog, and final links.
+   - Apply `feature-intake:package` to assemble README, indexes, coverage matrix, spec extraction audit, screenshots, risks, MVP/backlog, and final links.
+
+8. Spec
+   - Apply `feature-intake:spec` when implementation-ready specs, test-code-ready acceptance criteria, or production merge planning are requested.
+
+9. Report
+   - Apply `feature-intake:report` when a static web report, readable source-document browser, Mermaid rendering, or screenshot-linked planning document is requested.
+   - If both spec and report are requested, run report after spec so the generated viewer can include `spec/*.md`.
 
 ## Hallucination guardrails
 
@@ -96,7 +112,11 @@ May read the artifact project and existing product repo. May create helper scrip
 - The intake package exists under `docs/feature-intake/<slug>/`.
 - Screenshots or explicit capture blockers are present.
 - Product framing has statuses for actors, placement, output, quality, MVP, data/AI/storage, operations, and risks.
+- `analysis/action-graph.md` exists when specs, user flows, user journeys, use cases, QA inputs, or merge planning are requested.
+- `analysis/condition-graph.md`, `analysis/condition-visuals.md`, and `qa/condition-probe-matrix.md` exist when page/action conditions, guards, roles, permissions, or lifecycle rules are requested.
 - User flow, user journeys, use cases, screen-by-screen annotations, button-handling reactions, integration fit, risks, and MVP/backlog exist for interactive artifacts.
+- `qa/spec-extraction-audit.md` exists and reports pass/gap/blocked counts before user review.
 - If PoC fidelity was in scope, `analysis/poc-fidelity-matrix.md` exists and every high-risk screen/control is `match`, `intentional-deviation`, `blocked`, or has a concrete fix direction.
 - Final README links the most useful screenshots and contact sheets.
+- `report.html` and `docs/index.html` exist when a web report or readable document view was requested.
 - Final response states what was verified, assumed, unknown, and blocked.

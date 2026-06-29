@@ -23,6 +23,11 @@
 사용자, 사용 맥락, output destination, quality bar, MVP/backlog까지 일반화해서 정리해줘.
 ```
 
+```text
+기존 feature-intake 결과를 스크린샷과 연결된 웹 리포트로 만들어줘.
+Mermaid 다이어그램은 렌더링하고, 노드에서 해당 화면 근거로 이동할 수 있게 해줘.
+```
+
 ## Product Framing Table
 
 ```md
@@ -69,6 +74,76 @@ node plugins/feature-intake/scripts/page_walk_capture.mjs \
 | screenshots/interactions/ | Non-dialog interaction screenshots. |
 | screenshots/dialogs/ | Modal and native dialog evidence. |
 | screenshots/edge-cases/ | Disabled, skipped mutation, and click-error evidence. |
+```
+
+## Action Graph
+
+```md
+## Action Graph
+
+| ID | Actor | Surface | State | Action | Trigger | Reaction | Destination/Output | Evidence | Status | Next Check |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A-001 | Primary operator | Dashboard | configured | Generate draft | Generate button | async -> result | Draft content | screenshots/interactions/03-generate-result.png; src/App.tsx:88 | verified | Add failure capture |
+| A-002 | Primary operator | Result modal | result | Copy output | Copy button | output | Clipboard text | screenshots/dialogs/04-copy-alert.png | captured | Decide persistence |
+| A-003 | Reviewer | Result view | review | Approve | Approve button | mutation | Approved record | src/review.ts:42 | source-confirmed | Capture with disposable data |
+```
+
+## Condition Graph And Visuals
+
+```md
+## Condition Graph
+
+| ID | Target | Condition | Layer | Guard/Evidence | Allowed Outcome | Blocked Outcome | Verification | Status | Next Probe |
+|---|---|---|---|---|---|---|---|---|---|
+| C-001 | /admin/reports | actor.role == admin | backend-authz | src/middleware/auth.ts:42 | page loads | 403 | source-confirmed | partial | Open as member |
+| C-002 | A-001 Generate draft | required fields valid and quota available | frontend+backend | src/schema.ts:18; src/quota.ts:31 | loading -> result | disabled or quota guard | runtime-verified | partial | Direct API quota probe |
+```
+
+```mermaid
+flowchart LR
+  Actor["Actor: Reviewer"] --> Auth["Authenticated"]
+  Auth --> Role["Role: reviewer"]
+  Role --> State["Report status: submitted"]
+  State --> Action["Approve"]
+  Action --> API["POST /reports/:id/approve"]
+  API --> Guard["RBAC + status guard"]
+  Guard --> Output["Approved record"]
+```
+
+```md
+## Condition Probe Matrix
+
+| Probe ID | Target | Actor/Data State | Expected | Method | Evidence | Result | Status |
+|---|---|---|---|---|---|---|---|
+| P-001 | /admin/reports | guest | redirect login | browser | screenshot | not run | pending |
+| P-002 | POST /reports/:id/approve | consultant + submitted | 403 | API | response log | not run | pending |
+```
+
+## Spec Extraction Audit
+
+```md
+## Spec Extraction Audit
+
+| Area | Pass | Gap | Blocked | Notes |
+|---|---:|---:|---:|---|
+| High-priority actions | 8 | 1 | 1 | Approval mutation needs disposable data. |
+| User-flow steps | 6 | 0 | 0 | All steps reference action IDs. |
+| Output destinations | 1 | 1 | 0 | Copy is captured; save/send decision needed. |
+| Async states | 2 | 1 | 0 | Failure state not captured yet. |
+```
+
+## Static Web Report
+
+```md
+## Report Outputs
+
+| Artifact | Purpose |
+|---|---|
+| report.html | Reviewer-facing planning document with screenshot-backed sections. |
+| docs/index.html | Purpose-based source-document entry point. |
+| docs/*.html | Readable HTML version of each source Markdown document. |
+| docs/all.html | Optional all-in-one search/scan page. |
+| docs/assets/mermaid.min.js | Local Mermaid runtime for file-based review packages. |
 ```
 
 ## Use Case Table

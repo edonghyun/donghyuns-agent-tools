@@ -39,6 +39,40 @@ Every meaningful claim should point to at least one evidence source:
 
 If no evidence exists, mark the claim as `Assumed`, `Unknown`, or `Decision Needed`.
 
+## Static Report
+
+A static report is the reviewer-facing publication layer for an intake package. It should not create new product facts. It renders and links existing evidence, specs, analysis, screenshots, and open decisions so a reviewer can scan the feature without reading raw Markdown files.
+
+Use `feature-intake:report` when the user asks for `report.html`, a readable document viewer, screenshot-linked planning docs, Mermaid rendering, or "raw Markdown 말고" review output.
+
+## Action Graph
+
+An action graph is the normalized bridge between evidence and specs. It connects:
+
+- actors
+- pages, routes, screens, dialogs, and tabs
+- stable states
+- user-visible actions
+- system reactions and state transitions
+- outputs, persistence, and handoffs
+- rules, blockers, and unknowns
+
+Use [SPEC-EXTRACTION-PROTOCOL](SPEC-EXTRACTION-PROTOCOL.md) when the intake must produce implementation-ready user flows, user journeys, use cases, QA inputs, or merge planning. Final prose should be derived from the graph, not written as a detached summary.
+
+## Condition Graph
+
+A condition graph records when a page or action is available. It connects:
+
+- actor and auth state
+- role, permission, ownership, tenant, plan, and quota conditions
+- entity lifecycle state
+- frontend visibility or disabled guards
+- backend middleware, authorization, validation, and domain guards
+- allowed and blocked outcomes
+- runtime/API probes
+
+Use [CONDITION-INSPECT-PROTOCOL](CONDITION-INSPECT-PROTOCOL.md) when page entry conditions, action execution conditions, backend guards, or access-control rules matter. Prefer a paired set of table, JSON, and Mermaid graph outputs so reviewers can scan visually while tests and QA can consume structured data.
+
 ## Actors
 
 Actors are role slots, not fixed personas. Common slots:

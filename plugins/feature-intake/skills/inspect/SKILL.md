@@ -9,6 +9,10 @@ Discover what the artifact contains and what evidence must be captured.
 
 For generalized wireframe/page-state and button-reaction categories, read `../../docs/STATE-TAXONOMY.md` when the artifact is interactive or the user asks for wireframes, all pages, button reactions, or implementation-ready flows.
 
+For spec extraction from code or PoC artifacts, read `../../docs/SPEC-EXTRACTION-PROTOCOL.md` and prepare the static action candidates that will later become `analysis/action-graph.md`.
+
+For page entry conditions, action execution conditions, backend guards, permissions, roles, ownership, tenant boundaries, lifecycle states, quota, feature flags, or condition-focused inspection, read `../../docs/CONDITION-INSPECT-PROTOCOL.md` and prepare condition candidates for `analysis/condition-graph.md`.
+
 ## When to use
 
 Use when starting intake on an unknown artifact, especially before browser capture.
@@ -31,7 +35,13 @@ docs/feature-intake/<slug>/
 ├── intake-manifest.json
 └── analysis/
     ├── page-inventory.md
-    └── feature-inventory.md
+    ├── feature-inventory.md
+    ├── condition-graph.md
+    ├── condition-graph.json
+    ├── condition-visuals.md
+    ├── page-entry-conditions.md
+    ├── action-preconditions.md
+    └── server-guard-inventory.md
 ```
 
 May create `tools/README.md` only to document setup/mocking notes discovered during inspect.
@@ -48,6 +58,8 @@ Never modify artifact source code or product source code.
    - List pages/routes/views.
    - Mark seed routes and crawl boundaries for page-walk capture.
    - List controls: buttons, tabs, inputs, uploads, dropdowns, menus, export/download/copy actions.
+   - List static action candidates from handler functions, form submit callbacks, command functions, API clients, mutation hooks, storage writes, feature flags, auth guards, disabled conditions, and output commands.
+   - List condition candidates from frontend route guards, backend routes/controllers, middleware, request validators, RBAC/permission checks, ownership/tenant checks, service preconditions, domain state transitions, DB constraints, feature flags, plan/quota checks, and tests/fixtures.
    - For each important button/control, record handler/function/source evidence when available.
    - Classify expected reaction type: toggle, navigation, async/API, modal/dialog, guard/error, output/download/copy.
    - List modals, alerts, confirmations, toasts, empty/loading/error states.
@@ -67,6 +79,7 @@ Never modify artifact source code or product source code.
    - Dialog screenshots/logs.
    - Edge states.
    - Contact sheets.
+   - Condition probes: unauthenticated entry, wrong role, wrong owner/tenant, missing entity, lifecycle states, invalid input, quota exhausted, feature flag disabled, and direct API bypass where safe.
 
 5. Detect blocked/dead paths
    - If code exists but UI cannot reach it, mark `blocked`.
@@ -83,4 +96,5 @@ Never modify artifact source code or product source code.
 
 - `intake-manifest.json` contains artifact source, existing product source if known, runtime status, mock policy, page targets, interaction targets, dialog targets, edge targets, and known blockers.
 - `page-inventory.md` lists pages/views with evidence status.
-- `feature-inventory.md` lists controls/actions/features, capture priority, and whether button reactions need evidence.
+- `feature-inventory.md` lists controls/actions/features, source evidence when available, capture priority, expected reaction type, confidence, mutation risk, and whether button reactions need evidence.
+- When condition inspection is in scope, `condition-graph.md` and `condition-visuals.md` summarize page/action availability with table and Mermaid evidence, and `condition-graph.json` preserves the same IDs in data form.

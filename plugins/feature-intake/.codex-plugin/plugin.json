@@ -1,7 +1,7 @@
 {
   "name": "feature-intake",
-  "version": "0.2.1",
-  "description": "Turn external feature artifacts, PoCs, demos, prototypes, and VoC experiments into screenshot-backed product integration analysis packages.",
+  "version": "0.3.0+codex.20260629071557",
+  "description": "Turn external feature artifacts, PoCs, demos, prototypes, and VoC experiments into screenshot-backed product integration analysis and implementation spec packages.",
   "author": {
     "name": "Donghyun",
     "email": "edonghyun@hankyopa.com",
@@ -21,7 +21,7 @@
   "interface": {
     "displayName": "Feature Intake",
     "shortDescription": "Analyze PoCs and prototypes for product integration with screenshots.",
-    "longDescription": "Feature Intake turns external feature artifacts such as VoC-driven PoCs, demo apps, Figma prototypes, and experimental tools into product handoff packages: screenshots, page-walk traversal, page-state and control-reaction evidence, PoC fidelity matrices, contact sheets, product framing, user flows, journeys, use cases, screen annotations, integration fit, risks, MVP boundaries, and backlog.",
+    "longDescription": "Feature Intake turns external feature artifacts such as VoC-driven PoCs, demo apps, Figma prototypes, and experimental tools into product handoff packages: screenshots, page-walk traversal, page-state and control-reaction evidence, PoC fidelity matrices, contact sheets, product framing, user flows, journeys, use cases, screen annotations, integration fit, risks, MVP boundaries, backlog, implementation-ready spec packs, and static web reports with readable document views.",
     "developerName": "Donghyun",
     "category": "Productivity",
     "capabilities": [
@@ -34,7 +34,9 @@
       "와이어프레임 설계용으로 모든 페이지 상태와 버튼 클릭 반응까지 한 번에 정리해줘.",
       "시작 페이지부터 페이지를 순회하면서 링크, 탭, 버튼, 모달 상태까지 캡처해줘.",
       "이 prototype을 기존 서비스에 붙인다고 가정하고 product framing과 MVP/backlog까지 만들어줘.",
-      "기존 PoC 스크린샷과 현재 구현을 비교해서 요구사항 충실도 매트릭스를 만들어줘."
+      "기존 PoC 스크린샷과 현재 구현을 비교해서 요구사항 충실도 매트릭스를 만들어줘.",
+      "이 feature-intake 결과를 구현 스펙과 acceptance test spec으로 컴파일해줘.",
+      "분석 결과를 스크린샷과 연결된 웹 리포트/문서 뷰로 만들어줘."
     ],
     "brandColor": "#5B5F97"
   }
