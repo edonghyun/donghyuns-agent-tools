@@ -1,0 +1,4 @@
+interface:
+  display_name: "Strict TDD"
+  short_description: "Enforce RED-GREEN-REFACTOR with executed evidence."
+  default_prompt: "Use strict TDD: co-locate A.spec.ts with A.ts, treat tests as executable specifications, verify RED, make the minimum GREEN change, refactor production and test code only after verified GREEN, and report the commands and evidence."

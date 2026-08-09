@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "donghyuns-agent-tools",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Donghyun's personal plugin marketplace for coding agents",
   "owner": {
     "name": "Donghyun",
@@ -34,6 +34,13 @@
       "description": "Evidence-backed UI iteration operator for baseline/current web, mobile web, native mobile, local session, and requirement parity comparisons during product UI changes",
       "version": "0.1.1",
       "source": "./plugins/ui-operator",
+      "category": "productivity"
+    },
+    {
+      "name": "dev-discipline",
+      "description": "Evidence-driven development discipline for strict RED-GREEN-REFACTOR TDD with co-located executable specifications",
+      "version": "0.1.0",
+      "source": "./plugins/dev-discipline",
       "category": "productivity"
     }
   ]

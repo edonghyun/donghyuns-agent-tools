@@ -22,12 +22,14 @@ claude plugin install spec-mirror@donghyuns-agent-tools
 claude plugin install qa-operator@donghyuns-agent-tools
 claude plugin install feature-intake@donghyuns-agent-tools
 claude plugin install ui-operator@donghyuns-agent-tools
+claude plugin install dev-discipline@donghyuns-agent-tools
 
 # Refresh after marketplace changes.
 claude plugin marketplace update donghyuns-agent-tools
 claude plugin update qa-operator@donghyuns-agent-tools
 claude plugin update feature-intake@donghyuns-agent-tools
 claude plugin update ui-operator@donghyuns-agent-tools
+claude plugin update dev-discipline@donghyuns-agent-tools
 ```
 
 ### Codex
@@ -48,12 +50,14 @@ codex plugin marketplace add /Users/idonghyeon/projects/donghyuns-agent-tools
 codex plugin add qa-operator@donghyuns-agent-tools
 codex plugin add feature-intake@donghyuns-agent-tools
 codex plugin add ui-operator@donghyuns-agent-tools
+codex plugin add dev-discipline@donghyuns-agent-tools
 
 # Refresh after marketplace changes.
 codex plugin marketplace upgrade donghyuns-agent-tools
 codex plugin add qa-operator@donghyuns-agent-tools
 codex plugin add feature-intake@donghyuns-agent-tools
 codex plugin add ui-operator@donghyuns-agent-tools
+codex plugin add dev-discipline@donghyuns-agent-tools
 ```
 
 Start a new Codex thread after install or update so the refreshed plugin skills are loaded into the session.
@@ -61,6 +65,31 @@ Start a new Codex thread after install or update so the refreshed plugin skills 
 ---
 
 ## Plugins
+
+### [dev-discipline](plugins/dev-discipline/README.md)
+
+Enforce evidence-driven development workflows. Its first skill, `/dev-discipline:tdd`, treats tests as co-located executable specifications (`A.ts` → `A.spec.ts`) and controls implementation through one-behavior-at-a-time RED-GREEN-REFACTOR cycles with commands and observed results.
+
+**Just say:**
+
+```text
+TDD로 구현해줘. 테스트는 프로덕션 코드 옆에 명세처럼 작성하고 RED 실패부터 실제로 확인해.
+이 버그를 회귀 테스트 먼저 작성해서 고치고 테스트를 통과시키려고 assertion을 약하게 만들지 마.
+```
+
+**Skills:**
+
+| Command | Description |
+|---------|-------------|
+| `/dev-discipline:tdd` | Co-located executable specifications, meaningful RED verification, minimum GREEN changes, restrained test doubles, and green-only refactoring. |
+
+**Workflow:**
+
+```text
+behavior ledger → specification quality gate → RED → verify RED → minimum GREEN → verify GREEN → refactor
+```
+
+---
 
 ### [ui-operator](plugins/ui-operator/README.md)
 

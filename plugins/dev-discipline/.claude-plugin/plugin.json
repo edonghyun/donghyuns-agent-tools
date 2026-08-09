@@ -1,0 +1,9 @@
+{
+  "name": "dev-discipline",
+  "version": "0.1.0",
+  "description": "Evidence-driven development discipline for Claude Code, starting with strict RED-GREEN-REFACTOR TDD.",
+  "author": {
+    "name": "Donghyun",
+    "email": "edonghyun@hankyopa.com"
+  }
+}

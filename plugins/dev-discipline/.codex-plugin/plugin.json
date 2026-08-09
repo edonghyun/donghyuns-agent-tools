@@ -1,0 +1,36 @@
+{
+  "name": "dev-discipline",
+  "version": "0.1.0",
+  "description": "Evidence-driven development discipline for coding agents, starting with strict RED-GREEN-REFACTOR TDD.",
+  "author": {
+    "name": "Donghyun",
+    "email": "edonghyun@hankyopa.com",
+    "url": "https://github.com/edonghyun"
+  },
+  "homepage": "https://github.com/edonghyun/donghyuns-agent-tools/tree/main/plugins/dev-discipline",
+  "repository": "https://github.com/edonghyun/donghyuns-agent-tools",
+  "license": "MIT",
+  "keywords": [
+    "tdd",
+    "testing",
+    "red-green-refactor",
+    "development-workflow"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Dev Discipline",
+    "shortDescription": "Enforce evidence-driven development workflows.",
+    "longDescription": "Dev Discipline controls coding-agent implementation order with auditable workflows. Its first skill enforces strict RED-GREEN-REFACTOR TDD, regression tests for bug fixes, minimal GREEN changes, and honest command evidence.",
+    "developerName": "Donghyun",
+    "category": "Productivity",
+    "capabilities": [
+      "Write"
+    ],
+    "defaultPrompt": [
+      "TDD로 구현해줘. RED 실패부터 실제로 확인해.",
+      "이 버그를 회귀 테스트부터 작성해서 고쳐줘.",
+      "strict RED-GREEN-REFACTOR로 진행하고 명령 증거를 남겨줘."
+    ],
+    "brandColor": "#8B1E3F"
+  }
+}
