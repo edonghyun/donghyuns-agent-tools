@@ -4,6 +4,41 @@ A host-neutral personal plugin marketplace for coding agents, focused on **safet
 
 > Read [`docs/PHILOSOPHY.md`](docs/PHILOSOPHY.md) for the mission, [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) for the rules every plugin follows, and [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) to add a new plugin or skill.
 
+## 빠르게 둘러보기
+
+코딩 에이전트가 검토 근거와 결과물을 일정한 형식으로 남기도록 돕는 플러그인 모음입니다.
+지금 필요한 작업에 맞춰 아래 도구를 선택합니다.
+
+| 하려는 일 | 도구 | 결과를 읽는 곳 |
+|---|---|---|
+| 요구사항을 실제 브라우저에서 검증하기 | [qa-operator](plugins/qa-operator/README.md) | QA 계획·항목별 결과·증거 대시보드 |
+| 이미 구현한 화면의 변경 전후를 비교하기 | [ui-operator](plugins/ui-operator/README.md) | 화면별 캡처·비교 리포트·리뷰 |
+| 외부 PoC를 기존 제품에 편입할지 분석하기 | [feature-intake](plugins/feature-intake/README.md) | 스크린샷과 연결된 분석·스펙·웹 리포트 |
+| 구현과 문서의 차이를 추적하기 | [spec-mirror](plugins/spec-mirror/README.md) | 코드 근거가 연결된 명세·차이·범위 분석 |
+| 실패 증거부터 확인하며 TDD로 변경하기 | [dev-discipline](plugins/dev-discipline/README.md) | 행동 목록·실행 명령·RED/GREEN 근거 |
+
+설치 후에는 예를 들어 다음과 같이 요청할 수 있습니다. 이는 사용 예이며 실제 QA 결과는 아닙니다.
+
+```text
+qa-operator로 현재 변경분의 QA 계획을 만들고 브라우저로 검증해줘.
+실패한 항목에는 스크린샷과 원인 분석을 남겨줘.
+```
+
+[QA 요청 예시](plugins/qa-operator/docs/EXAMPLES.md)와 각 플러그인의 문서에서 입력·출력·검증 범위를 확인할 수 있습니다.
+사용 중인 코딩 에이전트의 브라우저 접근과 프로젝트 실행 환경은 별도로 필요합니다.
+
+## Runtime checks
+
+QA 결과 파일 초기화·갱신·동시 업데이트·증거 경로 검증·대시보드 관련 회귀 테스트를 실행합니다.
+Python 표준 라이브러리를 사용하며 별도 패키지 설치가 필요하지 않습니다.
+
+```sh
+python3 -m unittest discover -s plugins/qa-operator/scripts -p 'test_*.py' -v
+```
+
+[GitHub CI](https://github.com/edonghyun/donghyuns-agent-tools/actions/workflows/runtime-checks.yml)는 Python 3.12에서 같은 검사를 실행합니다.
+이 검사는 QA 도구의 파일·상태 관리 범위이며, 실제 브라우저 QA나 전체 플러그인의 호스트별 설치·동작을 검증하지 않습니다.
+
 ---
 
 ## Installation
