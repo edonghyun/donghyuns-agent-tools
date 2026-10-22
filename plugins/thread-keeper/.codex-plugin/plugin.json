@@ -1,0 +1,29 @@
+{
+  "name": "thread-keeper",
+  "version": "0.1.0",
+  "description": "Keep conversation threads straight: branch a point into a capsule file another session can continue, merge results back, and show the current position.",
+  "author": {
+    "name": "Donghyun",
+    "email": "edonghyun@hankyopa.com",
+    "url": "https://github.com/edonghyun"
+  },
+  "homepage": "https://github.com/edonghyun/donghyuns-agent-tools/tree/main/plugins/thread-keeper",
+  "repository": "https://github.com/edonghyun/donghyuns-agent-tools",
+  "license": "MIT",
+  "keywords": ["conversation", "context", "handoff", "branch", "session"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Thread Keeper",
+    "shortDescription": "Branch, merge, and track conversation threads across sessions.",
+    "longDescription": "Thread Keeper keeps the main line of a long conversation intact. Branch any point into a small capsule file that another pane, session, or agent can continue from; merge the result back with one word; and see the main position, open branches, and parked questions at a glance.",
+    "developerName": "Donghyun",
+    "category": "Productivity",
+    "capabilities": ["Write"],
+    "defaultPrompt": [
+      "가지: toolchain vs JAVA_HOME",
+      "합쳐",
+      "어디야"
+    ],
+    "brandColor": "#2F6F4E"
+  }
+}
