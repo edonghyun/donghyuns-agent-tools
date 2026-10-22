@@ -1,0 +1,9 @@
+{
+  "name": "thread-keeper",
+  "version": "0.1.0",
+  "description": "Keep conversation threads straight in one session: branch a point into a lightweight capsule for another pane or agent, merge the result back, and always show where you are.",
+  "author": {
+    "name": "Donghyun",
+    "email": "edonghyun@hankyopa.com"
+  }
+}
