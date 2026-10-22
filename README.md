@@ -16,6 +16,7 @@ A host-neutral personal plugin marketplace for coding agents, focused on **safet
 | 외부 PoC를 기존 제품에 편입할지 분석하기 | [feature-intake](plugins/feature-intake/README.md) | 스크린샷과 연결된 분석·스펙·웹 리포트 |
 | 구현과 문서의 차이를 추적하기 | [spec-mirror](plugins/spec-mirror/README.md) | 코드 근거가 연결된 명세·차이·범위 분석 |
 | 실패 증거부터 확인하며 TDD로 변경하기 | [dev-discipline](plugins/dev-discipline/README.md) | 행동 목록·실행 명령·RED/GREEN 근거 |
+| 긴 대화에서 한 지점을 다른 창·세션으로 떼어 파고들고 다시 합치기 | [thread-keeper](plugins/thread-keeper/README.md) | `.threads/` 캡슐·메인 위치·나중에 볼 것 |
 
 설치 후에는 예를 들어 다음과 같이 요청할 수 있습니다. 이는 사용 예이며 실제 QA 결과는 아닙니다.
 
