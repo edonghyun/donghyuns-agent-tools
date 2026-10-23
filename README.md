@@ -104,7 +104,7 @@ Start a new Codex thread after install or update so the refreshed plugin skills 
 
 ### [dev-discipline](plugins/dev-discipline/README.md)
 
-Enforce evidence-driven development workflows. Its first skill, `/dev-discipline:tdd`, treats tests as co-located executable specifications (`A.ts` → `A.spec.ts`) and controls implementation through one-behavior-at-a-time RED-GREEN-REFACTOR cycles with commands and observed results.
+Enforce evidence-driven development workflows. `/dev-discipline:tdd` treats tests as co-located executable specifications (`A.ts` → `A.spec.ts`) and controls implementation through one-behavior-at-a-time RED-GREEN-REFACTOR cycles with commands and observed results. `/dev-discipline:contract-tests` keeps fakes honest: a fake or in-memory port implementation must pass the same contract suite as the real adapter before tests may rely on it.
 
 **Just say:**
 
@@ -118,6 +118,7 @@ TDD로 구현해줘. 테스트는 프로덕션 코드 옆에 명세처럼 작성
 | Command | Description |
 |---------|-------------|
 | `/dev-discipline:tdd` | Co-located executable specifications, meaningful RED verification, minimum GREEN changes, restrained test doubles, and green-only refactoring. |
+| `/dev-discipline:contract-tests` | Shared contract suites beside each port, run against fakes and real adapters, so fake-based tests cannot pass on behavior production lacks. |
 
 **Workflow:**
 
