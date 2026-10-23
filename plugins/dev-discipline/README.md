@@ -14,6 +14,7 @@ Evidence-driven development discipline for coding agents. The plugin controls im
 
 | Skill | Use |
 |---|---|
+| `/dev-discipline:contract-tests` | Verify fakes and in-memory port implementations against the same contract suite as the real adapter, so tests that rely on them cannot pass on behavior production lacks. |
 | `/dev-discipline:tdd` | Enforce co-located executable specifications and one-behavior-at-a-time RED-GREEN-REFACTOR with executed evidence, regression tests, minimal implementation, and green-only refactoring. |
 
 ## Workflow
