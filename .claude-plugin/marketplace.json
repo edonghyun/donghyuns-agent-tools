@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "donghyuns-agent-tools",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Donghyun's personal plugin marketplace for coding agents",
   "owner": {
     "name": "Donghyun",
@@ -38,8 +38,8 @@
     },
     {
       "name": "dev-discipline",
-      "description": "Evidence-driven development discipline for strict RED-GREEN-REFACTOR TDD with co-located executable specifications",
-      "version": "0.1.0",
+      "description": "Evidence-driven development discipline for strict RED-GREEN-REFACTOR TDD with co-located executable specifications and contract tests for fakes",
+      "version": "0.2.0",
       "source": "./plugins/dev-discipline",
       "category": "productivity"
     },

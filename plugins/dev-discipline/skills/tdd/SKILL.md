@@ -47,6 +47,7 @@ May modify only:
 - co-located specifications that express the current task's requested behavior;
 - the minimum production files needed to make the current failing test pass;
 - existing fixtures or snapshots only when the requested behavior intentionally changes them;
+- a fake or in-memory port implementation whose behavior decides the current test's verdict, through its own contract RED first (REQUIRED SUB-SKILL: dev-discipline:contract-tests);
 - task reports only when the repository workflow or user explicitly requires one.
 
 Never modify unrelated production code, unrelated tests, global test configuration, lint rules, generated artifacts, or snapshots merely to obtain GREEN.
@@ -204,6 +205,8 @@ Test code follows the same color discipline as production code. During RED or GR
 - rewrite an older test for readability while implementing the current behavior;
 - mix test-structure cleanup into the minimum production change.
 
+A new contract scenario that drives a fake's behavior is a RED of its own, not an extraction. It may come before the use-case test that relies on the fake, or be discovered while writing it. Either way, a use-case GREEN that relies on a fake counts as evidence only after the fake passes its contract and the use-case test has been seen to fail without the behavior on the corrected fake; if the fake was fixed after that GREEN, re-observe the RED before reporting it. Replacing adapter tests that a contract suite now duplicates is refactoring, done only while green.
+
 If a test-structure problem becomes visible during RED or GREEN, record it and first restore GREEN.
 Perform the cleanup as a separate REFACTOR step. A refactoring commit or diff must remain behavior
 preserving and must not introduce the next behavioral requirement.
@@ -320,6 +323,7 @@ TDD controls development order. Do not claim lint, typecheck, build, deployment,
 - Refactoring occurred only while relevant tests were green.
 - Test refactoring occurred only after an explicitly executed GREEN and was reverified afterward.
 - Relevant existing tests pass.
+- Every fake the new tests rely on passes the same contract suite that runs against the real adapter.
 - Specifications describe observable outcomes and can be read without reconstructing production internals.
 - Tests contain no mirrored production algorithm, excessive internal mocking, shared mutable fixture, hidden decisive assertion, or unnecessary duplication abstraction.
 - The final diff contains no unrelated or speculative implementation.
