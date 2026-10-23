@@ -1,0 +1,4 @@
+interface:
+  display_name: "Contract Tests"
+  short_description: "Verify fakes against the same contract suite as real adapters."
+  default_prompt: "When a test depends on a fake or in-memory port implementation, put a shared contract suite beside the port, run it against the fake and the real adapter, fix the fake when it diverges, and assert results by reading back through the port."
