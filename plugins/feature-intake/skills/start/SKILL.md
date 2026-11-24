@@ -96,6 +96,10 @@ May read the artifact project and existing product repo. May create helper scrip
    - Apply `feature-intake:report` when a static web report, readable source-document browser, Mermaid rendering, or screenshot-linked planning document is requested.
    - If both spec and report are requested, run report after spec so the generated viewer can include `spec/*.md`.
 
+10. Optional clickable flow handoff
+   - When the user wants to click through the PoC's flow, find missing steps or recovery paths, or compare the observed flow with fix options, hand `analysis/action-graph.md` and `analysis/user-flow.md` to the `wireflow` plugin (`wireflow:start`). Model PoC screens as `origin: "observed"`, keep action/transition IDs from `action-graph.md` as wireflow action ids, and put fixes in proposals.
+   - wireflow writes under `docs/wireflow/<slug>/`, outside this skill's contract; only run it when the user asks for it or agrees.
+
 ## Hallucination guardrails
 
 - Do not claim a screen exists without a screenshot, source file, or explicit supplied image.

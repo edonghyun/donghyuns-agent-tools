@@ -1,6 +1,6 @@
 {
   "name": "feature-intake",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Turn external feature artifacts, PoCs, demos, prototypes, and VoC experiments into screenshot-backed page-walk product integration analysis, implementation spec packages, and static web reports.",
   "author": {
     "name": "Donghyun",
