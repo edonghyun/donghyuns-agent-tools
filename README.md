@@ -16,6 +16,7 @@ A host-neutral personal plugin marketplace for coding agents, focused on **safet
 | 외부 PoC를 기존 제품에 편입할지 분석하기 | [feature-intake](plugins/feature-intake/README.md) | 스크린샷과 연결된 분석·스펙·웹 리포트 |
 | 구현과 문서의 차이를 추적하기 | [spec-mirror](plugins/spec-mirror/README.md) | 코드 근거가 연결된 명세·차이·범위 분석 |
 | 실패 증거부터 확인하며 TDD로 변경하기 | [dev-discipline](plugins/dev-discipline/README.md) | 행동 목록·실행 명령·RED/GREEN 근거 |
+| 기획 단계에서 화면 흐름·빠진 단계·복구 경로를 클릭하며 검토하기 | [wireflow](plugins/wireflow/README.md) | 연결된 목업 화면 HTML·시나리오 검사·수정 요청 |
 | 긴 대화에서 한 지점을 다른 창·세션으로 떼어 파고들고 다시 합치기 | [thread-keeper](plugins/thread-keeper/README.md) | `.threads/` 캡슐·메인 위치·나중에 볼 것 |
 
 설치 후에는 예를 들어 다음과 같이 요청할 수 있습니다. 이는 사용 예이며 실제 QA 결과는 아닙니다.
@@ -35,6 +36,7 @@ Python 표준 라이브러리를 사용하며 별도 패키지 설치가 필요�
 
 ```sh
 python3 -m unittest discover -s plugins/qa-operator/scripts -p 'test_*.py' -v
+node --test plugins/wireflow/scripts/test/*.test.mjs
 ```
 
 [GitHub CI](https://github.com/edonghyun/donghyuns-agent-tools/actions/workflows/runtime-checks.yml)는 Python 3.12에서 같은 검사를 실행합니다.
@@ -59,6 +61,7 @@ claude plugin install qa-operator@donghyuns-agent-tools
 claude plugin install feature-intake@donghyuns-agent-tools
 claude plugin install ui-operator@donghyuns-agent-tools
 claude plugin install dev-discipline@donghyuns-agent-tools
+claude plugin install wireflow@donghyuns-agent-tools
 
 # Refresh after marketplace changes.
 claude plugin marketplace update donghyuns-agent-tools
@@ -66,6 +69,7 @@ claude plugin update qa-operator@donghyuns-agent-tools
 claude plugin update feature-intake@donghyuns-agent-tools
 claude plugin update ui-operator@donghyuns-agent-tools
 claude plugin update dev-discipline@donghyuns-agent-tools
+claude plugin update wireflow@donghyuns-agent-tools
 ```
 
 ### Codex
@@ -87,6 +91,7 @@ codex plugin add qa-operator@donghyuns-agent-tools
 codex plugin add feature-intake@donghyuns-agent-tools
 codex plugin add ui-operator@donghyuns-agent-tools
 codex plugin add dev-discipline@donghyuns-agent-tools
+codex plugin add wireflow@donghyuns-agent-tools
 
 # Refresh after marketplace changes.
 codex plugin marketplace upgrade donghyuns-agent-tools
@@ -94,6 +99,7 @@ codex plugin add qa-operator@donghyuns-agent-tools
 codex plugin add feature-intake@donghyuns-agent-tools
 codex plugin add ui-operator@donghyuns-agent-tools
 codex plugin add dev-discipline@donghyuns-agent-tools
+codex plugin add wireflow@donghyuns-agent-tools
 ```
 
 Start a new Codex thread after install or update so the refreshed plugin skills are loaded into the session.
@@ -101,6 +107,26 @@ Start a new Codex thread after install or update so the refreshed plugin skills 
 ---
 
 ## Plugins
+
+### [wireflow](plugins/wireflow/README.md)
+
+Review app structure and user flow before visual design — as a flowchart with actor lanes before screens exist, or as connected mock screens per device. `wireflow` turns a brief, notes, screenshots, routes, or a feature-intake analysis into an editable `*.flow.json` and one self-contained HTML: simple mock screens grouped by task, connected by arrows, with scenarios that replay main journeys and recovery paths (cancel, back, retry) and flag dead ends, missing links, and unchecked requirements. Fix proposals preview in memory without touching the observed baseline, and reviewers copy per-screen change requests back to the agent.
+
+**Just say:**
+
+```text
+이 기획 메모로 와이어플로우 만들어줘. 결제 실패하고 다시 시도하는 경로도 넣어줘.
+## Wireflow 수정 요청 … (뷰어에서 복사한 목록 붙여넣기)
+```
+
+**Skills:**
+
+| Command | Description |
+|---------|-------------|
+| `/wireflow:start` | Brief → flow JSON → `check` → HTML viewer, with requirements, scenarios, decisions, and fix proposals. |
+| `/wireflow:revise` | Apply pasted change requests or adopt a proposal, keep ids stable, rebuild the same HTML, rerun checks. |
+
+---
 
 ### [dev-discipline](plugins/dev-discipline/README.md)
 
