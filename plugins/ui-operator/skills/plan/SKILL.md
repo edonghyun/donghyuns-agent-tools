@@ -64,6 +64,9 @@ node plugins/ui-operator/scripts/session_surface_mapper.mjs \
    - Use stable route and state IDs such as `admin-lectures` and `extend-modal`.
    - Keep credentials out of the plan; put login logic in a setup script.
 
+5. Flow-level changes
+   - When the task adds, removes, or reorders steps across several screens (new step, new recovery path, changed back/cancel behavior), suggest reviewing the intended flow with `wireflow:start` before capturing. Reuse its screen ids as `routes`/`states` ids so the capture plan and the wireflow refer to the same surfaces.
+
 ## Hallucination guardrails
 
 - Do not invent exact routes or native screens from component-only files or session text unless naming strongly supports the inference.
