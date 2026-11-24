@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "donghyuns-agent-tools",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Donghyun's personal plugin marketplace for coding agents",
   "owner": {
     "name": "Donghyun",
@@ -25,14 +25,14 @@
     {
       "name": "feature-intake",
       "description": "Screenshot-backed product intake for external PoCs, demos, prototypes, and VoC experiments before product integration, with page-walk, control-reaction, PoC fidelity, implementation specs, and static web reports",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "source": "./plugins/feature-intake",
       "category": "productivity"
     },
     {
       "name": "ui-operator",
       "description": "Evidence-backed UI iteration operator for baseline/current web, mobile web, native mobile, local session, and requirement parity comparisons during product UI changes",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "source": "./plugins/ui-operator",
       "category": "productivity"
     },
@@ -48,6 +48,13 @@
       "description": "Branch a conversation point into a capsule another session continues from, merge results back, and always show where you are",
       "version": "0.1.0",
       "source": "./plugins/thread-keeper",
+      "category": "productivity"
+    },
+    {
+      "name": "wireflow",
+      "description": "Clickable wireflow review: a flowchart of steps, decisions, and actor lanes before screens exist, then mock screens per device plus messages, emails, and documents, with scenario checks, fix proposals, and copyable change requests",
+      "version": "0.2.0",
+      "source": "./plugins/wireflow",
       "category": "productivity"
     }
   ]
