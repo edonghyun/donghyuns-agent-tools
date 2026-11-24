@@ -1,0 +1,127 @@
+{
+  "id": "consulting-request",
+  "title": "컨설팅 상담 신청",
+  "goal": "고객이 상담을 신청하고 결제한 뒤 상담 리포트를 받는다.",
+  "locale": "ko",
+  "view": "flowchart",
+  "device": "mobile",
+  "source": "예시 기획 메모 (가상의 컨설팅 서비스). 화면 설계 전 단계의 업무 흐름.",
+  "actors": ["고객", "상담사", "시스템"],
+  "start": "apply",
+  "stages": ["신청", "배정·안내", "결제", "상담·리포트"],
+  "vars": { "name": "", "capacity": true, "paid": 0, "payFails": false },
+  "screens": [
+    {
+      "id": "apply", "number": "01.01", "title": "상담 신청서 작성", "stage": 0, "actor": "고객", "kind": "screen", "origin": "source",
+      "brief": "모바일에서 이름·연락처·고민을 적어 신청한다.",
+      "ui": { "bar": "OO 컨설팅", "blocks": [
+        { "type": "input", "label": "이름", "field": "name", "placeholder": "홍길동", "required": true },
+        { "type": "input", "label": "상담받고 싶은 내용", "multiline": true, "placeholder": "현재 고민을 적어주세요" }
+      ] },
+      "actions": [{ "id": "submit", "label": "신청하기", "to": "received" }]
+    },
+    {
+      "id": "received", "number": "01.02", "title": "신청 접수·상담사 대기열 등록", "stage": 0, "actor": "시스템", "kind": "system", "origin": "inferred",
+      "actions": [{ "id": "queue", "label": "대기열 등록", "to": "assign" }]
+    },
+    {
+      "id": "assign", "number": "02.01", "title": "상담사 배정 (관리자 화면)", "stage": 1, "actor": "상담사", "kind": "screen", "device": "desktop", "origin": "source",
+      "brief": "상담사가 관리자 화면에서 새 신청을 보고 자신에게 배정한다.",
+      "ui": { "bar": "상담 관리자", "blocks": [
+        { "type": "rows", "rows": [{ "label": "신청자", "value": "{{name}}" }, { "label": "상태", "value": "배정 대기" }] }
+      ] },
+      "actions": [{ "id": "take", "label": "내가 맡기", "to": "capacity" }]
+    },
+    {
+      "id": "capacity", "number": "02.02", "title": "이번 주 상담 가능?", "stage": 1, "actor": "상담사", "kind": "decision", "origin": "source",
+      "decisions": ["대기 기간이 2주를 넘으면 환불·취소 안내를 해야 하는가?"],
+      "actions": [
+        { "id": "yes", "label": "가능", "to": "notify", "when": { "capacity": true } },
+        { "id": "no", "label": "불가", "to": "waitlist", "when": { "capacity": false } }
+      ]
+    },
+    {
+      "id": "waitlist", "number": "02.03", "title": "다음 주 일정 대기", "stage": 1, "actor": "시스템", "kind": "wait", "origin": "inferred",
+      "body": "자리가 나면 상담사에게 다시 알린다.",
+      "actions": [{ "id": "slot-open", "label": "자리 생김", "to": "notify", "set": { "capacity": true } }]
+    },
+    {
+      "id": "notify", "number": "02.04", "title": "상담 확정 알림톡", "stage": 1, "actor": "고객", "kind": "message", "channel": "카카오톡 알림톡", "origin": "source",
+      "body": "{{name}}님, 상담이 확정됐어요. 아래 링크에서 결제를 완료해 주세요.",
+      "decisions": ["일정 변경 요청은 어디서 받는가? (알림톡 답장 / 전화 / 별도 화면)"],
+      "actions": [
+        { "id": "open-pay", "label": "결제하러 가기", "to": "pay" },
+        { "id": "reschedule", "label": "일정 변경 요청", "to": null }
+      ]
+    },
+    {
+      "id": "pay", "number": "03.01", "title": "결제", "stage": 2, "actor": "고객", "kind": "screen", "origin": "source",
+      "ui": { "bar": "OO 컨설팅", "blocks": [{ "type": "rows", "rows": [{ "label": "1:1 상담", "value": "150,000원" }] }] },
+      "actions": [
+        { "id": "sim-ok", "label": "(시뮬레이션) 결제 성공", "to": "paid", "kind": "sim", "inc": { "paid": 1 } },
+        { "id": "sim-fail", "label": "(시뮬레이션) 결제 실패", "to": "pay-failed", "kind": "sim", "set": { "payFails": true } }
+      ]
+    },
+    {
+      "id": "pay-failed", "number": "03.02", "title": "결제 실패 안내", "stage": 2, "actor": "고객", "kind": "screen", "tone": "error", "origin": "inferred",
+      "ui": { "blocks": [{ "type": "notice", "tone": "error", "label": "결제가 완료되지 않았어요." }] },
+      "actions": [{ "id": "retry", "label": "다시 결제하기", "to": "pay", "set": { "payFails": false } }]
+    },
+    {
+      "id": "paid", "number": "03.03", "title": "결제 확인·영수증 발송", "stage": 2, "actor": "시스템", "kind": "system", "origin": "inferred",
+      "actions": [
+        { "id": "send-receipt", "label": "영수증 메일", "to": "receipt" },
+        { "id": "start", "label": "상담 진행", "to": "consult" }
+      ]
+    },
+    {
+      "id": "receipt", "number": "03.04", "title": "결제 영수증", "stage": 2, "actor": "고객", "kind": "email", "channel": "이메일", "origin": "inferred", "end": true,
+      "body": "{{name}}님, 1:1 상담 150,000원 결제가 완료됐습니다.",
+      "actions": []
+    },
+    {
+      "id": "consult", "number": "04.01", "title": "상담 진행·리포트 작성", "stage": 3, "actor": "상담사", "kind": "step", "origin": "source",
+      "actions": [{ "id": "write", "label": "리포트 발송", "to": "report" }]
+    },
+    {
+      "id": "report", "number": "04.02", "title": "상담 리포트 (PDF)", "stage": 3, "actor": "고객", "kind": "document", "origin": "source",
+      "ui": { "bar": "PDF 리포트", "blocks": [{ "type": "list", "items": ["현재 상황 진단", "추천 실행 계획", "다음 상담 제안"] }] },
+      "actions": [{ "id": "done", "label": "확인 완료", "to": "finished" }]
+    },
+    {
+      "id": "finished", "number": "04.03", "title": "완료", "stage": 3, "actor": "고객", "kind": "end", "origin": "source", "end": true,
+      "actions": []
+    }
+  ],
+  "scenarios": [
+    { "id": "happy", "title": "이번 주 상담 → 결제 → 리포트", "requirements": ["r-apply", "r-report"], "vars": { "name": "김예시" }, "steps": [
+      { "action": "submit", "screen": "received" },
+      { "action": "queue", "screen": "assign" },
+      { "action": "take", "screen": "capacity" },
+      { "action": "yes", "screen": "notify" },
+      { "action": "open-pay", "screen": "pay" },
+      { "action": "sim-ok", "screen": "paid", "vars": { "paid": 1 } },
+      { "action": "start", "screen": "consult" },
+      { "action": "write", "screen": "report" },
+      { "action": "done", "screen": "finished" }
+    ] },
+    { "id": "full-week", "title": "이번 주 마감 → 대기 후 확정", "requirements": ["r-waitlist"], "vars": { "name": "대기고객", "capacity": false }, "steps": [
+      { "action": "submit" }, { "action": "queue" }, { "action": "take" },
+      { "action": "no", "screen": "waitlist" },
+      { "action": "slot-open", "screen": "notify", "vars": { "capacity": true } }
+    ] },
+    { "id": "pay-retry", "title": "결제 실패 후 재결제", "requirements": ["r-retry"], "vars": { "name": "재시도고객" }, "steps": [
+      { "action": "submit" }, { "action": "queue" }, { "action": "take" }, { "action": "yes" }, { "action": "open-pay" },
+      { "action": "sim-fail", "screen": "pay-failed" },
+      { "action": "retry", "screen": "pay", "vars": { "payFails": false, "name": "재시도고객" } },
+      { "action": "sim-ok", "screen": "paid" }
+    ] }
+  ],
+  "requirements": [
+    { "id": "r-apply", "title": "모바일 신청 → 상담사 배정", "expected": "신청하면 상담사 관리자 화면에 배정 대기로 보인다", "origin": "source", "screen": "assign" },
+    { "id": "r-waitlist", "title": "마감 시 대기 후 확정", "expected": "이번 주 불가면 대기하고, 자리가 나면 확정 알림톡이 간다", "origin": "source", "screen": "capacity" },
+    { "id": "r-retry", "title": "결제 실패 후 재결제", "expected": "실패 안내에서 다시 결제할 수 있다", "origin": "inferred", "screen": "pay-failed" },
+    { "id": "r-report", "title": "리포트 수령", "expected": "상담 후 PDF 리포트를 받는다", "origin": "source", "screen": "report" },
+    { "id": "r-reschedule", "title": "일정 변경", "expected": "확정 후 일정 변경을 요청할 수 있다", "origin": "inferred", "screen": "notify", "action": "reschedule" }
+  ]
+}

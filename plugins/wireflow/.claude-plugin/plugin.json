@@ -1,0 +1,9 @@
+{
+  "name": "wireflow",
+  "version": "0.2.0",
+  "description": "Clickable wireflow review for planners and developers: turn briefs, screenshots, or intake analysis into simple connected mock screens, replay journeys and recovery paths, and copy precise change requests back to the agent.",
+  "author": {
+    "name": "Donghyun",
+    "email": "edonghyun@hankyopa.com"
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "id": "class-booking",
+  "title": "도자기 클래스 예약",
+  "goal": "원하는 날짜의 클래스를 골라 결제까지 마친다.",
+  "locale": "ko",
+  "device": "mobile",
+  "source": "예시 기획 메모 (가상의 공방). 결제 실패 후 재시도 경로가 현재 구현에서 막혀 있는 상황을 재현한다.",
+  "start": "home",
+  "stages": ["둘러보기", "예약", "결제 결과"],
+  "vars": { "slot": "", "name": "", "paid": 0, "payFails": false },
+  "screens": [
+    {
+      "id": "home", "number": "01.01", "title": "클래스 목록", "stage": 0, "origin": "source",
+      "brief": "첫 화면에서 이번 주 열리는 클래스를 바로 본다.",
+      "ui": { "bar": "흙과 불 공방", "blocks": [
+        { "type": "visual", "label": "물레 클래스 대표 사진", "aspect": "16/9" },
+        { "type": "list", "items": ["물레 원데이 · 4.5만원", "핸드빌딩 · 3.8만원"] }
+      ] },
+      "actions": [
+        { "id": "open-wheel", "label": "물레 원데이 보기", "to": "detail" },
+        { "id": "tab-my", "label": "내 예약", "to": "my", "kind": "tab" }
+      ]
+    },
+    {
+      "id": "detail", "number": "02.01", "title": "클래스 상세", "stage": 1, "origin": "source",
+      "brief": "날짜와 시간을 고르고 이름을 입력하면 결제로 넘어간다.",
+      "notes": ["시간을 고르지 않으면 결제 버튼이 동작하지 않는다", "마감된 시간은 회색으로 표시 (현재 예시에는 없음)"],
+      "decisions": ["한 번에 여러 명을 예약할 수 있어야 하는가?"],
+      "ui": { "blocks": [
+        { "type": "rows", "rows": [{ "label": "선택한 시간", "value": "{{slot}}" }] },
+        { "type": "input", "label": "예약자 이름", "field": "name", "placeholder": "홍길동", "required": true }
+      ] },
+      "actions": [
+        { "id": "back", "label": "뒤로", "to": "home", "kind": "back" },
+        { "id": "pick-sat", "label": "토 14:00 선택", "to": "detail", "kind": "secondary", "set": { "slot": "토 14:00" } },
+        { "id": "pay", "label": "결제하기", "to": "paying", "when": { "slot": "토 14:00" } }
+      ]
+    },
+    {
+      "id": "paying", "number": "02.02", "title": "결제 진행", "stage": 1, "origin": "inferred", "tone": "pending",
+      "body": "{{slot}} · {{name}}님 결제를 처리하는 중이에요.",
+      "actions": [
+        { "id": "sim-ok", "label": "(시뮬레이션) 결제 성공", "to": "done", "kind": "sim", "when": { "payFails": false }, "inc": { "paid": 1 } },
+        { "id": "sim-fail", "label": "(시뮬레이션) 카드 승인 실패", "to": "failed", "kind": "sim", "set": { "payFails": true } }
+      ]
+    },
+    {
+      "id": "done", "number": "03.01", "title": "예약 완료", "stage": 2, "origin": "source", "tone": "success", "end": true,
+      "ui": { "blocks": [{ "type": "notice", "label": "{{slot}} 예약이 확정됐어요. 예약 {{paid}}건" }] },
+      "actions": [{ "id": "to-my", "label": "내 예약 보기", "to": "my" }]
+    },
+    {
+      "id": "failed", "number": "03.02", "title": "결제 실패", "stage": 2, "origin": "observed", "tone": "error",
+      "brief": "현재 구현: 실패 안내만 있고 다시 시도할 방법이 없다.",
+      "ui": { "blocks": [{ "type": "notice", "tone": "error", "label": "카드 승인에 실패했어요." }] },
+      "decisions": ["재시도 시 입력한 이름과 시간을 유지할 것인가?"],
+      "actions": []
+    },
+    {
+      "id": "my", "number": "01.02", "title": "내 예약", "stage": 0, "origin": "inferred", "end": true,
+      "body": "확정된 예약 {{paid}}건",
+      "actions": [{ "id": "home", "label": "클래스 보러 가기", "to": "home", "kind": "tab" }]
+    }
+  ],
+  "scenarios": [
+    { "id": "book", "title": "토요일 클래스 예약", "requirements": ["r-book"], "vars": { "name": "도자기러버" }, "steps": [
+      { "action": "open-wheel", "screen": "detail" },
+      { "action": "pick-sat", "vars": { "slot": "토 14:00" } },
+      { "action": "pay", "screen": "paying" },
+      { "action": "sim-ok", "screen": "done", "vars": { "paid": 1 } }
+    ] },
+    { "id": "retry", "title": "결제 실패 후 같은 정보로 재시도", "requirements": ["r-retry"], "vars": { "name": "재시도테스트" }, "steps": [
+      { "action": "open-wheel" },
+      { "action": "pick-sat" },
+      { "action": "pay" },
+      { "action": "sim-fail", "screen": "failed" },
+      { "action": "retry", "screen": "detail", "vars": { "slot": "토 14:00", "name": "재시도테스트" } },
+      { "action": "pay", "screen": "paying" }
+    ] }
+  ],
+  "requirements": [
+    { "id": "r-book", "title": "시간을 골라 예약", "expected": "시간 선택 → 결제 → 예약 완료 화면에 선택한 시간이 보인다", "origin": "source", "screen": "detail", "action": "pay" },
+    { "id": "r-retry", "title": "결제 실패 후 재시도", "expected": "실패 화면에서 입력값을 유지한 채 다시 결제할 수 있다", "origin": "source", "screen": "failed" },
+    { "id": "r-cancel", "title": "예약 취소", "expected": "내 예약에서 예약을 취소할 수 있다", "origin": "inferred", "screen": "my" }
+  ],
+  "proposals": [
+    { "id": "retry-to-detail", "title": "실패 화면에 '다시 시도' 추가 (상세로 복귀, 입력 유지)", "reason": "결제 실패 시 사용자가 갇힌다. 상세로 돌아가 같은 정보로 재결제.", "changes": [
+      { "screen": "failed", "action": { "id": "retry", "label": "다시 시도", "to": "detail", "set": { "payFails": false } } },
+      { "screen": "failed", "action": { "id": "home", "label": "처음으로", "to": "home", "kind": "secondary" } }
+    ] }
+  ]
+}
