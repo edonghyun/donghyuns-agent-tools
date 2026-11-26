@@ -1,0 +1,164 @@
+// Orthogonal edge routes for the journey board. A forward edge turns in the channel between two
+// columns. A back edge, a self-loop, an edge within one column, and a skip that a card blocks
+// detour around the main area through a lane above or below it. Edges into exceptions drop to
+// the exception band and edges out of them climb back, both through the lanes below. No segment
+// passes through a card. Channel slots come from route-space.mjs, path helpers from path-geometry.mjs.
+
+import { primaryPath } from '../../../lib/board.mjs';
+import { backEdges, edgeKey, isException, screensById } from '../../../lib/graph.mjs';
+import { bottomOf } from './geometry.mjs';
+import { crossesAny, labelAnchor, simplify } from './path-geometry.mjs';
+import { channelSlots, detourLanes } from './route-space.mjs';
+
+/**
+ * One route per action whose `to` names a screen, in `screens` and then `actions` order:
+ * `{id: 'node.action', from, to, points: [[x, y], …], kind, primary, dormant, label?, labelAt?}`.
+ * `kind` is 'forward', 'back' (self-loops included), 'exception' (into an exception), or
+ * 'from-exception' (out of one). `primary`: the step is on the primary path. `dormant`: either
+ * end is dormant. `label` and `labelAt` only on edges out of a decision.
+ */
+export function routeEdges(flow, layout) {
+  const edges = boardEdges(flow, layout);
+  const space = {
+    boxes: [...layout.nodes.values()],
+    mainArea: layout.mainArea,
+    spineY: layout.spineY,
+    channels: channelSlots(layout.columns),
+    lanes: detourLanes(layout.mainArea),
+  };
+  // Short edges claim first, so they take the inner lanes and longer detours wrap around them.
+  const byReach = [...edges].sort((a, b) => reach(a) - reach(b));
+  const points = new Map(byReach.map((edge) => [edge.id, routeOf(edge, space)]));
+  return edges.map(({ source, target, ...edge }) => ({
+    ...edge,
+    points: points.get(edge.id),
+    ...(edge.label !== undefined && { labelAt: labelAnchor(points.get(edge.id)) }),
+  }));
+}
+
+/** Points as an SVG path of M, H, V and L commands. */
+export function toPathD(points) {
+  const steps = points.slice(1).map(([x, y], i) => {
+    const [px, py] = points[i];
+    if (py === y) {
+      return `H${x}`;
+    }
+    return px === x ? `V${y}` : `L${x} ${y}`;
+  });
+  return [`M${points[0][0]} ${points[0][1]}`, ...steps].join(' ');
+}
+
+function boardEdges(flow, layout) {
+  const byId = screensById(flow);
+  const back = backEdges(flow);
+  const { steps } = primaryPath(flow);
+  return flow.screens.flatMap((from) =>
+    from.actions
+      .filter((action) => byId.has(action.to))
+      .map((action) => {
+        const to = byId.get(action.to);
+        const id = `${from.id}.${action.id}`;
+        return {
+          id,
+          from: from.id,
+          to: to.id,
+          kind: kindOf(from, to, back.has(edgeKey(from.id, to.id))),
+          primary: steps.has(id),
+          dormant: Boolean(from.dormant || to.dormant),
+          ...(from.kind === 'decision' && { label: action.label }),
+          source: layout.nodes.get(from.id),
+          target: layout.nodes.get(to.id),
+        };
+      }),
+  );
+}
+
+function kindOf(from, to, isBack) {
+  if (isException(from)) {
+    return 'from-exception';
+  }
+  if (isException(to)) {
+    return 'exception';
+  }
+  return isBack ? 'back' : 'forward';
+}
+
+const centerX = (box) => box.x + box.w / 2;
+const centerY = (box) => box.y + box.h / 2;
+const reach = ({ source, target }) => Math.abs(centerX(source) - centerX(target));
+
+function routeOf(edge, space) {
+  const { kind, source, target } = edge;
+  if (kind === 'forward' && target.column > source.column) {
+    // Turn right after the source, or else right before the target, whichever runs clear.
+    const channel = [source.column, target.column - 1].find(
+      (c) => !crossesAny(throughChannel(edge, space.channels.center(c)), space.boxes),
+    );
+    if (channel !== undefined) {
+      return throughChannel(edge, space.channels.claim(channel));
+    }
+  }
+  return detour(edge, space);
+}
+
+/** Right middle of the source → the channel at `x` → left middle of the target. */
+function throughChannel({ source, target }, x) {
+  return simplify([
+    [source.x + source.w, centerY(source)],
+    [x, centerY(source)],
+    [x, centerY(target)],
+    [target.x, centerY(target)],
+  ]);
+}
+
+/**
+ * Out of the source's top or bottom, along a lane outside the main area, into the target's top
+ * or bottom. Edges into and out of exceptions use the lanes below, next to the exception band.
+ * The others go round the side nearer to their two cards.
+ */
+function detour({ kind, source, target }, space) {
+  const nearTop = (centerY(source) + centerY(target)) / 2 <= space.spineY;
+  const side = kind === 'exception' || kind === 'from-exception' || !nearTop ? 'bottom' : 'top';
+  const out = cardToLane(source, 'source', side, space);
+  const into = cardToLane(target, 'target', side, space);
+  const outX = out[out.length - 1][0];
+  const intoX = into[into.length - 1][0];
+  const laneY = space.lanes.claim(side, outX, intoX);
+  return simplify([...out, [outX, laneY], [intoX, laneY], ...[...into].reverse()]);
+}
+
+// Where a detour meets a card's top or bottom. A main card sends from its center and takes edges
+// in three quarters across, so the two never share a line. An exception card is the other way
+// round: an edge dropping into it ends on its top center.
+const sendX = (box) => box.x + box.w * (box.band === 'exception' ? 0.75 : 0.5);
+const takeX = (box) => box.x + box.w * (box.band === 'exception' ? 0.5 : 0.75);
+
+/**
+ * The path from the edge's `end` of a card to where it can run straight out of the main area
+ * toward the lanes on `side`: a point on the card's top or bottom when no other card is in the
+ * way. A main card faces the lanes with its top or bottom; an exception card, below the main
+ * area, always with its top. When a card is in the way, the edge uses the card's sides the way
+ * forward edges do: out of its right middle into the channel right of its column, or in at its
+ * left middle from the channel left of it.
+ */
+function cardToLane(box, end, side, space) {
+  const x = end === 'source' ? sendX(box) : takeX(box);
+  const borderY = side === 'top' || box.band === 'exception' ? box.y : bottomOf(box);
+  const areaEdgeY = side === 'top' ? space.mainArea.top : space.mainArea.bottom;
+  const straightOut = [
+    [x, borderY],
+    [x, areaEdgeY],
+  ];
+  if (!crossesAny(straightOut, space.boxes)) {
+    return [[x, borderY]];
+  }
+  return end === 'source'
+    ? [
+        [box.x + box.w, centerY(box)],
+        [space.channels.claim(box.column), centerY(box)],
+      ]
+    : [
+        [box.x, centerY(box)],
+        [space.channels.claim(box.column - 1), centerY(box)],
+      ];
+}
