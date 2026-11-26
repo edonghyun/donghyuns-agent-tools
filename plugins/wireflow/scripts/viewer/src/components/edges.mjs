@@ -34,7 +34,9 @@ export function render({ flow, nodes, anchors, path }) {
       const classes = classNames(onPath && 'on', action.proposed && 'prop', dim);
       curves.push(html`<path class="${classes}" d="${pathData(points)}"
         marker-end="url(#${onPath ? 'arrow-on' : 'arrow'})"/>`);
-      if (onPath) steps.push(stepBadge(midpoint(points), path.edgeSteps.get(key)));
+      if (onPath) {
+        steps.push(stepBadge(midpoint(points), path.edgeSteps.get(key), path.failed === key));
+      }
     });
   }
   return String(html`${ARROW_DEFS}${curves}${steps}`);
@@ -97,5 +99,6 @@ const pathData = ([p0, p1, p2, p3]) => `M${p0} C${p1} ${p2} ${p3}`;
 const midpoint = ([p0, p1, p2, p3]) =>
   [0, 1].map((axis) => (p0[axis] + 3 * p1[axis] + 3 * p2[axis] + p3[axis]) / 8);
 
-const stepBadge = ([x, y], numbers) =>
-  html`<circle cx="${x}" cy="${y}" r="18"/><text x="${x}" y="${y}">${numbers.join(',')}</text>`;
+const stepBadge = ([x, y], numbers, failed) =>
+  html`<circle class="${failed && 'failed'}" cx="${x}" cy="${y}" r="18"/>
+    <text x="${x}" y="${y}">${numbers.join(',')}</text>`;

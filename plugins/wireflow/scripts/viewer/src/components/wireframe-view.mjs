@@ -21,6 +21,7 @@ export function draw(canvas, scene, { flow, result, scenario, selected }, T) {
       vars: previewVars(flow, node),
       live: false,
       pathSteps: path?.steps,
+      failedAction: path?.failed,
       classes: classNames(
         selected === node.id && 'sel',
         path && !path.nodes.has(node.id) && selected !== node.id && 'dim',

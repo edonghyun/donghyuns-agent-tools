@@ -100,6 +100,9 @@
   display: grid;
   place-items: center;
 }
+.act .step.failed {
+  background: var(--bad);
+}
 .m-bar .act {
   width: auto;
   padding: 0;

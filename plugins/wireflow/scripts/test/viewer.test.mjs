@@ -101,7 +101,7 @@ test('box nodes hide their buttons on the canvas and show them in the walk-throu
   assert.match(String(renderNode(node, ctx, T)), /polygon/);
 });
 
-test('frame buttons mark missing links, guards, and scenario steps', () => {
+test('frame buttons mark missing links, guards, scenario steps, and the step that failed', () => {
   const T = texts('ko');
   const node = {
     id: 'pay',
@@ -118,14 +118,19 @@ test('frame buttons mark missing links, guards, and scenario steps', () => {
         flow: { title: 'F', screens: [node] },
         vars: { ready: false },
         live: true,
-        pathSteps: new Map([['pay.go', [2]]]),
+        pathSteps: new Map([
+          ['pay.go', [2]],
+          ['pay.nowhere', [3]],
+        ]),
+        failedAction: 'pay.nowhere',
       },
       T,
     ),
   );
   assert.match(out, /class="act primary guard-off on-path" data-action="go"/);
   assert.match(out, /<span class="step">2<\/span>/);
-  assert.match(out, /class="act secondary missing" data-action="nowhere"/);
+  assert.match(out, /<span class="step failed">3<\/span>/);
+  assert.match(out, /class="act secondary missing on-path" data-action="nowhere"/);
 });
 
 test('the viewer imports the model only through lib/index.mjs', () => {

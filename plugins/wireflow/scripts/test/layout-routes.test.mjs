@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { layoutBoard, SUB_GAP } from '../viewer/src/layout/board.mjs';
 import { layoutAndRoute } from '../viewer/src/layout/board-scene.mjs';
-import { LABEL_H, labelWidth } from '../viewer/src/layout/edge-labels.mjs';
+import { LABEL_H, labelWidth, STEP_H } from '../viewer/src/layout/edge-labels.mjs';
 import { CARD_W } from '../viewer/src/layout/geometry.mjs';
 import { channelSlots } from '../viewer/src/layout/route-space.mjs';
 import { routeEdges, toPathD } from '../viewer/src/layout/routes.mjs';
@@ -456,4 +456,29 @@ test('two edges never turn on one x in a channel, whichever way each claims its 
   ];
   assert.equal(new Set(xs).size, xs.length, `repeated x in ${xs}`);
   assert.ok(xs.every((x) => x > CARD_W && x < CARD_W + gap));
+});
+
+test('a step badge sits on its edge halfway along, or just above the edge’s label', () => {
+  const onRoute = ([x, y], points) =>
+    points
+      .slice(1)
+      .some(
+        ([x2, y2], i) =>
+          Math.min(points[i][0], x2) <= x &&
+          x <= Math.max(points[i][0], x2) &&
+          Math.min(points[i][1], y2) <= y &&
+          y <= Math.max(points[i][1], y2),
+      );
+  const { edges } = layoutAndRoute(hakwonLikeFlow());
+  for (const edge of edges) {
+    if (edge.labelAt) {
+      const [x, y] = edge.labelAt;
+      assert.deepEqual(edge.stepAt, [x, y - (LABEL_H + STEP_H) / 2], edge.id);
+    } else {
+      assert.ok(onRoute(edge.stepAt, edge.points), `${edge.id} badge off its route`);
+    }
+  }
+  const straight = edges.find((e) => e.points.length === 2 && !e.labelAt);
+  const [[x1, y1], [x2, y2]] = straight.points;
+  assert.deepEqual(straight.stepAt, [(x1 + x2) / 2, (y1 + y2) / 2]);
 });

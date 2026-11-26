@@ -81,6 +81,9 @@
 .edges circle {
   fill: var(--path);
 }
+.edges circle.failed {
+  fill: var(--bad);
+}
 .edges text {
   fill: #fff;
   font: 700 18px sans-serif;

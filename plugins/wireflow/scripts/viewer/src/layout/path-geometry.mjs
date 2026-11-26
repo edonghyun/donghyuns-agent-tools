@@ -1,4 +1,5 @@
-// Axis-aligned paths as point lists: card crossing, cleanup, and horizontal runs for labels.
+// Axis-aligned paths as point lists: card crossing, cleanup, horizontal runs for labels, and the
+// halfway point for step badges.
 
 const segmentsOf = (points) => points.slice(1).map((p, i) => [points[i], p]);
 
@@ -38,6 +39,24 @@ export function horizontalRuns(points) {
     .map(([a, b]) => (a[0] < b[0] ? [a, b] : [b, a]))
     .reverse()
     .sort(([a, b], [c, d]) => d[0] - c[0] - (b[0] - a[0]));
+}
+
+/** The point halfway along a simplified path's length. */
+export function halfway(points) {
+  const runs = segmentsOf(points).map(([from, to]) => ({
+    from,
+    to,
+    length: Math.abs(to[0] - from[0]) + Math.abs(to[1] - from[1]),
+  }));
+  let left = runs.reduce((sum, run) => sum + run.length, 0) / 2;
+  for (const { from, to, length } of runs) {
+    if (left <= length) {
+      const t = left / length;
+      return [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
+    }
+    left -= length;
+  }
+  return points[0];
 }
 
 /** True when two boxes share interior. */

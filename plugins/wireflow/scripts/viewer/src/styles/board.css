@@ -88,7 +88,11 @@
   font-weight: 700;
 }
 
-/* Edges: grey by default, the primary path bold blue, exceptions red and dashed. */
+/*
+ * Edges: grey by default, the primary path bold blue, exceptions red and dashed. A highlighted
+ * scenario's steps are blue and the step it failed at red. Later rules win, in the order
+ * board-edges.mjs picks arrowheads.
+ */
 .board-edges path {
   stroke: #8d97ab;
   stroke-width: 2.5;
@@ -117,6 +121,10 @@
   stroke: var(--path);
   stroke-width: 5;
 }
+.board-edges path.failed {
+  stroke: #c2605b;
+  stroke-width: 5;
+}
 .board-edges marker path {
   stroke: none;
 }
@@ -143,12 +151,34 @@
   white-space: nowrap;
   pointer-events: none;
 }
-.edge-label.exception {
+.edge-label.exception,
+.edge-label.failed {
   color: var(--bad);
   border-color: #e9c3c1;
 }
 .edge-label.dim {
   opacity: 0.2;
+}
+/* A highlighted scenario's step numbers on its edges; STEP_H in layout/edge-labels.mjs is its height. */
+.edge-step {
+  position: absolute;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 15px;
+  background: var(--path);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 30px;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.edge-step.failed {
+  background: var(--bad);
 }
 
 /* A card: actor tag and number, title, body, chips. Its box is the layout's estimate. */

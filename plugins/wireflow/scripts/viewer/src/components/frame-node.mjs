@@ -8,9 +8,10 @@ import { nodeStyle } from '../layout/wireframe.mjs';
 import { findNode } from '../selectors.mjs';
 
 /**
- * ctx: `{flow, vars, live, pathSteps?, classes?, style?}`.
+ * ctx: `{flow, vars, live, pathSteps?, failedAction?, classes?, style?}`.
  * - `live`: in the walk-through, where buttons work and box nodes show theirs.
- * - `pathSteps`: 'node.action' → step numbers of the highlighted scenario.
+ * - `pathSteps`: 'node.action' → step numbers of the highlighted scenario. `failedAction`: the
+ *   'node.action' it failed at, whose badge is red.
  * - `classes` and `style` go on the node element as they are.
  * The bodies below also get `ctx.text(s)`: `s` with its {{var}}s filled from `ctx.vars`.
  */
@@ -115,7 +116,10 @@ function actionButton(node, a, primary, ctx) {
     steps && 'on-path',
   );
   const label = a.kind === 'back' ? '‹' : ctx.text(a.label);
-  const badge = steps && html`<span class="step">${steps.join(',')}</span>`;
+  const failed = ctx.failedAction === `${node.id}.${a.id}`;
+  const badge =
+    steps &&
+    html`<span class="${classNames('step', failed && 'failed')}">${steps.join(',')}</span>`;
   return html`<button class="${classes}" data-action="${a.id}"
     title="${a.label}">${badge}${label}</button>`;
 }

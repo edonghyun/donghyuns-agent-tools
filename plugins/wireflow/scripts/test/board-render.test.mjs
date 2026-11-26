@@ -237,3 +237,88 @@ test('a decision draws every routed branch label, and a card title fills its var
   assert.deepEqual(labels.sort(), ['b 누르기', 'c 누르기']);
   assert.match(cardOf(board, 'a'), /학부모 결정/);
 });
+
+test('a primary edge into an exception is red in both stroke and arrowhead', () => {
+  const flow = flowOf(
+    [
+      ['a', 0, ['b', 'gone']],
+      ['b', 1, []],
+      ['gone', 1, [], { exception: 'E01' }],
+    ],
+    { primary: 'p', scenarios: [{ id: 'p', title: 'p', steps: [{ action: 'gone' }] }] },
+  );
+  const [into] = edgesOf(boardHtml(flow)).filter((e) => e.title === 'gone 누르기');
+  assert.ok(into.classes.includes('primary') && into.classes.includes('exception'));
+  assert.equal(into.marker, 'b-arrow-exception');
+});
+
+/** Each step badge on a rendered board: its classes and the step numbers it shows. */
+const stepBadgesOf = (board) =>
+  [...board.matchAll(/<span class="edge-step ([^"]*)"[^>]*>([^<]*)</g)].map(
+    ([, classes, text]) => ({
+      classes,
+      text,
+    }),
+  );
+
+test('a highlighted scenario numbers its edges, parallel actions on one badge', () => {
+  const flow = flowOf(
+    [
+      ['a', 0, ['b']],
+      ['b', 1, ['a', 'c']],
+      ['c', 2, []],
+    ],
+    {
+      scenarios: [
+        {
+          id: 's',
+          title: 's',
+          steps: [{ action: 'b' }, { action: 'a' }, { action: 'again' }, { action: 'c' }],
+        },
+      ],
+    },
+  );
+  flow.screens[0].actions.push({ id: 'again', label: '다시', to: 'b' });
+  assert.deepEqual(stepBadgesOf(boardHtml(flow)), []);
+  assert.deepEqual(
+    stepBadgesOf(boardHtml(flow, 's'))
+      .map((b) => [b.classes, b.text])
+      .sort(),
+    [
+      ['on', '1,3'],
+      ['on', '2'],
+      ['on', '4'],
+    ],
+  );
+});
+
+test('the step a scenario fails at is red, taken or not', () => {
+  const flow = flowOf(
+    [
+      ['a', 0, ['b']],
+      ['b', 1, ['c']],
+      ['c', 2, []],
+    ],
+    {
+      scenarios: [
+        { id: 'blocked', title: 'x', steps: [{ action: 'b' }, { action: 'c' }] },
+        { id: 'astray', title: 'y', steps: [{ action: 'b' }, { action: 'c', screen: 'a' }] },
+      ],
+    },
+  );
+  flow.screens[1].actions[0].when = { paid: true };
+  const blocked = boardHtml(flow, 'blocked');
+  assert.deepEqual(stepBadgesOf(blocked), [
+    { classes: 'on', text: '1' },
+    { classes: 'failed', text: '2' },
+  ]);
+  const failedEdge = edgesOf(blocked).find((e) => e.title === 'c 누르기');
+  assert.ok(failedEdge.classes.includes('failed') && !failedEdge.classes.includes('dim'));
+  assert.equal(failedEdge.marker, 'b-arrow-exception');
+
+  delete flow.screens[1].actions[0].when;
+  assert.deepEqual(stepBadgesOf(boardHtml(flow, 'astray')), [
+    { classes: 'on', text: '1' },
+    { classes: 'failed', text: '2' },
+  ]);
+});

@@ -8,6 +8,8 @@ export const LABEL_PADDING = 16; // 7px each side and a 1px border
 export const LABEL_H = 24; // a 20px line, 1px padding and a 1px border, top and bottom
 /** Space a label keeps clear on each side, from cards and from where its edge turns. */
 export const LABEL_MARGIN = 12;
+/** A scenario's step badge, `.edge-step` in styles/board.css, sits on top of its edge's label. */
+export const STEP_H = 30;
 
 export const labelWidth = (label) => textWidth(label, LABEL_SIZE) + LABEL_PADDING;
 

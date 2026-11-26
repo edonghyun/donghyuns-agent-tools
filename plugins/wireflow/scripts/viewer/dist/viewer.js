@@ -803,6 +803,7 @@
   var LABEL_PADDING = 16;
   var LABEL_H = 24;
   var LABEL_MARGIN = 12;
+  var STEP_H = 30;
   var labelWidth = (label) => textWidth(label, LABEL_SIZE) + LABEL_PADDING;
   function branchLabels(node, targetIds) {
     const labels = /* @__PURE__ */ new Map();
@@ -1044,6 +1045,22 @@
   function horizontalRuns(points) {
     return segmentsOf(points).filter(([a, b]) => a[1] === b[1] && a[0] !== b[0]).map(([a, b]) => a[0] < b[0] ? [a, b] : [b, a]).reverse().sort(([a, b], [c, d]) => d[0] - c[0] - (b[0] - a[0]));
   }
+  function halfway(points) {
+    const runs = segmentsOf(points).map(([from, to]) => ({
+      from,
+      to,
+      length: Math.abs(to[0] - from[0]) + Math.abs(to[1] - from[1])
+    }));
+    let left = runs.reduce((sum, run) => sum + run.length, 0) / 2;
+    for (const { from, to, length } of runs) {
+      if (left <= length) {
+        const t = left / length;
+        return [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
+      }
+      left -= length;
+    }
+    return points[0];
+  }
   var boxesOverlap = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
   // scripts/viewer/src/layout/routes.mjs
@@ -1062,11 +1079,12 @@
     const points = new Map(byReach.map((edge) => [edge.id, routeOf(edge, space)]));
     const taken = [...space.boxes];
     return {
-      edges: edges.map(({ source, target, ...edge }) => ({
-        ...edge,
-        points: points.get(edge.id),
-        ...edge.label !== void 0 && labelPlace(edge.label, points.get(edge.id), taken)
-      })),
+      edges: edges.map(({ source, target, ...edge }) => {
+        const route = points.get(edge.id);
+        const { labelAt } = edge.label !== void 0 ? labelPlace(edge.label, route, taken) : {};
+        const stepAt = labelAt ? [labelAt[0], labelAt[1] - (LABEL_H + STEP_H) / 2] : halfway(route);
+        return { ...edge, points: route, ...labelAt && { labelAt }, stepAt };
+      }),
       lanes: lanes.used()
     };
   }
@@ -1289,15 +1307,23 @@
     const scenario = findScenario(flow, scenarioId);
     if (!scenario) return null;
     const run = runScenario(flow, scenario);
+    const taken = run.trail.slice(1).map((t, i) => `${run.trail[i].screen}.${t.action}`);
     const edgeSteps = /* @__PURE__ */ new Map();
-    run.trail.slice(1).forEach((t, i) => {
-      const key = `${run.trail[i].screen}.${t.action}`;
+    for (const [i, key] of taken.entries()) {
       edgeSteps.set(key, [...edgeSteps.get(key) || [], i + 1]);
-    });
+    }
     const steps = new Map(edgeSteps);
-    const failedAction = !run.ok && scenario.steps[run.failedStep]?.action;
-    if (failedAction) steps.set(`${run.screen}.${failedAction}`, [run.failedStep + 1]);
-    return { steps, edgeSteps, nodes: new Set(run.trail.map((t) => t.screen)) };
+    const failed = failedKey(run, scenario, taken);
+    if (failed && !taken[run.failedStep]) {
+      steps.set(failed, [...steps.get(failed) || [], run.failedStep + 1]);
+    }
+    return { steps, edgeSteps, failed, nodes: new Set(run.trail.map((t) => t.screen)) };
+  }
+  function failedKey(run, scenario, taken) {
+    if (run.ok) return null;
+    if (taken[run.failedStep]) return taken[run.failedStep];
+    const action = scenario.steps[run.failedStep]?.action;
+    return action ? `${run.screen}.${action}` : null;
   }
 
   // scripts/viewer/src/store.mjs
@@ -1810,27 +1836,38 @@
     const node = findNode(flow, edge.from);
     return edge.ids.map((id) => node.actions.find((a) => `${node.id}.${a.id}` === id)?.label ?? id).join(" / ");
   }
+  function scenarioRole(edge, path) {
+    if (!path) return null;
+    if (edge.ids.includes(path.failed)) return "failed";
+    return edge.ids.some((id) => path.edgeSteps.has(id)) ? "on" : "dim";
+  }
+  function markerOf(edge, role) {
+    if (role === "failed") return "b-arrow-exception";
+    if (role === "on") return "b-arrow-primary";
+    if (edge.kind === "exception") return "b-arrow-exception";
+    return edge.primary ? "b-arrow-primary" : "b-arrow";
+  }
   function render2(edges, size, path, flow) {
-    const onPath = (edge) => Boolean(path) && edge.ids.some((id) => path.edgeSteps.has(id));
     const classesOf = (edge) => classNames(
       edge.kind,
       edge.primary && "primary",
       edge.dormant && "dormant",
-      path && (onPath(edge) ? "on" : "dim")
+      scenarioRole(edge, path)
     );
-    const markerOf = (edge) => {
-      if (onPath(edge) || !path && edge.primary) return "b-arrow-primary";
-      return edge.kind === "exception" ? "b-arrow-exception" : "b-arrow";
-    };
     const line = (edge) => html`<g class="edge"><title>${actionLabels(flow, edge)}</title>
     <path class="hit" d="${toPathD(edge.points)}"/>
     <path class="${classesOf(edge)}" d="${toPathD(edge.points)}"
-      marker-end="url(#${markerOf(edge)})"/></g>`;
+      marker-end="url(#${markerOf(edge, scenarioRole(edge, path))})"/></g>`;
     const label = (edge) => edge.labelAt && html`<span class="edge-label ${classesOf(edge)}"
       style="left:${edge.labelAt[0]}px;top:${edge.labelAt[1]}px">${edge.label}</span>`;
+    const stepBadge2 = (edge) => {
+      const numbers = edge.ids.flatMap((id) => path.steps.get(id) || []).sort((a, b) => a - b);
+      return numbers.length > 0 && html`<span class="edge-step ${scenarioRole(edge, path)}"
+        style="left:${edge.stepAt[0]}px;top:${edge.stepAt[1]}px">${numbers.join(",")}</span>`;
+    };
     const drawOrder = [...edges].sort((a, b) => Number(a.primary) - Number(b.primary));
     return html`<svg class="edges board-edges" width="${size.w}" height="${size.h}">
-    ${DEFS}${drawOrder.map(line)}</svg>${edges.map(label)}`;
+    ${DEFS}${drawOrder.map(line)}</svg>${edges.map(label)}${path && edges.map(stepBadge2)}`;
   }
 
   // scripts/viewer/src/components/board-view.mjs
@@ -1886,7 +1923,9 @@
         const classes = classNames(onPath && "on", action.proposed && "prop", dim);
         curves.push(html`<path class="${classes}" d="${pathData(points)}"
         marker-end="url(#${onPath ? "arrow-on" : "arrow"})"/>`);
-        if (onPath) steps.push(stepBadge(midpoint(points), path.edgeSteps.get(key)));
+        if (onPath) {
+          steps.push(stepBadge(midpoint(points), path.edgeSteps.get(key), path.failed === key));
+        }
       });
     }
     return String(html`${ARROW_DEFS}${curves}${steps}`);
@@ -1937,7 +1976,8 @@
   }
   var pathData = ([p0, p1, p2, p3]) => `M${p0} C${p1} ${p2} ${p3}`;
   var midpoint = ([p0, p1, p2, p3]) => [0, 1].map((axis) => (p0[axis] + 3 * p1[axis] + 3 * p2[axis] + p3[axis]) / 8);
-  var stepBadge = ([x, y], numbers) => html`<circle cx="${x}" cy="${y}" r="18"/><text x="${x}" y="${y}">${numbers.join(",")}</text>`;
+  var stepBadge = ([x, y], numbers, failed) => html`<circle class="${failed && "failed"}" cx="${x}" cy="${y}" r="18"/>
+    <text x="${x}" y="${y}">${numbers.join(",")}</text>`;
 
   // scripts/viewer/src/components/frame-node.mjs
   function render5(node, ctx, T2) {
@@ -2020,7 +2060,8 @@
       steps && "on-path"
     );
     const label = a.kind === "back" ? "\u2039" : ctx.text(a.label);
-    const badge = steps && html`<span class="step">${steps.join(",")}</span>`;
+    const failed = ctx.failedAction === `${node.id}.${a.id}`;
+    const badge = steps && html`<span class="${classNames("step", failed && "failed")}">${steps.join(",")}</span>`;
     return html`<button class="${classes}" data-action="${a.id}"
     title="${a.label}">${badge}${label}</button>`;
   }
@@ -2070,6 +2111,7 @@
         vars: previewVars(flow, node),
         live: false,
         pathSteps: path?.steps,
+        failedAction: path?.failed,
         classes: classNames(
           selected === node.id && "sel",
           path && !path.nodes.has(node.id) && selected !== node.id && "dim",

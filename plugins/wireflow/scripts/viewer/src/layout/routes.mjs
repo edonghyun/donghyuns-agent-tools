@@ -5,9 +5,9 @@
 // passes through a card. Channel slots come from route-space.mjs, path helpers from path-geometry.mjs.
 
 import { backEdges, edgeKey, isException, primaryPath, screensById } from '../../../lib/index.mjs';
-import { branchLabels, LABEL_H, LABEL_MARGIN, labelWidth } from './edge-labels.mjs';
+import { branchLabels, LABEL_H, LABEL_MARGIN, labelWidth, STEP_H } from './edge-labels.mjs';
 import { bottomOf } from './geometry.mjs';
-import { boxesOverlap, crossesAny, horizontalRuns, simplify } from './path-geometry.mjs';
+import { boxesOverlap, crossesAny, halfway, horizontalRuns, simplify } from './path-geometry.mjs';
 import { channelSlots, detourLanes } from './route-space.mjs';
 
 /**
@@ -23,6 +23,8 @@ import { channelSlots, detourLanes } from './route-space.mjs';
  *   where the label centers, on a horizontal run of the edge, clear of every card and of the
  *   labels placed before it; an edge whose route has no such spot has no `labelAt`. The columns
  *   leave room for every forward branch's.
+ * - `stepAt` is where a scenario's step badge centers: just above the label, leaving its text
+ *   readable, or halfway along an edge with no placed label.
  * `lanes` counts the detour lanes used above (`top`) and below (`bottom`) the main area.
  */
 export function routeEdges(flow, layout) {
@@ -42,11 +44,12 @@ export function routeEdges(flow, layout) {
   // Each placed label joins the boxes the later labels keep clear of.
   const taken = [...space.boxes];
   return {
-    edges: edges.map(({ source, target, ...edge }) => ({
-      ...edge,
-      points: points.get(edge.id),
-      ...(edge.label !== undefined && labelPlace(edge.label, points.get(edge.id), taken)),
-    })),
+    edges: edges.map(({ source, target, ...edge }) => {
+      const route = points.get(edge.id);
+      const { labelAt } = edge.label !== undefined ? labelPlace(edge.label, route, taken) : {};
+      const stepAt = labelAt ? [labelAt[0], labelAt[1] - (LABEL_H + STEP_H) / 2] : halfway(route);
+      return { ...edge, points: route, ...(labelAt && { labelAt }), stepAt };
+    }),
     lanes: lanes.used(),
   };
 }
