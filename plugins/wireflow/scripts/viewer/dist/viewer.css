@@ -498,7 +498,11 @@ body:not([data-mode="play"]) #player {
   font-size: 12px;
   white-space: nowrap;
 }
+/* The number gives way when the row is full (exception code plus origin badge). The actor never
+   shrinks, since even a fraction of a pixel ellipsizes it; only a name past the cap is cut. */
 .c-actor {
+  flex-shrink: 0;
+  max-width: 55%;
   padding: 1px 6px;
   border-radius: 4px;
   font-weight: 700;
@@ -509,9 +513,16 @@ body:not([data-mode="play"]) #player {
   text-overflow: ellipsis;
 }
 .c-num {
+  min-width: 0;
   margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: var(--mono);
   color: var(--muted);
+}
+.c-code,
+.c-top .badge {
+  flex-shrink: 0;
 }
 .c-code {
   font: 700 12px var(--mono);
