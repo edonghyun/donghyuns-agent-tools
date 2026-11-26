@@ -15,6 +15,10 @@ const MSG = {
     step: (n, r) => `step ${n}: ${r}`,
     uncovered: (t) => `requirement "${t}" is not checked by any scenario`,
     branches: (t, n) => `decision "${t}" has ${n} branch(es); a decision needs at least two`,
+    brokenEvent: (id, at) => `event "${id}" points to unknown location "${at}"`,
+    unknownPrimary: (id) => `primary path scenario "${id}" does not exist`,
+    orphanException: (code, t) => `nothing leads into exception "${code} ${t}"`,
+    untracked: (t) => `primary path step "${t}" has no event`,
   },
   ko: {
     notOn: (a, s) => `"${s}" 화면에 "${a}" 버튼이 없음`,
@@ -30,6 +34,10 @@ const MSG = {
     step: (n, r) => `${n}단계: ${r}`,
     uncovered: (t) => `요구사항 "${t}"를 확인하는 시나리오가 없음`,
     branches: (t, n) => `분기 "${t}"의 갈래가 ${n}개뿐임 (2개 이상 필요)`,
+    brokenEvent: (id, at) => `이벤트 "${id}"가 없는 위치 "${at}"를 가리킴`,
+    unknownPrimary: (id) => `기본 경로 시나리오 "${id}"가 없음`,
+    orphanException: (code, t) => `예외 "${code} ${t}"로 들어오는 연결이 없음`,
+    untracked: (t) => `기본 경로 "${t}" 단계에 이벤트가 없음`,
   },
 };
 

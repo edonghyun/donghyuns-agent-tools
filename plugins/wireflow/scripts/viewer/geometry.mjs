@@ -1,4 +1,5 @@
 // Pure layout math: node sizes, canvas positions, edge paths. No DOM.
+import { actorList } from '../lib/board.mjs';
 import { DEVICES } from '../lib/constants.mjs';
 
 const PAD = 70;
@@ -169,7 +170,7 @@ function laneLayout(flow, view, unassignedLabel) {
 }
 
 function laneNames(flow) {
-  const lanes = [...(flow.actors || [])];
+  const lanes = actorList(flow).map((a) => a.name);
   for (const s of flow.screens) if (s.actor && !lanes.includes(s.actor)) lanes.push(s.actor);
   if (flow.screens.some((s) => !s.actor)) lanes.push('');
   return lanes;

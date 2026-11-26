@@ -1,6 +1,7 @@
 // Structural validation of a flow file. Returns error strings; an empty list means valid.
 
-import { DEVICES, ID, KINDS, VIEWS } from './constants.mjs';
+import { actorList } from './board.mjs';
+import { DEVICES, EVENT_TYPES, HEX_COLOR, ID, KINDS, VIEWS } from './constants.mjs';
 import { entryIds } from './graph.mjs';
 
 const deviceError = (d) => {
@@ -38,13 +39,22 @@ export function validate(flow) {
     errs.push(`flow ${fd}`);
   }
   if (flow.actors !== undefined && !Array.isArray(flow.actors)) {
-    errs.push('"actors" must be an array of labels');
+    errs.push('"actors" must be an array of labels or {name, color}');
+  }
+  const actorNames = Array.isArray(flow.actors) ? actorList(flow).map((a) => a.name) : null;
+  for (const a of Array.isArray(flow.actors) ? flow.actors : []) {
+    if (typeof a === 'string' ? !a : typeof a?.name !== 'string' || !a.name) {
+      errs.push(`actor ${JSON.stringify(a)} must be a label or {name, color}`);
+    } else if (typeof a === 'object' && a.color !== undefined && !HEX_COLOR.test(a.color)) {
+      errs.push(`actor "${a.name}" has color ${JSON.stringify(a.color)}, expected #RRGGBB`);
+    }
   }
   if (flow.id && !ID.test(flow.id)) {
     errs.push(`flow id "${flow.id}" must be lowercase letters, digits, hyphens`);
   }
 
   const seen = new Set();
+  const codes = new Set();
   for (const s of flow.screens) {
     if (!s || typeof s.id !== 'string') {
       errs.push('every screen needs a string "id"');
@@ -65,8 +75,16 @@ export function validate(flow) {
     if (s.kind !== undefined && !KINDS.includes(s.kind)) {
       errs.push(`screen "${s.id}" has kind "${s.kind}", expected one of ${KINDS.join('/')}`);
     }
-    if (Array.isArray(flow.actors) && s.actor !== undefined && !flow.actors.includes(s.actor)) {
+    if (actorNames && s.actor !== undefined && !actorNames.includes(s.actor)) {
       errs.push(`screen "${s.id}" has actor "${s.actor}", not listed in "actors"`);
+    }
+    if (s.exception !== undefined) {
+      if (typeof s.exception !== 'string' || !s.exception) {
+        errs.push(`screen "${s.id}" has exception ${JSON.stringify(s.exception)}, expected a code`);
+      } else if (codes.has(s.exception)) {
+        errs.push(`duplicate exception code "${s.exception}"`);
+      }
+      codes.add(s.exception);
     }
     const sd = deviceError(s.device);
     if (sd) {
@@ -105,6 +123,9 @@ export function validate(flow) {
     if (!Array.isArray(sc.steps)) {
       errs.push(`scenario "${sc.id}" needs "steps"`);
     }
+    if (sc.start !== undefined && !seen.has(sc.start)) {
+      errs.push(`scenario "${sc.id}" starts at "${sc.start}", not a screen id`);
+    }
   }
   const pids = new Set();
   for (const p of flow.proposals || []) {
@@ -114,6 +135,27 @@ export function validate(flow) {
     pids.add(p.id);
     if (!Array.isArray(p.changes)) {
       errs.push(`proposal "${p.id}" needs "changes"`);
+    }
+  }
+  if (flow.events !== undefined && !Array.isArray(flow.events)) {
+    errs.push('"events" must be an array');
+  }
+  const eids = new Set();
+  for (const e of Array.isArray(flow.events) ? flow.events : []) {
+    if (typeof e?.id !== 'string' || !e.id) {
+      errs.push('every event needs a string "id"');
+      continue;
+    }
+    if (eids.has(e.id)) {
+      errs.push(`duplicate event id "${e.id}"`);
+    }
+    eids.add(e.id);
+    if (!EVENT_TYPES.includes(e.type)) {
+      errs.push(`event "${e.id}" has type "${e.type}", expected one of ${EVENT_TYPES.join('/')}`);
+    }
+    const at = [e.at].flat();
+    if (at.length === 0 || !at.every((l) => typeof l === 'string' && l)) {
+      errs.push(`event "${e.id}" needs "at": a node id, node.action, or a list of them`);
     }
   }
   return errs;

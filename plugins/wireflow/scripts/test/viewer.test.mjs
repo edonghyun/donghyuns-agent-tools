@@ -56,7 +56,7 @@ test('flowchart with actors lays out lanes (rows) by stage (columns)', () => {
       { id: 'assign', stage: 1, actor: '상담사', kind: 'step', actions: [] },
       { id: 'notify', stage: 1, actor: '고객', kind: 'message', actions: [] },
     ],
-    { actors: ['고객', '상담사'] },
+    { actors: ['고객', { name: '상담사', color: '#2F53C4' }] },
   );
   const { pos, groups } = layoutFlow(f, 'flowchart', '미지정');
   assert.deepEqual(
