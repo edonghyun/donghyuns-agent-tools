@@ -180,11 +180,11 @@ node "$WF" example OUT.flow.json --board   # copy the journey board sample (0.2 
 | `broken-link` | 🔴 | action points at a screen id that does not exist |
 | `trapped` | 🔴 | reachable screen with no route to start/entries or an `end` screen |
 | `scenario-failed` | 🔴 | a scenario step failed (message names the step and reason) |
+| `broken-event` | 🔴 | `events[].at` names a node or transition that does not exist |
+| `unknown-primary` | 🔴 | `primary` is not a scenario id |
 | `missing-link` | 🟡 | action with `to: null` |
 | `decision-branches` | 🟡 | `decision` node with fewer than two actions |
 | `unreachable` | 🟡 | no route from start/entries |
-| `broken-event` | 🔴 | `events[].at` names a node or transition that does not exist |
-| `unknown-primary` | 🔴 | `primary` is not a scenario id |
 | `orphan-exception` | 🟡 | an `exception` node has no incoming action |
 | `uncovered-requirement` | 🔵 | requirement that no scenario checks |
 | `untracked-step` | 🔵 | `events` exist, but a primary-path step has none on its transition or landing node |

@@ -34,7 +34,7 @@ Pre-condition: the referenced `*.flow.json` exists. If the path in the header do
    - *Open question* — the request asks something undecided. Add or update a `decisions` entry instead of guessing.
    - *Out of scope* — application code, visual styling beyond wireframe blocks. Report, do not apply.
 4. **Edit.** Preserve ids and unrelated behavior. New screens get new ids, a `number` that does not collide, and `origin` (`source` if the user asked for it, `inferred` if you added it to complete the change). Update affected scenarios and requirements so they still assert the observable result; add a scenario if a request introduces a new path.
-5. **Check and rebuild** (same commands as `wireflow:start` step 4), including `--with` for each remaining proposal.
+5. **Check and rebuild** (same commands as `wireflow:start` step 5), including `--with` for each remaining proposal.
 6. **Report** per request: applied / turned into decision / skipped (why), affected screen numbers, and check result before → after. Remind the user to reload the HTML; requests stored in the browser stay attached because the path is unchanged — they can clear handled ones with **비우기**.
 
 ## Hallucination guardrails
