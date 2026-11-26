@@ -662,23 +662,27 @@
     };
     const byReach = [...edges].sort((a, b) => reach2(a) - reach2(b));
     const points = new Map(byReach.map((edge) => [edge.id, routeOf(edge, space)]));
+    const taken = [...space.boxes];
     return {
       edges: edges.map(({ source, target, ...edge }) => ({
         ...edge,
         points: points.get(edge.id),
-        ...edge.label !== void 0 && labelPlace(edge.label, points.get(edge.id), space.boxes)
+        ...edge.label !== void 0 && labelPlace(edge.label, points.get(edge.id), taken)
       })),
       lanes: lanes.used()
     };
   }
-  function labelPlace(label, points, boxes) {
+  function labelPlace(label, points, taken) {
     const w = labelWidth(label);
     const half = (w + LABEL_MARGIN) / 2;
     for (const [[left, y], [right]] of horizontalRuns(points)) {
       if (right - left < w + LABEL_MARGIN) continue;
       for (const x of [(left + right) / 2, left + half, right - half]) {
         const box = { x: x - w / 2, y: y - LABEL_H / 2, w, h: LABEL_H };
-        if (!boxes.some((card) => boxesOverlap(box, card))) return { labelAt: [x, y] };
+        if (!taken.some((other) => boxesOverlap(box, other))) {
+          taken.push(box);
+          return { labelAt: [x, y] };
+        }
       }
     }
     return {};

@@ -21,8 +21,9 @@ import { channelSlots, detourLanes } from './route-space.mjs';
  *   'from-exception' (out of one).
  * - `primary`: one of its actions is a primary-path step. `dormant`: either end is dormant.
  * - `label` (its actions' labels joined by ' / ') only on edges out of a decision. `labelAt` is
- *   where the label centers, on a horizontal run of the edge, clear of every card; an edge whose
- *   route has no such spot has no `labelAt`. The columns leave room for every forward branch's.
+ *   where the label centers, on a horizontal run of the edge, clear of every card and of the
+ *   labels placed before it; an edge whose route has no such spot has no `labelAt`. The columns
+ *   leave room for every forward branch's.
  * `lanes` counts the detour lanes used above (`top`) and below (`bottom`) the main area.
  */
 export function routeEdges(flow, layout) {
@@ -39,28 +40,34 @@ export function routeEdges(flow, layout) {
   // Short edges claim first, so they take the inner lanes and longer detours wrap around them.
   const byReach = [...edges].sort((a, b) => reach(a) - reach(b));
   const points = new Map(byReach.map((edge) => [edge.id, routeOf(edge, space)]));
+  // Each placed label joins the boxes the later labels keep clear of.
+  const taken = [...space.boxes];
   return {
     edges: edges.map(({ source, target, ...edge }) => ({
       ...edge,
       points: points.get(edge.id),
-      ...(edge.label !== undefined && labelPlace(edge.label, points.get(edge.id), space.boxes)),
+      ...(edge.label !== undefined && labelPlace(edge.label, points.get(edge.id), taken)),
     })),
     lanes: lanes.used(),
   };
 }
 
 /**
- * `{labelAt}` for the first spot clear of every box, else {}. Runs are tried longest first, each
- * at its middle and then beside either end, LABEL_MARGIN/2 in from it.
+ * `{labelAt}` for the first spot clear of every box in `taken`, else {}, adding the label's box to
+ * `taken`. Runs are tried longest first, each at its middle and then beside either end,
+ * LABEL_MARGIN/2 in from it.
  */
-function labelPlace(label, points, boxes) {
+function labelPlace(label, points, taken) {
   const w = labelWidth(label);
   const half = (w + LABEL_MARGIN) / 2;
   for (const [[left, y], [right]] of horizontalRuns(points)) {
     if (right - left < w + LABEL_MARGIN) continue;
     for (const x of [(left + right) / 2, left + half, right - half]) {
       const box = { x: x - w / 2, y: y - LABEL_H / 2, w, h: LABEL_H };
-      if (!boxes.some((card) => boxesOverlap(box, card))) return { labelAt: [x, y] };
+      if (!taken.some((other) => boxesOverlap(box, other))) {
+        taken.push(box);
+        return { labelAt: [x, y] };
+      }
     }
   }
   return {};

@@ -420,3 +420,22 @@ test('every forward branch of a decision gets a label that clears every card', (
     }
   }
 });
+
+test('no two decision labels overlap', () => {
+  // On the hakwon board the labels of two back edges out of stacked decisions ran in adjacent
+  // detour lanes, 14px apart, and each was placed clear of the cards but not of the other.
+  const { edges } = layoutAndRoute(hakwonLikeFlow());
+  const boxes = edges
+    .filter((e) => e.labelAt)
+    .map((e) => {
+      const w = labelWidth(e.label);
+      return { id: e.id, x: e.labelAt[0] - w / 2, y: e.labelAt[1] - LABEL_H / 2, w, h: LABEL_H };
+    });
+  assert.ok(boxes.length >= 4);
+  for (const [i, a] of boxes.entries()) {
+    for (const b of boxes.slice(i + 1)) {
+      const overlaps = a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+      assert.ok(!overlaps, `the labels of ${a.id} and ${b.id} overlap`);
+    }
+  }
+});
