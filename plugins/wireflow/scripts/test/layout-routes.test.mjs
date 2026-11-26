@@ -4,6 +4,8 @@ import { test } from 'node:test';
 import { layoutBoard, SUB_GAP } from '../viewer/src/layout/board.mjs';
 import { layoutAndRoute } from '../viewer/src/layout/board-scene.mjs';
 import { LABEL_H, labelWidth } from '../viewer/src/layout/edge-labels.mjs';
+import { CARD_W } from '../viewer/src/layout/geometry.mjs';
+import { channelSlots } from '../viewer/src/layout/route-space.mjs';
 import { routeEdges, toPathD } from '../viewer/src/layout/routes.mjs';
 import { hakwonLikeFlow } from './fixtures/board-fixture.mjs';
 
@@ -438,4 +440,20 @@ test('no two decision labels overlap', () => {
       assert.ok(!overlaps, `the labels of ${a.id} and ${b.id} overlap`);
     }
   }
+});
+
+test('two edges never turn on one x in a channel, whichever way each claims its slot', () => {
+  const gap = 48;
+  const slots = channelSlots([{ x: 0 }, { x: CARD_W + gap }]);
+  const xs = [
+    slots.claimBeside(0),
+    slots.claim(0),
+    slots.claimBeside(0),
+    slots.claim(0),
+    slots.claimBeside(0),
+    slots.claim(0),
+    slots.claim(0),
+  ];
+  assert.equal(new Set(xs).size, xs.length, `repeated x in ${xs}`);
+  assert.ok(xs.every((x) => x > CARD_W && x < CARD_W + gap));
 });

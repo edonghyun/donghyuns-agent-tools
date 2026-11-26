@@ -976,19 +976,28 @@
       const [left, right] = sides(c);
       return (left + right) / 2;
     };
-    const claim = (c) => {
-      const i = taken.get(c) ?? 0;
-      taken.set(c, i + 1);
-      const [left, right] = sides(c);
-      const x = center(c) + Math.ceil(i / 2) * SLOT_GAP * (i % 2 ? 1 : -1);
-      return Math.min(right - CLEARANCE, Math.max(left + CLEARANCE, x));
+    const fromCenter = (c) => {
+      const right = sides(c)[1];
+      const xs = [center(c)];
+      for (let d = SLOT_GAP; center(c) + d <= right - CLEARANCE; d += SLOT_GAP) {
+        xs.push(center(c) + d, center(c) - d);
+      }
+      return xs;
     };
-    const besideTaken = /* @__PURE__ */ new Map();
-    const claimBeside = (c) => {
-      const i = (besideTaken.get(c) ?? 0) + 1;
-      besideTaken.set(c, i);
-      return Math.min(center(c), sides(c)[0] + i * SLOT_GAP);
+    const fromLeft = (c) => {
+      const xs = [];
+      for (let x = sides(c)[0] + SLOT_GAP; x < center(c); x += SLOT_GAP) xs.push(x);
+      return xs;
     };
+    const firstFree = (c, xs) => {
+      const used = taken.get(c) ?? /* @__PURE__ */ new Set();
+      taken.set(c, used);
+      const x = xs.find((candidate) => !used.has(candidate)) ?? xs[xs.length - 1];
+      used.add(x);
+      return x;
+    };
+    const claim = (c) => firstFree(c, fromCenter(c));
+    const claimBeside = (c) => firstFree(c, [...fromLeft(c), ...fromCenter(c)]);
     return { center, claim, claimBeside };
   }
   function detourLanes(mainArea) {
