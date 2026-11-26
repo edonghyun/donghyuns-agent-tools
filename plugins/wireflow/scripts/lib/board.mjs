@@ -5,6 +5,9 @@ import { ACTOR_PALETTE } from './constants.mjs';
 import { isException } from './graph.mjs';
 import { runScenario } from './scenario.mjs';
 
+/** A node's kind; a node without one is a screen. */
+export const kindOf = (node) => node.kind || 'screen';
+
 export const resolveView = (flow) =>
   flow.view === 'board' || flow.view === 'flowchart' ? 'board' : 'wireframe';
 

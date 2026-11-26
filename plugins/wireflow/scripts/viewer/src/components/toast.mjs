@@ -33,5 +33,7 @@ function text({ message, detail }, T) {
       return `${T.requests} +1`;
     case 'copied':
       return T.copied;
+    default:
+      return message;
   }
 }

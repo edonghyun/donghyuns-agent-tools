@@ -19,6 +19,14 @@ function usage(code = 2) {
   process.exit(code);
 }
 
+/** Replaces each marker in viewer.html once. A missing marker is a broken template: throw. */
+function fillTemplate(template, fills) {
+  return fills.reduce((html, [marker, value]) => {
+    if (!html.includes(marker)) throw new Error(`viewer.html has no ${marker}`);
+    return html.replace(marker, () => value);
+  }, template);
+}
+
 function load(path) {
   try {
     return JSON.parse(readFileSync(path, 'utf8'));
@@ -95,15 +103,14 @@ if (cmd === 'check') {
       .replace(/</g, '\\u003c')
       .replace(/\u2028/g, '\\u2028')
       .replace(/\u2029/g, '\\u2029');
-  const html = tpl
-    .replace('/*TITLE*/', () =>
-      String(flow.title).replace(/[<&]/g, (c) => (c === '<' ? '&lt;' : '&amp;')),
-    )
-    // The template is Korean, the default locale, so it stays valid HTML for the linter.
-    .replace('<html lang="ko">', () => `<html lang="${flow.locale === 'en' ? 'en' : 'ko'}">`)
-    .replace('/*CSS*/', () => css)
-    .replace('/*DATA*/', () => `const FLOW = ${safe(flow)};\nconst META = ${safe(meta)};`)
-    .replace('/*APP*/', () => app);
+  const html = fillTemplate(tpl, [
+    ['/*TITLE*/', String(flow.title).replace(/[<&]/g, (c) => (c === '<' ? '&lt;' : '&amp;'))],
+    // The template says Korean, the default locale, so it stays valid HTML for the linter.
+    ['<html lang="ko">', `<html lang="${flow.locale === 'en' ? 'en' : 'ko'}">`],
+    ['/*CSS*/', css],
+    ['/*DATA*/', `const FLOW = ${safe(flow)};\nconst META = ${safe(meta)};`],
+    ['/*APP*/', app],
+  ]);
   mkdirSync(dirname(resolve(out)), { recursive: true });
   writeFileSync(out, html);
   const r = check(flow);

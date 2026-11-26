@@ -1,6 +1,10 @@
 // Pan, zoom and framing of the canvas. The canvas transform always shows `state.camera`; drags,
 // the wheel, the fit button and Escape dispatch new cameras. A new view is framed whole, and a
-// newly selected node is brought to the middle.
+// newly selected node is brought to the middle of the stage.
+//
+// Framing waits for the next animation frame. By then every component has rendered the change,
+// the drawer that narrows the stage included, and the camera dispatch is not nested inside the
+// dispatch that triggered it.
 
 import { sceneOf } from '../layout/scene.mjs';
 import { watch } from '../store.mjs';
@@ -21,13 +25,14 @@ export function mount(stage, store) {
     // On another tab the stage is hidden and has no size to fit into.
     if (stage.offsetWidth) setCamera(fitAll(stage, sceneOf(store.getState())));
   };
-  /** The selected node if the scene has it, else the whole scene. */
-  const frame = () => {
-    const state = store.getState();
-    const box = state.selected && sceneOf(state).nodes.get(state.selected);
-    if (box) setCamera(focusOn(stage, box));
-    else fit();
-  };
+  /** On the next frame: the selected node if the scene has it, else the whole scene. */
+  const frame = () =>
+    requestAnimationFrame(() => {
+      const state = store.getState();
+      const box = state.selected && sceneOf(state).nodes.get(state.selected);
+      if (box) setCamera(focusOn(stage, box));
+      else fit();
+    });
   watch(store, (s) => [s.view], frame);
   watch(
     store,
@@ -37,9 +42,9 @@ export function mount(stage, store) {
     },
   );
 
+  /** Back to the overview: leave the walk-through, close the drawer, show the whole scene. */
   const overview = () => {
-    store.dispatch({ type: 'stopPlay' });
-    store.dispatch({ type: 'select', id: null });
+    store.dispatch({ type: 'overview' });
     fit();
   };
   stage.querySelector('#fit').addEventListener('click', overview);

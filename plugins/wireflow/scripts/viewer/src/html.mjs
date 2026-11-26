@@ -30,6 +30,9 @@ export function html(strings, ...values) {
 export const fillVars = (text, vars) =>
   String(text ?? '').replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? '');
 
+/** The truthy names joined into a class attribute value. */
+export const classNames = (...names) => names.filter(Boolean).join(' ');
+
 /** Attribute that makes a click on the element dispatch `action`. */
 export const onClick = (action) => html`data-dispatch="${JSON.stringify(action)}"`;
 

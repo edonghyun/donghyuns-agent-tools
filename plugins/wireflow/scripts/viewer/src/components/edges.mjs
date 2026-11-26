@@ -1,7 +1,7 @@
 // Wireframe edges: one curve per action, from its button (or the node's right side) into the
 // target, entering from the side that faces the source. Only the wireframe view draws these.
 
-import { html } from '../html.mjs';
+import { classNames, html } from '../html.mjs';
 
 const ARROW_DEFS = html`<defs>
   <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5"
@@ -31,7 +31,7 @@ export function render({ flow, nodes, anchors, path }) {
         return;
       }
       const points = curve(start, box, target);
-      const classes = [onPath && 'on', action.proposed && 'prop', dim].filter(Boolean).join(' ');
+      const classes = classNames(onPath && 'on', action.proposed && 'prop', dim);
       curves.push(html`<path class="${classes}" d="${pathData(points)}"
         marker-end="url(#${onPath ? 'arrow-on' : 'arrow'})"/>`);
       if (onPath) steps.push(stepBadge(midpoint(points), path.edgeSteps.get(key)));

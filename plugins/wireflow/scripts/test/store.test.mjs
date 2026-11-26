@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { texts } from '../viewer/src/i18n.mjs';
-import { requestsMarkdown } from '../viewer/src/selectors.mjs';
+import { requestsMarkdown } from '../viewer/src/request-markdown.mjs';
 import { createStore } from '../viewer/src/store.mjs';
 
 const classBooking = JSON.parse(
@@ -138,4 +138,13 @@ test('copied requests read as the markdown wireflow:revise parses', () => {
   assert.equal(heading, '## Wireflow change requests — 도자기 클래스 예약');
   assert.match(source, /^- flow: `class-booking` · File: /);
   assert.equal(applied, '- Applied proposals: —');
+});
+
+test('overview leaves the walk-through and closes the selection', () => {
+  const store = storeFor();
+  store.dispatch({ type: 'select', id: 'detail' });
+  store.dispatch({ type: 'startPlay', from: 'detail' });
+  store.dispatch({ type: 'overview' });
+  const { mode, play, selected } = store.getState();
+  assert.deepEqual({ mode, play, selected }, { mode: 'overview', play: null, selected: null });
 });

@@ -39,13 +39,11 @@ document.addEventListener('click', (e) => {
   store.dispatch(JSON.parse(target.dataset.dispatch));
 });
 
-// Mount order is render order: the drawer opens and the canvas draws before the camera
-// measures them to frame a node.
 tabs.mount($('tabs'), store, T);
 toolbar.mount($('tools'), store, T);
-nodePanel.mount($('panel'), store, T);
 canvas.mount($('canvas'), store, T);
 camera.mount($('stage'), store);
+nodePanel.mount($('panel'), store, T);
 player.mount($('player'), store, T);
 requests.mount($('requests'), store, T);
 reviewPage.mount($('review'), store, T);

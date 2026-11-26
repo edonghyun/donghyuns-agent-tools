@@ -1,10 +1,10 @@
 // A node as the wireframe draws it: a device frame for screens, a card for messages, emails and
 // documents, a box for the rest. The canvas and the walk-through both use it.
 
-import { enabledActions } from '../../../lib/index.mjs';
-import { fillVars, html } from '../html.mjs';
+import { enabledActions, kindOf } from '../../../lib/index.mjs';
+import { classNames, fillVars, html } from '../html.mjs';
 import { KIND_ICONS } from '../i18n.mjs';
-import { kindOf, nodeStyle } from '../layout/wireframe.mjs';
+import { nodeStyle } from '../layout/wireframe.mjs';
 import { findNode } from '../selectors.mjs';
 
 /**
@@ -12,26 +12,28 @@ import { findNode } from '../selectors.mjs';
  * - `live`: in the walk-through, where buttons work and box nodes show theirs.
  * - `pathSteps`: 'node.action' → step numbers of the highlighted scenario.
  * - `classes` and `style` go on the node element as they are.
+ * The bodies below also get `ctx.text(s)`: `s` with its {{var}}s filled from `ctx.vars`.
  */
 export function render(node, ctx, T) {
   const style = nodeStyle(node);
-  const body = { frame: frameBody, card: cardBody, box: boxBody }[style](node, ctx, T);
-  const classes = [
+  const withText = { ...ctx, text: (s) => fillVars(s, ctx.vars) };
+  const body = { frame: frameBody, card: cardBody, box: boxBody }[style](node, withText, T);
+  const classes = classNames(
     'screen',
     `k-${kindOf(node)}`,
     style,
     `tone-${node.tone || 'normal'}`,
     node.origin || 'source',
     ctx.classes,
-  ];
-  return html`<div class="${classes.filter(Boolean).join(' ')}" data-id="${node.id}"
+  );
+  return html`<div class="${classes}" data-id="${node.id}"
     style="${ctx.style || ''}">${body}</div>`;
 }
 
 /** A device artboard: header bar, heading, blocks, buttons, optional tab bar. */
 function frameBody(node, ctx) {
   const ui = node.ui || {};
-  const text = (s) => fillVars(s, ctx.vars);
+  const { text } = ctx;
   const back = node.actions.filter((a) => a.kind === 'back');
   const tabs = node.actions.filter((a) => a.kind === 'tab');
   const main = node.actions.filter((a) => a.kind !== 'back' && a.kind !== 'tab');
@@ -55,7 +57,7 @@ function frameBody(node, ctx) {
 function cardBody(node, ctx, T) {
   const kind = kindOf(node);
   const ui = node.ui || {};
-  const text = (s) => fillVars(s, ctx.vars);
+  const { text } = ctx;
   const channel = text(node.channel || ui.bar || T.kinds[kind]);
   const heading = text(ui.heading || node.title);
 
@@ -82,7 +84,7 @@ const DIAMOND = html`<svg class="shape" viewBox="0 0 100 100" preserveAspectRati
 /** A step, decision, system, wait or end box. Its buttons show only in the walk-through. */
 function boxBody(node, ctx, T) {
   const kind = kindOf(node);
-  const text = (s) => fillVars(s, ctx.vars);
+  const { text } = ctx;
   const showBody = node.body && (kind !== 'decision' || ctx.live);
 
   return html`
@@ -104,22 +106,21 @@ const buttons = (node, actions, primary, ctx) =>
 
 function actionButton(node, a, primary, ctx) {
   const steps = ctx.pathSteps?.get(`${node.id}.${a.id}`);
-  const classes = [
+  const classes = classNames(
     'act',
     a.kind || (a === primary ? 'primary' : 'secondary'),
     !findNode(ctx.flow, a.to) && 'missing',
     a.proposed && 'proposed',
     ctx.live && !enabledActions(node, ctx.vars).includes(a) && 'guard-off',
     steps && 'on-path',
-  ];
-  const label = a.kind === 'back' ? '‹' : fillVars(a.label, ctx.vars);
+  );
+  const label = a.kind === 'back' ? '‹' : ctx.text(a.label);
   const badge = steps && html`<span class="step">${steps.join(',')}</span>`;
-  return html`<button class="${classes.filter(Boolean).join(' ')}" data-action="${a.id}"
+  return html`<button class="${classes}" data-action="${a.id}"
     title="${a.label}">${badge}${label}</button>`;
 }
 
-function block(b, { vars, live }) {
-  const text = (s) => fillVars(s, vars);
+function block(b, { vars, live, text }) {
   const disabled = !live && html`disabled`;
   switch (b.type) {
     case 'notice':

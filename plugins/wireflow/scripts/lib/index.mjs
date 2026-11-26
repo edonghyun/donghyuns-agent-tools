@@ -4,6 +4,7 @@ export {
   actorList,
   eventLocations,
   exceptionSources,
+  kindOf,
   primaryPath,
   resolveView,
   splitLocation,

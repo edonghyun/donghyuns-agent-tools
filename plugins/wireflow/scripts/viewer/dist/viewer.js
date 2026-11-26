@@ -231,6 +231,7 @@
   }
 
   // scripts/lib/board.mjs
+  var kindOf = (node) => node.kind || "screen";
   var resolveView = (flow) => flow.view === "board" || flow.view === "flowchart" ? "board" : "wireframe";
   var actorList = (flow) => (flow.actors || []).map((a, i) => ({
     name: typeof a === "string" ? a : a?.name,
@@ -596,7 +597,7 @@
         ids,
         from: from.id,
         to: to.id,
-        kind: kindOf(from, to, back.has(edgeKey(from.id, to.id))),
+        kind: kindOf2(from, to, back.has(edgeKey(from.id, to.id))),
         primary: ids.some((id) => steps.has(id)),
         dormant: Boolean(from.dormant || to.dormant),
         ...from.kind === "decision" && {
@@ -607,7 +608,7 @@
       };
     });
   }
-  function kindOf(from, to, isBack) {
+  function kindOf2(from, to, isBack) {
     if (isException(from)) {
       return "from-exception";
     }
@@ -699,7 +700,6 @@
     email: [460, 440],
     document: [420, 594]
   };
-  var kindOf2 = (node) => node.kind || "screen";
   function deviceSize(device) {
     if (device && typeof device === "object") return [device.width, device.height];
     return DEVICES[device] || null;
@@ -709,7 +709,7 @@
     return typeof d === "object" ? `${d.width}\xD7${d.height}` : d;
   }
   function nodeStyle(node) {
-    const kind = kindOf2(node);
+    const kind = kindOf(node);
     if (kind === "screen") return "frame";
     if (["message", "email", "document"].includes(kind)) return "card";
     return "box";
@@ -718,7 +718,7 @@
     if (nodeStyle(node) === "frame") {
       return deviceSize(node.device) || deviceSize(flow.device) || DEVICES.mobile;
     }
-    return BOX_SIZES[kindOf2(node)];
+    return BOX_SIZES[kindOf(node)];
   }
   function layoutWireframe(flow) {
     const nodes = /* @__PURE__ */ new Map();
@@ -1155,20 +1155,6 @@
     if (failedAction) steps.set(`${run.screen}.${failedAction}`, [run.failedStep + 1]);
     return { steps, edgeSteps, nodes: new Set(run.trail.map((t) => t.screen)) };
   }
-  function requestsMarkdown({ authored, meta, applied, requests }, T2) {
-    const appliedIds = applied.length ? applied.map((id) => `\`${id}\``).join(", ") : "\u2014";
-    const lines = requests.map((q, i) => {
-      const target = `${q.number} \`${q.screen}\`${q.action ? ` \u203A action \`${q.action}\`` : ""}`;
-      return `${i + 1}. [${target}] ${q.text}`;
-    });
-    return [
-      `${T2.requestHeading} \u2014 ${authored.title}`,
-      `- flow: \`${authored.id}\` \xB7 ${T2.file}: \`${meta.source}\` \xB7 viewer: \`${meta.output}\``,
-      `- ${T2.applied}: ${appliedIds}`,
-      "",
-      ...lines
-    ].join("\n");
-  }
 
   // scripts/viewer/src/store.mjs
   function createStore(FLOW2, META2, storage = browserStorage()) {
@@ -1235,6 +1221,7 @@
     startPlay: (s, { from }) => ({ ...s, mode: "play", play: freshPlay(s, from) }),
     press,
     stopPlay: (s) => ({ ...s, ...OVERVIEW }),
+    overview: (s) => ({ ...s, ...OVERVIEW, selected: null }),
     addRequest: (s, { screen, action, text: text2 }) => {
       const number = displayNumber(s.flow, findNode(s.flow, screen));
       const request = { screen, number, action: action || null, text: text2, at: (/* @__PURE__ */ new Date()).toISOString() };
@@ -1253,7 +1240,7 @@
     };
   }
   function withNotice(s, message, detail) {
-    return { ...s, notice: { message, detail, seq: (s.notice?.seq ?? 0) + 1 } };
+    return { ...s, notice: { message, detail } };
   }
   function freshPlay(s, from) {
     const scenario = findScenario(s.flow, s.scenario);
@@ -1310,12 +1297,12 @@
     const fit = () => {
       if (stage.offsetWidth) setCamera(fitAll(stage, sceneOf(store2.getState())));
     };
-    const frame = () => {
+    const frame = () => requestAnimationFrame(() => {
       const state = store2.getState();
       const box = state.selected && sceneOf(state).nodes.get(state.selected);
       if (box) setCamera(focusOn(stage, box));
       else fit();
-    };
+    });
     watch(store2, (s) => [s.view], frame);
     watch(
       store2,
@@ -1325,8 +1312,7 @@
       }
     );
     const overview = () => {
-      store2.dispatch({ type: "stopPlay" });
-      store2.dispatch({ type: "select", id: null });
+      store2.dispatch({ type: "overview" });
       fit();
     };
     stage.querySelector("#fit").addEventListener("click", overview);
@@ -1413,6 +1399,7 @@
     );
   }
   var fillVars = (text2, vars) => String(text2 ?? "").replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
+  var classNames = (...names) => names.filter(Boolean).join(" ");
   var onClick = (action) => html`data-dispatch="${JSON.stringify(action)}"`;
   var boxStyle = ({ x, y, w, h }) => `left:${x}px;top:${y}px;width:${w}px;height:${h}px`;
 
@@ -1452,7 +1439,7 @@
           return;
         }
         const points = curve(start, box, target);
-        const classes = [onPath && "on", action.proposed && "prop", dim].filter(Boolean).join(" ");
+        const classes = classNames(onPath && "on", action.proposed && "prop", dim);
         curves.push(html`<path class="${classes}" d="${pathData(points)}"
         marker-end="url(#${onPath ? "arrow-on" : "arrow"})"/>`);
         if (onPath) steps.push(stepBadge(midpoint(points), path.edgeSteps.get(key)));
@@ -1642,21 +1629,22 @@
   // scripts/viewer/src/components/frame-node.mjs
   function render3(node, ctx, T2) {
     const style = nodeStyle(node);
-    const body = { frame: frameBody, card: cardBody, box: boxBody }[style](node, ctx, T2);
-    const classes = [
+    const withText = { ...ctx, text: (s) => fillVars(s, ctx.vars) };
+    const body = { frame: frameBody, card: cardBody, box: boxBody }[style](node, withText, T2);
+    const classes = classNames(
       "screen",
-      `k-${kindOf2(node)}`,
+      `k-${kindOf(node)}`,
       style,
       `tone-${node.tone || "normal"}`,
       node.origin || "source",
       ctx.classes
-    ];
-    return html`<div class="${classes.filter(Boolean).join(" ")}" data-id="${node.id}"
+    );
+    return html`<div class="${classes}" data-id="${node.id}"
     style="${ctx.style || ""}">${body}</div>`;
   }
   function frameBody(node, ctx) {
     const ui = node.ui || {};
-    const text2 = (s) => fillVars(s, ctx.vars);
+    const { text: text2 } = ctx;
     const back = node.actions.filter((a) => a.kind === "back");
     const tabs = node.actions.filter((a) => a.kind === "tab");
     const main = node.actions.filter((a) => a.kind !== "back" && a.kind !== "tab");
@@ -1675,9 +1663,9 @@
     ${tabs.length > 0 && html`<div class="m-tabs">${buttons(node, tabs, primary, ctx)}</div>`}`;
   }
   function cardBody(node, ctx, T2) {
-    const kind = kindOf2(node);
+    const kind = kindOf(node);
     const ui = node.ui || {};
-    const text2 = (s) => fillVars(s, ctx.vars);
+    const { text: text2 } = ctx;
     const channel = text2(node.channel || ui.bar || T2.kinds[kind]);
     const heading = text2(ui.heading || node.title);
     const header = {
@@ -1695,8 +1683,8 @@
   var DIAMOND = html`<svg class="shape" viewBox="0 0 100 100" preserveAspectRatio="none">
   <polygon points="50,2 98,50 50,98 2,50"/></svg>`;
   function boxBody(node, ctx, T2) {
-    const kind = kindOf2(node);
-    const text2 = (s) => fillVars(s, ctx.vars);
+    const kind = kindOf(node);
+    const { text: text2 } = ctx;
     const showBody = node.body && (kind !== "decision" || ctx.live);
     return html`
     ${kind === "decision" && DIAMOND}
@@ -1710,21 +1698,20 @@
   var buttons = (node, actions, primary, ctx) => actions.map((a) => actionButton(node, a, primary, ctx));
   function actionButton(node, a, primary, ctx) {
     const steps = ctx.pathSteps?.get(`${node.id}.${a.id}`);
-    const classes = [
+    const classes = classNames(
       "act",
       a.kind || (a === primary ? "primary" : "secondary"),
       !findNode(ctx.flow, a.to) && "missing",
       a.proposed && "proposed",
       ctx.live && !enabledActions(node, ctx.vars).includes(a) && "guard-off",
       steps && "on-path"
-    ];
-    const label = a.kind === "back" ? "\u2039" : fillVars(a.label, ctx.vars);
+    );
+    const label = a.kind === "back" ? "\u2039" : ctx.text(a.label);
     const badge = steps && html`<span class="step">${steps.join(",")}</span>`;
-    return html`<button class="${classes.filter(Boolean).join(" ")}" data-action="${a.id}"
+    return html`<button class="${classes}" data-action="${a.id}"
     title="${a.label}">${badge}${label}</button>`;
   }
-  function block(b, { vars, live }) {
-    const text2 = (s) => fillVars(s, vars);
+  function block(b, { vars, live, text: text2 }) {
     const disabled = !live && html`disabled`;
     switch (b.type) {
       case "notice":
@@ -1757,48 +1744,24 @@
     <span>${b.label}${b.required && " *"}</span>${control}</label>`;
   }
 
-  // scripts/viewer/src/components/canvas.mjs
-  function mount2(canvas, store2, T2) {
-    const drawn = (s) => [s.tab, s.view, s.flow, s.result, s.scenario, s.selected];
-    watch(store2, drawn, (state) => {
-      if (state.tab !== "canvas") return;
-      const scene = sceneOf(state);
-      canvas.style.width = `${scene.size.w}px`;
-      canvas.style.height = `${scene.size.h}px`;
-      if (state.view === "board") {
-        canvas.innerHTML = String(render(scene, state));
-      } else {
-        drawWireframe(canvas, scene, state, T2);
-      }
-    });
-    canvas.addEventListener("click", (e) => {
-      const nodeEl = e.target.closest("[data-id]");
-      if (!nodeEl) return;
-      const { flow, selected } = store2.getState();
-      const id = nodeEl.dataset.id;
-      const button = e.target.closest("[data-action]");
-      const to = button && selected === id && findNode(flow, id).actions.find((a) => a.id === button.dataset.action)?.to;
-      store2.dispatch({ type: "select", id: findNode(flow, to) ? to : id });
-    });
-  }
-  function drawWireframe(canvas, scene, { flow, result, scenario, selected }, T2) {
+  // scripts/viewer/src/components/wireframe-view.mjs
+  function draw(canvas, scene, { flow, result, scenario, selected }, T2) {
     const path = scenarioPath(flow, scenario);
     const critical = new Set(
       result.findings.filter((f) => f.severity === "critical").map((f) => f.screen)
     );
     const nodes = flow.screens.map((node) => {
       const box = scene.nodes.get(node.id);
-      const classes = [
-        selected === node.id && "sel",
-        path && !path.nodes.has(node.id) && selected !== node.id && "dim",
-        critical.has(node.id) && "has-bad"
-      ];
       const ctx = {
         flow,
         vars: previewVars(flow, node),
         live: false,
         pathSteps: path?.steps,
-        classes: classes.filter(Boolean).join(" "),
+        classes: classNames(
+          selected === node.id && "sel",
+          path && !path.nodes.has(node.id) && selected !== node.id && "dim",
+          critical.has(node.id) && "has-bad"
+        ),
         style: boxStyle(box)
       };
       return html`${nodeTag(node, box, flow, T2)}${render3(node, ctx, T2)}`;
@@ -1838,6 +1801,31 @@
     return anchors;
   }
 
+  // scripts/viewer/src/components/canvas.mjs
+  function mount2(canvas, store2, T2) {
+    const drawn = (s) => [s.tab, s.view, s.flow, s.result, s.scenario, s.selected];
+    watch(store2, drawn, (state) => {
+      if (state.tab !== "canvas") return;
+      const scene = sceneOf(state);
+      canvas.style.width = `${scene.size.w}px`;
+      canvas.style.height = `${scene.size.h}px`;
+      if (state.view === "board") {
+        canvas.innerHTML = String(render(scene, state));
+      } else {
+        draw(canvas, scene, state, T2);
+      }
+    });
+    canvas.addEventListener("click", (e) => {
+      const nodeEl = e.target.closest("[data-id]");
+      if (!nodeEl) return;
+      const { flow, selected } = store2.getState();
+      const id = nodeEl.dataset.id;
+      const button = e.target.closest("[data-action]");
+      const to = button && selected === id && findNode(flow, id).actions.find((a) => a.id === button.dataset.action)?.to;
+      store2.dispatch({ type: "select", id: findNode(flow, to) ? to : id });
+    });
+  }
+
   // scripts/viewer/src/components/finding-list.mjs
   function render4(findings, flow, T2) {
     return findings.map((f) => {
@@ -1870,27 +1858,36 @@
   }
 
   // scripts/viewer/src/components/node-panel.mjs
+  var NO_DRAFT = { target: "", text: "" };
+  var readDraft = (el) => ({
+    target: el.querySelector("[name=request-target]").value,
+    text: el.querySelector("[name=request-text]").value
+  });
   function mount3(el, store2, T2) {
+    let shown = null;
     watch(
       store2,
-      (s) => [s.selected, s.tab, s.mode, s.flow, s.result, s.requests],
+      (s) => [s.selected, s.tab, s.mode, s.flow, s.result],
       (state) => {
         const open = state.tab === "canvas" && state.mode === "overview";
         const node = open && state.selected && findNode(state.flow, state.selected);
-        el.innerHTML = node ? String(render6(node, state, T2)) : "";
+        const draft = node && node.id === shown ? readDraft(el) : NO_DRAFT;
+        el.innerHTML = node ? String(render6(node, state, draft, T2)) : "";
+        shown = node ? node.id : null;
       }
     );
     el.addEventListener("click", (e) => {
       if (!e.target.closest("[name=add-request]")) return;
-      const text2 = el.querySelector("[name=request-text]").value.trim();
-      const action = el.querySelector("[name=request-target]").value;
+      const { target, text: text2 } = readDraft(el);
+      if (!text2.trim()) return;
       const screen = store2.getState().selected;
-      if (text2) store2.dispatch({ type: "addRequest", screen, action, text: text2 });
+      store2.dispatch({ type: "addRequest", screen, action: target, text: text2.trim() });
+      el.querySelector("[name=request-text]").value = "";
     });
   }
-  function render6(node, state, T2) {
+  function render6(node, state, draft, T2) {
     const { flow, result } = state;
-    const kind = kindOf2(node);
+    const kind = kindOf(node);
     const origin = node.origin || "source";
     const findings = result.findings.filter((f) => f.screen === node.id);
     const bullets = (items) => html`<ul>${items.map((x) => html`<li>${x}</li>`)}</ul>`;
@@ -1926,9 +1923,12 @@
     <div class="req-form">
       <select name="request-target">
         <option value="">${T2.whole}</option>
-        ${node.actions.map((a) => html`<option value="${a.id}">${a.label} (${a.id})</option>`)}
+        ${node.actions.map(
+      (a) => html`<option value="${a.id}" ${a.id === draft.target && html`selected`}>
+            ${a.label} (${a.id})</option>`
+    )}
       </select>
-      <textarea name="request-text" placeholder="${T2.placeholder}"></textarea>
+      <textarea name="request-text" placeholder="${T2.placeholder}">${draft.text}</textarea>
       <div class="row"><button name="add-request">${T2.add}</button></div>
     </div>`;
   }
@@ -1987,6 +1987,22 @@
       if (value !== initial) fields[field.dataset.field] = value;
     }
     return fields;
+  }
+
+  // scripts/viewer/src/request-markdown.mjs
+  function requestsMarkdown({ authored, meta, applied, requests }, T2) {
+    const appliedIds = applied.length ? applied.map((id) => `\`${id}\``).join(", ") : "\u2014";
+    const lines = requests.map((q, i) => {
+      const target = `${q.number} \`${q.screen}\`${q.action ? ` \u203A action \`${q.action}\`` : ""}`;
+      return `${i + 1}. [${target}] ${q.text}`;
+    });
+    return [
+      `${T2.requestHeading} \u2014 ${authored.title}`,
+      `- flow: \`${authored.id}\` \xB7 ${T2.file}: \`${meta.source}\` \xB7 viewer: \`${meta.output}\``,
+      `- ${T2.applied}: ${appliedIds}`,
+      "",
+      ...lines
+    ].join("\n");
   }
 
   // scripts/viewer/src/components/requests.mjs
@@ -2141,6 +2157,8 @@
         return `${T2.requests} +1`;
       case "copied":
         return T2.copied;
+      default:
+        return message;
     }
   }
 
@@ -2193,9 +2211,9 @@
   });
   mount7($("tabs"), store, T);
   mount9($("tools"), store, T);
-  mount3($("panel"), store, T);
   mount2($("canvas"), store, T);
   mount($("stage"), store);
+  mount3($("panel"), store, T);
   mount4($("player"), store, T);
   mount5($("requests"), store, T);
   mount6($("review"), store, T);

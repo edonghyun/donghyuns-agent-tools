@@ -8,7 +8,8 @@
 // - `tab`: 'canvas' | 'log' | 'review'. `mode`: 'overview' | 'play'.
 // - `scenario`: highlighted scenario id or ''. `selected`: node id or null.
 // - `camera`: `{x, y, k}`. `play`: `{node, vars, trail}` while walking through, else null.
-// - `requests`: change requests. `notice`: the latest `{message, detail, seq}` for the toast.
+// - `requests`: change requests. `notice`: the latest `{message, detail}` for the toast; each
+//   notice is a new object, so the same message twice still shows twice.
 
 import {
   applyAction,
@@ -88,6 +89,7 @@ const REDUCERS = {
   startPlay: (s, { from }) => ({ ...s, mode: 'play', play: freshPlay(s, from) }),
   press,
   stopPlay: (s) => ({ ...s, ...OVERVIEW }),
+  overview: (s) => ({ ...s, ...OVERVIEW, selected: null }),
   addRequest: (s, { screen, action, text }) => {
     const number = displayNumber(s.flow, findNode(s.flow, screen));
     const request = { screen, number, action: action || null, text, at: new Date().toISOString() };
@@ -109,7 +111,7 @@ function withProposals(authored, applied) {
 }
 
 function withNotice(s, message, detail) {
-  return { ...s, notice: { message, detail, seq: (s.notice?.seq ?? 0) + 1 } };
+  return { ...s, notice: { message, detail } };
 }
 
 /** A walk-through at `from` with its preview values, else at the scenario's start or the flow's. */

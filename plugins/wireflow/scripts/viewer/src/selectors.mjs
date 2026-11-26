@@ -1,5 +1,5 @@
-// Values components read off the state: node lookup, display numbers, the highlighted scenario,
-// and the change requests as markdown. Pure.
+// Values components read off the state: node lookup, display numbers, and the highlighted
+// scenario. Pure.
 
 import { runScenario } from '../../lib/index.mjs';
 
@@ -35,20 +35,4 @@ export function scenarioPath(flow, scenarioId) {
   const failedAction = !run.ok && scenario.steps[run.failedStep]?.action;
   if (failedAction) steps.set(`${run.screen}.${failedAction}`, [run.failedStep + 1]);
   return { steps, edgeSteps, nodes: new Set(run.trail.map((t) => t.screen)) };
-}
-
-/** The change requests as the markdown `wireflow:revise` reads. Keep this format stable. */
-export function requestsMarkdown({ authored, meta, applied, requests }, T) {
-  const appliedIds = applied.length ? applied.map((id) => `\`${id}\``).join(', ') : '—';
-  const lines = requests.map((q, i) => {
-    const target = `${q.number} \`${q.screen}\`${q.action ? ` › action \`${q.action}\`` : ''}`;
-    return `${i + 1}. [${target}] ${q.text}`;
-  });
-  return [
-    `${T.requestHeading} — ${authored.title}`,
-    `- flow: \`${authored.id}\` · ${T.file}: \`${meta.source}\` · viewer: \`${meta.output}\``,
-    `- ${T.applied}: ${appliedIds}`,
-    '',
-    ...lines,
-  ].join('\n');
 }

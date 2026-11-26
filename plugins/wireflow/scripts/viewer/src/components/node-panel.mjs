@@ -1,34 +1,48 @@
 // The drawer for the selected node: planning notes, links, findings, proposals, and a form to
 // add a change request. It is empty, and so hidden, unless a node is selected on the canvas.
 
+import { kindOf } from '../../../lib/index.mjs';
 import { html, onClick } from '../html.mjs';
 import { KIND_ICONS } from '../i18n.mjs';
-import { deviceLabel, kindOf } from '../layout/wireframe.mjs';
+import { deviceLabel } from '../layout/wireframe.mjs';
 import { displayNumber, findNode } from '../selectors.mjs';
 import { watch } from '../store.mjs';
 import * as findingList from './finding-list.mjs';
 import * as proposalList from './proposal-list.mjs';
 
+// What the visitor has typed into the request form. The store does not hold it, so a re-render
+// of the same node carries it over.
+const NO_DRAFT = { target: '', text: '' };
+const readDraft = (el) => ({
+  target: el.querySelector('[name=request-target]').value,
+  text: el.querySelector('[name=request-text]').value,
+});
+
 export function mount(el, store, T) {
+  let shown = null;
   watch(
     store,
-    (s) => [s.selected, s.tab, s.mode, s.flow, s.result, s.requests],
+    (s) => [s.selected, s.tab, s.mode, s.flow, s.result],
     (state) => {
       const open = state.tab === 'canvas' && state.mode === 'overview';
       const node = open && state.selected && findNode(state.flow, state.selected);
-      el.innerHTML = node ? String(render(node, state, T)) : '';
+      const draft = node && node.id === shown ? readDraft(el) : NO_DRAFT;
+      el.innerHTML = node ? String(render(node, state, draft, T)) : '';
+      shown = node ? node.id : null;
     },
   );
   el.addEventListener('click', (e) => {
     if (!e.target.closest('[name=add-request]')) return;
-    const text = el.querySelector('[name=request-text]').value.trim();
-    const action = el.querySelector('[name=request-target]').value;
+    const { target, text } = readDraft(el);
+    if (!text.trim()) return;
     const screen = store.getState().selected;
-    if (text) store.dispatch({ type: 'addRequest', screen, action, text });
+    store.dispatch({ type: 'addRequest', screen, action: target, text: text.trim() });
+    // The request is in the store now; the form starts the next one empty.
+    el.querySelector('[name=request-text]').value = '';
   });
 }
 
-function render(node, state, T) {
+function render(node, state, draft, T) {
   const { flow, result } = state;
   const kind = kindOf(node);
   const origin = node.origin || 'source';
@@ -69,9 +83,12 @@ function render(node, state, T) {
     <div class="req-form">
       <select name="request-target">
         <option value="">${T.whole}</option>
-        ${node.actions.map((a) => html`<option value="${a.id}">${a.label} (${a.id})</option>`)}
+        ${node.actions.map(
+          (a) => html`<option value="${a.id}" ${a.id === draft.target && html`selected`}>
+            ${a.label} (${a.id})</option>`,
+        )}
       </select>
-      <textarea name="request-text" placeholder="${T.placeholder}"></textarea>
+      <textarea name="request-text" placeholder="${T.placeholder}">${draft.text}</textarea>
       <div class="row"><button name="add-request">${T.add}</button></div>
     </div>`;
 }

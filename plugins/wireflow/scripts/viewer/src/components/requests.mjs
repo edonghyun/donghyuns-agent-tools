@@ -2,7 +2,7 @@
 // them as the markdown `wireflow:revise` reads.
 
 import { html, onClick } from '../html.mjs';
-import { requestsMarkdown } from '../selectors.mjs';
+import { requestsMarkdown } from '../request-markdown.mjs';
 import { watch } from '../store.mjs';
 
 export function mount(el, store, T) {

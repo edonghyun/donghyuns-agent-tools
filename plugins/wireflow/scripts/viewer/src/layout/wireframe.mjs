@@ -1,5 +1,6 @@
 // Wireframe layout: one row per stage, each node at the size it is drawn, left to right. Pure.
 
+import { kindOf } from '../../../lib/board.mjs';
 import { DEVICES } from '../../../lib/constants.mjs';
 
 const PAD = 70;
@@ -16,8 +17,6 @@ const BOX_SIZES = {
   email: [460, 440],
   document: [420, 594],
 };
-
-export const kindOf = (node) => node.kind || 'screen';
 
 function deviceSize(device) {
   if (device && typeof device === 'object') return [device.width, device.height];
