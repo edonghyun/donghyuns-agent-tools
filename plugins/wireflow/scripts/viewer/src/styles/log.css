@@ -1,0 +1,81 @@
+/* The log page: common properties, then a table of events per stage. */
+#page > #log {
+  max-width: 1080px;
+}
+#log h2 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+#log h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 26px 0 8px;
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+#log .ph {
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: var(--path);
+  color: #fff;
+  font: 700 11px var(--mono);
+}
+.lt {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #e4e7ed;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--card);
+  font-size: 13px;
+}
+.lt th,
+.lt td {
+  padding: 9px 12px;
+  text-align: left;
+  vertical-align: top;
+  border-top: 1px solid #edeff3;
+}
+.lt thead th {
+  border-top: none;
+  background: #fafbfc;
+  font: 700 11px var(--mono);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+#log .lt code {
+  background: none;
+  padding: 0;
+  font: 12px var(--mono);
+  color: var(--path);
+}
+.lt a {
+  color: inherit;
+}
+/* Fixed columns, so every stage's table lines up with the others. */
+.lt.events,
+.lt.props {
+  table-layout: fixed;
+}
+.lt.props th:first-child {
+  width: 30%;
+}
+.lt.events th:nth-child(1) {
+  width: 22%;
+}
+.lt.events th:nth-child(2) {
+  width: 9%;
+}
+.lt.events th:nth-child(3) {
+  width: 37%;
+}
+.lt.events th:nth-child(4) {
+  width: 16%;
+}

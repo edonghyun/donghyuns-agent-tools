@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const STYLES = ['base', 'toolbar', 'canvas', 'frame', 'panel', 'player'];
+const STYLES = ['base', 'toolbar', 'canvas', 'board', 'frame', 'panel', 'log', 'player'];
 
 await build({
   absWorkingDir: root,

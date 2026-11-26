@@ -1,5 +1,5 @@
 // Board reading of a flow: the view alias, actor colors, the primary path, event locations,
-// and which nodes lead into each exception node.
+// which nodes lead into each exception node, and the exception codes each node leads into.
 
 import { ACTOR_PALETTE } from './constants.mjs';
 import { isException } from './graph.mjs';
@@ -56,4 +56,16 @@ export function exceptionSources(flow) {
     }
   }
   return sources;
+}
+
+/** Each node id → the codes of the exception nodes it leads into, in `screens` order. */
+export function exceptionCodes(flow) {
+  const codes = new Map();
+  for (const [id, sources] of exceptionSources(flow)) {
+    const { exception } = flow.screens.find((s) => s.id === id);
+    for (const from of sources) {
+      codes.set(from, [...(codes.get(from) ?? []), exception]);
+    }
+  }
+  return codes;
 }

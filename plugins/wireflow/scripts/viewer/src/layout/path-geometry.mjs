@@ -31,13 +31,16 @@ export function simplify(points) {
   });
 }
 
-/** The middle of the path's longest horizontal segment, the later one on a tie, or else of its first segment. */
-export function labelAnchor(points) {
+/**
+ * Where a label goes on the path: `at` the middle of its longest horizontal segment (the later one
+ * on a tie, or else of its first segment), with `room` the width of that horizontal run.
+ */
+export function labelSpot(points) {
   const segments = segmentsOf(points);
   const runs = segments.filter(([a, b]) => a[1] === b[1]);
   const length = ([a, b]) => Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]);
   const [[x1, y1], [x2, y2]] = (runs.length ? runs : segments).reduce((best, s) =>
     length(s) >= length(best) ? s : best,
   );
-  return [(x1 + x2) / 2, (y1 + y2) / 2];
+  return { at: [(x1 + x2) / 2, (y1 + y2) / 2], room: y1 === y2 ? Math.abs(x2 - x1) : 0 };
 }

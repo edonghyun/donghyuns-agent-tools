@@ -3,6 +3,7 @@
 export {
   actorList,
   eventLocations,
+  exceptionCodes,
   exceptionSources,
   kindOf,
   primaryPath,
@@ -11,7 +12,7 @@ export {
 } from './board.mjs';
 export { check, exitCode } from './check.mjs';
 export { ACTOR_PALETTE, DEVICES, EVENT_TYPES, KINDS, VIEWS } from './constants.mjs';
-export { backEdges, edgeKey, isBackEdge, rankNodes } from './graph.mjs';
+export { backEdges, edgeKey, isBackEdge, isException, rankNodes } from './graph.mjs';
 export { applyProposals } from './proposals.mjs';
 export { applyAction, enabledActions, runScenario } from './scenario.mjs';
 export { validate } from './validate.mjs';

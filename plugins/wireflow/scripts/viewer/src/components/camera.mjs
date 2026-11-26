@@ -1,6 +1,7 @@
 // Pan, zoom and framing of the canvas. The canvas transform always shows `state.camera`; drags,
 // the wheel, the fit button and Escape dispatch new cameras. A new view is framed whole, and a
-// newly selected node is brought to the middle of the stage.
+// newly selected node is brought to the middle of the stage, and a board stage jump shows that
+// stage's columns from the top.
 //
 // Framing waits for the next animation frame. By then every component has rendered the change,
 // the drawer that narrows the stage included, and the camera dispatch is not nested inside the
@@ -34,6 +35,17 @@ export function mount(stage, store) {
       else fit();
     });
   watch(store, (s) => [s.view], frame);
+  watch(
+    store,
+    (s) => [s.focus],
+    ({ focus }) => {
+      if (!focus) return;
+      requestAnimationFrame(() => {
+        const { layout } = sceneOf(store.getState());
+        setCamera(focusStage(stage, layout.stageHeaders[focus.stage], layout.mainArea));
+      });
+    },
+  );
   watch(
     store,
     (s) => [s.selected],
@@ -103,6 +115,17 @@ function focusOn(stage, box) {
     x: width / 2 - (box.x + box.w / 2) * k,
     y: height / 2 - (box.y + box.h / 2) * k,
   };
+}
+
+/**
+ * A board stage across the middle, its header near the top, as large as its columns and the main
+ * area under them fit, never above 100%.
+ */
+function focusStage(stage, header, mainArea) {
+  const { width, height } = stage.getBoundingClientRect();
+  const h = mainArea.bottom - header.y;
+  const k = Math.min((width * 0.9) / header.w, (height * 0.9) / h, 1);
+  return { k, x: width / 2 - (header.x + header.w / 2) * k, y: 24 - header.y * k };
 }
 
 /** Zoom by the wheel delta, keeping the point under the pointer still. */

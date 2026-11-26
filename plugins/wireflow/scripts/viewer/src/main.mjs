@@ -3,6 +3,8 @@
 
 import * as camera from './components/camera.mjs';
 import * as canvas from './components/canvas.mjs';
+import * as legend from './components/legend.mjs';
+import * as logPage from './components/log-page.mjs';
 import * as nodePanel from './components/node-panel.mjs';
 import * as player from './components/player.mjs';
 import * as requests from './components/requests.mjs';
@@ -21,12 +23,12 @@ for (const el of document.querySelectorAll('[data-t]')) el.textContent = T[el.da
 $('flow-title').textContent = FLOW.title;
 $('flow-goal').textContent = FLOW.goal || '';
 
-// The body carries the tab and the mode; the styles show the parts that belong to them.
+// The body carries the tab, the view and the mode; the styles show the parts that belong to them.
 watch(
   store,
-  (s) => [s.tab, s.mode],
-  ({ tab, mode }) => {
-    Object.assign(document.body.dataset, { tab, mode });
+  (s) => [s.tab, s.view, s.mode],
+  ({ tab, view, mode }) => {
+    Object.assign(document.body.dataset, { tab, view, mode });
   },
 );
 
@@ -41,10 +43,12 @@ document.addEventListener('click', (e) => {
 
 tabs.mount($('tabs'), store, T);
 toolbar.mount($('tools'), store, T);
+legend.mount($('legend'), store, T);
 canvas.mount($('canvas'), store, T);
 camera.mount($('stage'), store);
 nodePanel.mount($('panel'), store, T);
 player.mount($('player'), store, T);
 requests.mount($('requests'), store, T);
+logPage.mount($('log'), store, T);
 reviewPage.mount($('review'), store, T);
 toast.mount($('toast'), store, T);

@@ -53,13 +53,22 @@ function assertNoOverlap(board) {
 }
 
 test('card height grows with title lines, body lines and chip rows, each capped', () => {
-  assert.equal(estimateCardHeight({ title: '가'.repeat(13) }), 64 + 18);
-  assert.equal(estimateCardHeight({ title: '가'.repeat(14) }), 64 + 18 * 2);
-  assert.equal(estimateCardHeight({ title: '가'.repeat(60), body: '나'.repeat(60) }), 64 + 36 + 32);
-  assert.equal(estimateCardHeight({ title: '가', body: '나'.repeat(13) }), 64 + 18 + 16);
-  const chips = { title: '가', state: 'PAID', metrics: ['a', 'b'], notify: ['c'] };
-  assert.equal(estimateCardHeight(chips), 64 + 18 + 22 * 2);
-  assert.equal(estimateCardHeight(chips, 1), 64 + 18 + 22 * 3);
+  const height = (node, codes) => estimateCardHeight({ title: '가', ...node }, codes);
+  const base = height({});
+  const twoLineTitle = height({ title: '가'.repeat(12) });
+  assert.ok(twoLineTitle > base);
+  assert.equal(height({ title: '가'.repeat(60) }), twoLineTitle, 'titles clamp at two lines');
+
+  const oneLineBody = height({ body: '나' });
+  const twoLineBody = height({ body: '나'.repeat(20) });
+  assert.ok(base < oneLineBody && oneLineBody < twoLineBody);
+  assert.equal(height({ body: '나'.repeat(90) }), twoLineBody, 'bodies clamp at two lines');
+
+  const oneRow = height({ metrics: ['a', 'b', 'c'] });
+  assert.ok(oneRow > base);
+  assert.equal(height({ metrics: ['a', 'b', 'c', 'd'] }), oneRow, 'short chips share a row');
+  assert.ok(height({ metrics: ['a', '가'.repeat(13)] }) > oneRow, 'a wide chip wraps');
+  assert.equal(height({ metrics: ['a'] }, ['E01']), height({ metrics: ['a', 'E01'] }));
 });
 
 test('primary nodes sit centered on the spine', () => {

@@ -87,27 +87,3 @@
   text-anchor: middle;
   dominant-baseline: central;
 }
-
-/* Board stand-in until the journey board's cards land. */
-.sketch-stage {
-  position: absolute;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--muted);
-}
-.sketch-card {
-  position: absolute;
-  background: var(--card);
-  border: 2px solid var(--ink);
-  border-radius: 10px;
-  padding: 10px 12px;
-  cursor: pointer;
-  overflow: hidden;
-}
-.sketch-card b {
-  color: var(--muted);
-}
-.sketch-card.sel {
-  outline: 5px solid var(--path);
-  outline-offset: 4px;
-}

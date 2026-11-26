@@ -1,12 +1,14 @@
-// The drawer for the selected node: planning notes, links, findings, proposals, and a form to
-// add a change request. It is empty, and so hidden, unless a node is selected on the canvas.
+// The drawer for the selected node: planning notes, chips, the events it fires, findings, links,
+// proposals, and a form to add a change request. It is empty, and so hidden, unless a node is
+// selected on the canvas.
 
-import { kindOf } from '../../../lib/index.mjs';
+import { eventLocations, exceptionCodes, kindOf, splitLocation } from '../../../lib/index.mjs';
 import { html, onClick } from '../html.mjs';
 import { KIND_ICONS } from '../i18n.mjs';
 import { deviceLabel } from '../layout/wireframe.mjs';
 import { displayNumber, findNode } from '../selectors.mjs';
 import { watch } from '../store.mjs';
+import { renderChips } from './chips.mjs';
 import * as findingList from './finding-list.mjs';
 import * as proposalList from './proposal-list.mjs';
 
@@ -75,6 +77,8 @@ function render(node, state, draft, T) {
     ${node.brief && html`<h3>${T.brief}</h3><div>${node.brief}</div>`}
     ${node.notes?.length > 0 && html`<h3>${T.notes}</h3>${bullets(node.notes)}`}
     ${node.decisions?.length > 0 && html`<h3>${T.decisions}</h3>${bullets(node.decisions)}`}
+    ${chipSection(node, flow, T)}
+    ${eventSection(node, flow, T)}
     ${findings.length > 0 && html`<h3>${T.findings}</h3>${findingList.render(findings, flow, T)}`}
     <h3>${T.actions}</h3>
     <ul>${actions.length ? actions : html`<li class="sub">—</li>`}</ul>
@@ -91,4 +95,29 @@ function render(node, state, draft, T) {
       <textarea name="request-text" placeholder="${T.placeholder}">${draft.text}</textarea>
       <div class="row"><button name="add-request">${T.add}</button></div>
     </div>`;
+}
+
+function chipSection(node, flow, T) {
+  const chips = renderChips(node, exceptionCodes(flow).get(node.id), T);
+  return chips && html`<h3>${T.chips}</h3>${chips}`;
+}
+
+/** The events with a location on this node or one of its buttons, each with its button labels. */
+function eventSection(node, flow, T) {
+  const here = (flow.events || [])
+    .map((event) => ({
+      event,
+      spots: eventLocations(event)
+        .map(splitLocation)
+        .filter(([id]) => id === node.id),
+    }))
+    .filter(({ spots }) => spots.length);
+  if (!here.length) return '';
+  const label = ([, actionId]) =>
+    actionId && (node.actions.find((a) => a.id === actionId)?.label || actionId);
+  const row = ({ event, spots }) => html`<li>
+    <code>${event.id}</code>
+    <span class="ty ${event.type}">${T.eventTypes[event.type] || event.type}</span>
+    ${spots.map(label).filter(Boolean).join(', ')}</li>`;
+  return html`<h3>${T.nodeEvents}</h3><ul>${here.map(row)}</ul>`;
 }

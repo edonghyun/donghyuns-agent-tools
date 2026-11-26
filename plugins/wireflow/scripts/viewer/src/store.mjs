@@ -8,6 +8,7 @@
 // - `tab`: 'canvas' | 'log' | 'review'. `mode`: 'overview' | 'play'.
 // - `scenario`: highlighted scenario id or ''. `selected`: node id or null.
 // - `camera`: `{x, y, k}`. `play`: `{node, vars, trail}` while walking through, else null.
+// - `focus`: the latest stage jump, `{stage}`, for the camera to frame; each jump is a new object.
 // - `requests`: change requests. `notice`: the latest `{message, detail}` for the toast; each
 //   notice is a new object, so the same message twice still shows twice.
 
@@ -63,6 +64,7 @@ function initialState(FLOW, META, requests) {
     selected: null,
     camera: { x: 40, y: 80, k: 0.3 },
     play: null,
+    focus: null,
     requests,
     notice: null,
   };
@@ -90,6 +92,13 @@ const REDUCERS = {
   press,
   stopPlay: (s) => ({ ...s, ...OVERVIEW }),
   overview: (s) => ({ ...s, ...OVERVIEW, selected: null }),
+  focusStage: (s, { stage }) => ({
+    ...s,
+    ...OVERVIEW,
+    tab: 'canvas',
+    selected: null,
+    focus: { stage },
+  }),
   addRequest: (s, { screen, action, text }) => {
     const number = displayNumber(s.flow, findNode(s.flow, screen));
     const request = { screen, number, action: action || null, text, at: new Date().toISOString() };

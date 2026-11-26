@@ -1,5 +1,5 @@
-// The tabs: the board and wireframe views of the canvas, and the review page with its
-// finding count.
+// The tabs: the board and wireframe views of the canvas, the log page, and the review page with
+// its finding count.
 
 import { html, onClick } from '../html.mjs';
 import { watch } from '../store.mjs';
@@ -22,6 +22,7 @@ function render({ tab, view, result }, T) {
     ${['board', 'wireframe'].map((v) =>
       tabButton(T.views[v], tab === 'canvas' && view === v, { type: 'setView', view: v }),
     )}
+    ${tabButton(T.log, tab === 'log', { type: 'setTab', tab: 'log' })}
     ${tabButton(
       html`${T.review} <span class="count">${result.findings.length}</span>`,
       tab === 'review',

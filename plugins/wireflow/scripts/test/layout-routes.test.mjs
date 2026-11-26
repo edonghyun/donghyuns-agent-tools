@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { layoutBoard, SUB_GAP } from '../viewer/src/layout/board.mjs';
+import { layoutBoard, STAGE_GAP, SUB_GAP } from '../viewer/src/layout/board.mjs';
 import { layoutAndRoute } from '../viewer/src/layout/board-scene.mjs';
 import { routeEdges, toPathD } from '../viewer/src/layout/routes.mjs';
 import { hakwonLikeFlow } from './fixtures/board-fixture.mjs';
@@ -246,7 +246,9 @@ test('edges carry primary and dormant flags, and only decisions label theirs', (
     ],
   );
   assert.equal(edge('a.b').labelAt.length, 2);
+  assert.equal(edge('a.b').labelRoom, STAGE_GAP, 'the label sits on the run between the stages');
   assert.equal(edge('b.c').labelAt, undefined);
+  assert.equal(edge('b.c').labelRoom, undefined);
 });
 
 test('no edge on the 20-node board passes through a card', () => {

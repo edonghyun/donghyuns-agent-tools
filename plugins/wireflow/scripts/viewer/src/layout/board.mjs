@@ -2,7 +2,7 @@
 // exception band and a decision band below them. Pure: the same flow always gives the same boxes.
 // Columns come from columns.mjs, rows from rows.mjs, and bands from bands.mjs.
 
-import { exceptionSources, primaryPath } from '../../../lib/board.mjs';
+import { exceptionCodes, exceptionSources, primaryPath } from '../../../lib/board.mjs';
 import { placeBands } from './bands.mjs';
 import { estimateCardHeight } from './card-size.mjs';
 import { placeColumns } from './columns.mjs';
@@ -28,7 +28,7 @@ export { CARD_W, DETOUR_GAP, STAGE_GAP, SUB_GAP } from './geometry.mjs';
 export function layoutBoard(flow, { detourTop = DETOUR_GAP, detourBottom = DETOUR_GAP } = {}) {
   const primary = primaryPath(flow);
   const sources = exceptionSources(flow);
-  const heights = cardHeights(flow, sources);
+  const heights = cardHeights(flow);
   const { columns, stageHeaders, columnOf } = placeColumns(flow);
   const rowTops = stackColumns(flow, columnOf, heights, primary.nodes);
   const firstRow = MARGIN + HEADER_H + detourTop;
@@ -71,10 +71,7 @@ export function layoutBoard(flow, { detourTop = DETOUR_GAP, detourBottom = DETOU
 }
 
 /** Each node's card height. A node that leads into exceptions shows one code chip per exception. */
-function cardHeights(flow, sources) {
-  const codeChips = new Map();
-  for (const from of [...sources.values()].flat()) {
-    codeChips.set(from, (codeChips.get(from) ?? 0) + 1);
-  }
-  return new Map(flow.screens.map((s) => [s.id, estimateCardHeight(s, codeChips.get(s.id))]));
+function cardHeights(flow) {
+  const codes = exceptionCodes(flow);
+  return new Map(flow.screens.map((s) => [s.id, estimateCardHeight(s, codes.get(s.id))]));
 }

@@ -1,0 +1,346 @@
+/* The journey board: stage headers, bands, edges, cards and chips, and the legend under the bar.
+   Card sizes mirror layout/card-size.mjs, which estimates each card's height from them: the
+   padding, row gaps, line heights, two-line clamps and chip height below. Change both together. */
+.stage-head {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #8a92a0;
+  white-space: nowrap;
+}
+.stage-head b {
+  font: 700 18px / 30px var(--mono);
+  min-width: 30px;
+  text-align: center;
+  border-radius: 8px;
+  background: #dfe3ea;
+  color: var(--muted);
+}
+
+.band {
+  position: absolute;
+  border: 2px dashed #c7ccd6;
+  border-radius: 20px;
+  background: rgb(255 255 255 / 35%);
+}
+.band > h3 {
+  /* Above the edges dropping into the band's cards, on a pill of the band's color. */
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  margin: 2px 0 0 14px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: #f3f4f7;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 800;
+  color: #8a92a0;
+}
+.band.exception {
+  border-color: #e3a9a6;
+  background: rgb(193 59 55 / 5%);
+}
+.band.exception > h3 {
+  color: var(--bad);
+  background: #ede6e9;
+}
+.decision-card {
+  position: absolute;
+  padding: 12px 14px;
+  border: 1px dashed #c3c8d1;
+  border-left: 4px solid #5f6675;
+  border-radius: 12px;
+  background: #e9ebef;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.decision-card h4 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 800;
+}
+.decision-card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.decision-card li {
+  position: relative;
+  padding-left: 12px;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414753;
+}
+.decision-card li::before {
+  content: "·";
+  position: absolute;
+  left: 2px;
+  font-weight: 700;
+}
+
+/* Edges: grey by default, the primary path bold blue, exceptions red and dashed. */
+.board-edges path {
+  stroke: #8d97ab;
+  stroke-width: 2.5;
+}
+.board-edges path.primary {
+  stroke: var(--path);
+  stroke-width: 4;
+}
+.board-edges path.exception {
+  stroke: #c2605b;
+  stroke-dasharray: 8 6;
+}
+.board-edges path.dormant {
+  stroke-dasharray: 4 6;
+  opacity: 0.45;
+}
+.board-edges path.on {
+  stroke: var(--path);
+  stroke-width: 5;
+}
+.board-edges marker path {
+  stroke: none;
+}
+#b-arrow path {
+  fill: #8d97ab;
+}
+#b-arrow-primary path {
+  fill: var(--path);
+}
+#b-arrow-exception path {
+  fill: #c2605b;
+}
+.edge-label {
+  position: absolute;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--muted);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.edge-label.exception {
+  color: var(--bad);
+  border-color: #e9c3c1;
+}
+.edge-label.dim {
+  opacity: 0.2;
+}
+
+/* A card: actor tag and number, title, body, chips. Its box is the layout's estimate. */
+.card {
+  --actor: #8a92a0;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--actor) 30%, #fff);
+  border-left: 4px solid var(--actor);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 2px 6px rgb(20 30 60 / 6%);
+  cursor: pointer;
+}
+.card:hover {
+  box-shadow: 0 4px 14px rgb(20 30 60 / 14%);
+}
+.c-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+  flex-shrink: 0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.c-actor {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  line-height: 18px;
+  color: var(--actor);
+  background: color-mix(in srgb, var(--actor) 12%, #fff);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c-num {
+  margin-left: auto;
+  font-family: var(--mono);
+  color: var(--muted);
+}
+.c-code {
+  font: 700 12px var(--mono);
+  color: var(--bad);
+}
+.c-top .badge {
+  font-size: 10px;
+  line-height: 14px;
+}
+.c-title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.c-body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--muted);
+}
+.c-title,
+.c-body {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.card.primary {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--path) 30%, transparent),
+    0 4px 12px rgb(47 83 196 / 14%);
+}
+.card.k-decision {
+  background: linear-gradient(135deg, #eaeffb, #f3eefb);
+}
+.card.k-decision .c-title {
+  color: #3b3a8c;
+}
+.card.exception {
+  border-color: #e9c3c1;
+  border-left-color: var(--bad);
+  background: var(--bad-bg);
+}
+.card.exception .c-title {
+  color: #962d29;
+}
+.card.exception .c-body {
+  color: #8a4b48;
+}
+.card.inferred {
+  border-style: dashed dashed dashed solid;
+}
+.card.proposed {
+  border-color: var(--prop);
+  border-style: dashed dashed dashed solid;
+}
+.card.dormant {
+  background: transparent;
+  border: 1.5px dashed #b9c0cc;
+  box-shadow: none;
+}
+.card.dormant .c-title {
+  color: var(--muted);
+}
+.card.sel {
+  outline: 5px solid var(--path);
+  outline-offset: 4px;
+}
+.card.dim {
+  opacity: 0.3;
+}
+
+/* Chips, on cards and in the drawer. On a card a chip never wraps; one too wide is cut short. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.chip {
+  padding: 1px 6px;
+  border: 1px solid;
+  border-radius: 5px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.card .chip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chip.state {
+  font-family: var(--mono);
+  background: #141a2b;
+  border-color: #141a2b;
+  color: #e7eaf2;
+}
+.chip.metric {
+  background: #eaf6f0;
+  border-color: #c7e7da;
+  color: var(--ok);
+}
+.chip.experiment {
+  background: #f4effc;
+  border-color: #e1d5f6;
+  color: #6d28d9;
+}
+.chip.notify {
+  background: #eaf1ff;
+  border-color: #d2e1fa;
+  color: #2560c4;
+}
+.chip.code {
+  font-family: var(--mono);
+  font-weight: 700;
+  background: var(--bad-bg);
+  border-color: #eed2d0;
+  color: var(--bad);
+}
+
+/* The legend under the bar: actor colors, then edge and card styles. */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #f8f9fb;
+  font-size: 12.5px;
+}
+.key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.key .swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.key .line {
+  width: 22px;
+  border-top: 3px solid var(--path);
+}
+.key .line.exception {
+  border-top: 2px dashed var(--bad);
+}
+.key .mini {
+  width: 16px;
+  height: 11px;
+  border: 1.5px dashed #9aa3b2;
+  border-radius: 3px;
+}

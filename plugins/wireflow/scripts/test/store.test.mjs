@@ -148,3 +148,14 @@ test('overview leaves the walk-through and closes the selection', () => {
   const { mode, play, selected } = store.getState();
   assert.deepEqual({ mode, play, selected }, { mode: 'overview', play: null, selected: null });
 });
+
+test('jumping to a stage closes the drawer and asks the camera for that stage, each time', () => {
+  const store = storeFor();
+  store.dispatch({ type: 'select', id: 'detail' });
+  store.dispatch({ type: 'focusStage', stage: 1 });
+  const first = store.getState().focus;
+  assert.deepEqual(first, { stage: 1 });
+  assert.equal(store.getState().selected, null);
+  store.dispatch({ type: 'focusStage', stage: 1 });
+  assert.notEqual(store.getState().focus, first, 'the same stage again is a new request');
+});

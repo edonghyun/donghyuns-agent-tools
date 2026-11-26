@@ -265,17 +265,16 @@
     }
     return sources;
   }
-
-  // scripts/viewer/src/layout/card-size.mjs
-  var CHARS_PER_LINE = 13;
-  var CHIPS_PER_ROW = 2;
-  var lineCount = (text2 = "", max = Number.POSITIVE_INFINITY) => Math.min(max, Math.ceil(text2.length / CHARS_PER_LINE));
-  var chipCount = (node) => (node.state ? 1 : 0) + (node.metrics?.length ?? 0) + (node.experiments?.length ?? 0) + (node.notify?.length ?? 0);
-  function estimateCardHeight(node, autoChips = 0) {
-    const chipRows = Math.ceil((chipCount(node) + autoChips) / CHIPS_PER_ROW);
-    return 64 + 18 * lineCount(node.title, 2) + 16 * lineCount(node.body, 2) + 22 * chipRows;
+  function exceptionCodes(flow) {
+    const codes = /* @__PURE__ */ new Map();
+    for (const [id, sources] of exceptionSources(flow)) {
+      const { exception } = flow.screens.find((s) => s.id === id);
+      for (const from of sources) {
+        codes.set(from, [...codes.get(from) ?? [], exception]);
+      }
+    }
+    return codes;
   }
-  var estimateDecisionCardHeight = (items) => 44 + items.reduce((sum, item) => sum + 18 * lineCount(item) + 6, 0);
 
   // scripts/viewer/src/layout/geometry.mjs
   var CARD_W = 220;
@@ -285,6 +284,67 @@
   var HEADER_H = 40;
   var DETOUR_GAP = 56;
   var bottomOf = (box) => box.y + box.h;
+
+  // scripts/viewer/src/layout/card-size.mjs
+  var INNER_W = CARD_W - 33;
+  var PADDING = 26;
+  var GAP = 6;
+  var TOP_ROW = 20;
+  var TITLE = { size: 22, line: 28, max: 2 };
+  var BODY = { size: 14, line: 20, max: 2 };
+  var CHIP = { size: 13, padding: 14, h: 22, gap: 4 };
+  var DECISION = { heading: 24, size: 14, line: 20, indent: 12, gap: 4 };
+  var WIDE = /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uff00-\uffef]/;
+  var emOf = (ch) => {
+    if (WIDE.test(ch)) return 0.92;
+    if (ch === " ") return 0.27;
+    return /[A-Z0-9]/.test(ch) ? 0.64 : 0.52;
+  };
+  function textWidth(text2, size) {
+    let em = 0;
+    for (const ch of String(text2 ?? "")) {
+      em += emOf(ch);
+    }
+    return Math.ceil(em * size);
+  }
+  var lineCount = (text2, font, width = INNER_W) => Math.max(1, Math.ceil(textWidth(text2, font.size) / width));
+  var cardChips = (node, codes = []) => [
+    ...node.state ? [{ type: "state", text: node.state }] : [],
+    ...(node.metrics ?? []).map((text2) => ({ type: "metric", text: text2 })),
+    ...(node.experiments ?? []).map((text2) => ({ type: "experiment", text: text2 })),
+    ...(node.notify ?? []).map((text2) => ({ type: "notify", text: text2 })),
+    ...codes.map((text2) => ({ type: "code", text: text2 }))
+  ];
+  function chipRows(chips) {
+    let rows = 0;
+    let x = INNER_W;
+    for (const { text: text2 } of chips) {
+      const w = Math.min(INNER_W, textWidth(text2, CHIP.size) + CHIP.padding);
+      if (x + CHIP.gap + w > INNER_W) {
+        rows += 1;
+        x = w;
+      } else {
+        x += CHIP.gap + w;
+      }
+    }
+    return rows;
+  }
+  function estimateCardHeight(node, codes = []) {
+    const rows = [TOP_ROW, TITLE.line * Math.min(TITLE.max, lineCount(node.title, TITLE))];
+    if (node.body) {
+      rows.push(BODY.line * Math.min(BODY.max, lineCount(node.body, BODY)));
+    }
+    const chips = chipRows(cardChips(node, codes));
+    if (chips) {
+      rows.push(chips * CHIP.h + (chips - 1) * CHIP.gap);
+    }
+    return PADDING + rows.reduce((sum, h) => sum + h, 0) + GAP * (rows.length - 1);
+  }
+  function estimateDecisionCardHeight(items) {
+    const itemLines = items.map((item) => lineCount(item, DECISION, INNER_W - DECISION.indent));
+    const list = itemLines.reduce((sum, n) => sum + n * DECISION.line, 0) + DECISION.gap * (items.length - 1);
+    return PADDING + DECISION.heading + GAP + list;
+  }
 
   // scripts/viewer/src/layout/bands.mjs
   var BAND_GAP = 48;
@@ -432,7 +492,7 @@
   function layoutBoard(flow, { detourTop = DETOUR_GAP, detourBottom = DETOUR_GAP } = {}) {
     const primary = primaryPath(flow);
     const sources = exceptionSources(flow);
-    const heights = cardHeights(flow, sources);
+    const heights = cardHeights(flow);
     const { columns, stageHeaders, columnOf } = placeColumns(flow);
     const rowTops = stackColumns(flow, columnOf, heights, primary.nodes);
     const firstRow = MARGIN + HEADER_H + detourTop;
@@ -471,12 +531,9 @@
       size: { w: right + MARGIN, h: bottom + MARGIN }
     };
   }
-  function cardHeights(flow, sources) {
-    const codeChips = /* @__PURE__ */ new Map();
-    for (const from of [...sources.values()].flat()) {
-      codeChips.set(from, (codeChips.get(from) ?? 0) + 1);
-    }
-    return new Map(flow.screens.map((s) => [s.id, estimateCardHeight(s, codeChips.get(s.id))]));
+  function cardHeights(flow) {
+    const codes = exceptionCodes(flow);
+    return new Map(flow.screens.map((s) => [s.id, estimateCardHeight(s, codes.get(s.id))]));
   }
 
   // scripts/viewer/src/layout/route-space.mjs
@@ -544,14 +601,14 @@
       return !straight;
     });
   }
-  function labelAnchor(points) {
+  function labelSpot(points) {
     const segments = segmentsOf(points);
     const runs = segments.filter(([a, b]) => a[1] === b[1]);
     const length = ([a, b]) => Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]);
     const [[x1, y1], [x2, y2]] = (runs.length ? runs : segments).reduce(
       (best, s) => length(s) >= length(best) ? s : best
     );
-    return [(x1 + x2) / 2, (y1 + y2) / 2];
+    return { at: [(x1 + x2) / 2, (y1 + y2) / 2], room: y1 === y2 ? Math.abs(x2 - x1) : 0 };
   }
 
   // scripts/viewer/src/layout/routes.mjs
@@ -572,10 +629,24 @@
       edges: edges.map(({ source, target, ...edge }) => ({
         ...edge,
         points: points.get(edge.id),
-        ...edge.label !== void 0 && { labelAt: labelAnchor(points.get(edge.id)) }
+        ...edge.label !== void 0 && labelFields(points.get(edge.id))
       })),
       lanes: lanes.used()
     };
+  }
+  function labelFields(points) {
+    const { at, room } = labelSpot(points);
+    return { labelAt: at, labelRoom: room };
+  }
+  function toPathD(points) {
+    const steps = points.slice(1).map(([x, y], i) => {
+      const [px, py] = points[i];
+      if (py === y) {
+        return `H${x}`;
+      }
+      return px === x ? `V${y}` : `L${x} ${y}`;
+    });
+    return [`M${points[0][0]} ${points[0][1]}`, ...steps].join(" ");
   }
   function boardEdges(flow, layout) {
     const byId = screensById(flow);
@@ -689,7 +760,7 @@
 
   // scripts/viewer/src/layout/wireframe.mjs
   var PAD = 70;
-  var GAP = { x: 220, y: 200 };
+  var GAP2 = { x: 220, y: 200 };
   var BOX_SIZES = {
     step: [260, 140],
     system: [260, 140],
@@ -733,12 +804,12 @@
       row.forEach((s, i) => {
         const [w, h] = sizes[i];
         nodes.set(s.id, { x, y, w, h });
-        x += w + GAP.x;
+        x += w + GAP2.x;
       });
-      const stageWidth = Math.max(300, x - GAP.x - PAD + 40);
+      const stageWidth = Math.max(300, x - GAP2.x - PAD + 40);
       stages.push({ label, x: PAD, y: y - 60, w: stageWidth, h: rowHeight + 100 });
       width = Math.max(width, PAD + stageWidth);
-      y += rowHeight + GAP.y + 60;
+      y += rowHeight + GAP2.y + 60;
     });
     return { nodes, stages, size: { w: width + PAD, h: y } };
   }
@@ -1197,6 +1268,7 @@
       selected: null,
       camera: { x: 40, y: 80, k: 0.3 },
       play: null,
+      focus: null,
       requests,
       notice: null
     };
@@ -1222,6 +1294,13 @@
     press,
     stopPlay: (s) => ({ ...s, ...OVERVIEW }),
     overview: (s) => ({ ...s, ...OVERVIEW, selected: null }),
+    focusStage: (s, { stage }) => ({
+      ...s,
+      ...OVERVIEW,
+      tab: "canvas",
+      selected: null,
+      focus: { stage }
+    }),
     addRequest: (s, { screen, action, text: text2 }) => {
       const number = displayNumber(s.flow, findNode(s.flow, screen));
       const request = { screen, number, action: action || null, text: text2, at: (/* @__PURE__ */ new Date()).toISOString() };
@@ -1306,6 +1385,17 @@
     watch(store2, (s) => [s.view], frame);
     watch(
       store2,
+      (s) => [s.focus],
+      ({ focus }) => {
+        if (!focus) return;
+        requestAnimationFrame(() => {
+          const { layout } = sceneOf(store2.getState());
+          setCamera(focusStage(stage, layout.stageHeaders[focus.stage], layout.mainArea));
+        });
+      }
+    );
+    watch(
+      store2,
       (s) => [s.selected],
       ({ selected }) => {
         if (selected) frame();
@@ -1365,6 +1455,12 @@
       y: height / 2 - (box.y + box.h / 2) * k
     };
   }
+  function focusStage(stage, header, mainArea) {
+    const { width, height } = stage.getBoundingClientRect();
+    const h = mainArea.bottom - header.y;
+    const k = Math.min(width * 0.9 / header.w, height * 0.9 / h, 1);
+    return { k, x: width / 2 - (header.x + header.w / 2) * k, y: 24 - header.y * k };
+  }
   function zoomAt(camera, e, rect) {
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
@@ -1403,16 +1499,277 @@
   var onClick = (action) => html`data-dispatch="${JSON.stringify(action)}"`;
   var boxStyle = ({ x, y, w, h }) => `left:${x}px;top:${y}px;width:${w}px;height:${h}px`;
 
-  // scripts/viewer/src/components/board-sketch.mjs
-  function render({ layout, edges, size }, { flow, selected }) {
-    const card = (node) => html`<div class="sketch-card ${selected === node.id && "sel"}"
-    data-id="${node.id}" style="${boxStyle(layout.nodes.get(node.id))}">
-    <b>${displayNumber(flow, node)}</b> ${node.title}</div>`;
-    const line = (edge) => html`<polyline class="${edge.primary && "on"}" points="${edge.points.join(" ")}"/>`;
-    const stage = (h) => html`<div class="sketch-stage" style="${boxStyle(h)}">${h.label}</div>`;
+  // scripts/viewer/src/components/bands.mjs
+  function render(bands, stages) {
+    const decisionCard = (card) => html`<div class="decision-card" style="${boxStyle(card)}">
+    <h4>${stages[card.stage]}</h4>
+    <ul>${card.items.map((item) => html`<li>${item}</li>`)}</ul>
+  </div>`;
+    const band = (b) => html`<section class="band ${b.type}" style="${boxStyle(b)}">
+    <h3>${b.label}</h3></section>${(b.cards || []).map(decisionCard)}`;
+    return bands.map(band);
+  }
+
+  // scripts/viewer/src/i18n.mjs
+  var KIND_ICONS = {
+    screen: "\u{1F4F1}",
+    message: "\u{1F4AC}",
+    email: "\u2709\uFE0F",
+    document: "\u{1F4C4}",
+    step: "\u25AD",
+    decision: "\u25C6",
+    system: "\u2699\uFE0E",
+    wait: "\u23F3",
+    end: "\u25A0"
+  };
+  var KO = {
+    path: "\uACBD\uB85C",
+    fit: "\uC804\uCCB4 \uBCF4\uAE30",
+    review: "\uAC80\uD1A0",
+    close: "\uB2EB\uAE30",
+    play: "\uC9C1\uC811 \uAC78\uC5B4\uBCF4\uAE30",
+    requests: "\uC218\uC815 \uC694\uCCAD",
+    allActions: "\uC804\uCCB4 \uC5F0\uACB0 \uBCF4\uAE30",
+    summary: "\uAC80\uD1A0 \uC694\uC57D",
+    findings: "\uBC1C\uACAC \uC0AC\uD56D",
+    none: "\uBC1C\uACAC \uC0AC\uD56D \uC5C6\uC74C",
+    scenarios: "\uC2DC\uB098\uB9AC\uC624",
+    reqs: "\uC694\uAD6C\uC0AC\uD56D",
+    proposals: "\uAC1C\uC120 \uC81C\uC548 (\uD654\uBA74\uC5D0\uB9CC \uC801\uC6A9)",
+    decisions: "\uBBF8\uC815 \uACB0\uC815",
+    brief: "\uAE30\uD68D \uADFC\uAC70",
+    notes: "\uC870\uAC74\xB7\uBD84\uAE30",
+    actions: "\uBC84\uD2BC\xB7\uBD84\uAE30\uC640 \uC5F0\uACB0",
+    missing: "\uC5F0\uACB0 \uC5C6\uC74C",
+    request: "\uC218\uC815 \uC694\uCCAD \uB2F4\uAE30",
+    whole: "\uB178\uB4DC \uC804\uCCB4",
+    add: "\uB2F4\uAE30",
+    copy: "\uBAA8\uB450 \uBCF5\uC0AC",
+    clear: "\uBE44\uC6B0\uAE30",
+    copied: "\uBCF5\uC0AC\uD588\uC5B4\uC694",
+    empty: "\uC544\uC9C1 \uB2F4\uC740 \uC694\uCCAD\uC774 \uC5C6\uC5B4\uC694",
+    reset: "\uCC98\uC74C\uBD80\uD130",
+    vars: "\uD604\uC7AC \uC0C1\uD0DC",
+    trail: "\uC9C0\uB098\uC628 \uACBD\uB85C",
+    noDest: "\uC774 \uBC84\uD2BC\uC740 \uC544\uC9C1 \uC5F0\uACB0\uB41C \uACF3\uC774 \uC5C6\uC5B4\uC694",
+    guard: "\uC9C0\uAE08 \uC0C1\uD0DC\uC5D0\uC11C\uB294 \uB3D9\uC791\uD558\uC9C0 \uC54A\uB294 \uBC84\uD2BC\uC774\uC5D0\uC694",
+    passed: "\uD1B5\uACFC",
+    failed: "\uC2E4\uD328",
+    uncovered: "\uBBF8\uAC80\uC99D",
+    applied: "\uC801\uC6A9 \uC911\uC778 \uC81C\uC548",
+    file: "\uD30C\uC77C",
+    placeholder: "\uBB34\uC5C7\uC744 \uC5B4\uB5BB\uAC8C \uBC14\uAFB8\uACE0 \uC2F6\uC740\uC9C0 \uC801\uC5B4\uC8FC\uC138\uC694",
+    exitHint: "\uAC1C\uC694\uB85C \uB3CC\uC544\uAC00\uAE30",
+    actor: "\uB2F4\uB2F9",
+    device: "\uAE30\uAE30",
+    requestHeading: "## Wireflow \uC218\uC815 \uC694\uCCAD",
+    origin: { source: "\uAE30\uD68D \uC6D0\uBB38", inferred: "AI \uCD94\uC815", observed: "\uD604\uC7AC \uAD6C\uD604", proposed: "\uC81C\uC548" },
+    views: { board: "\uBCF4\uB4DC", wireframe: "\uC640\uC774\uC5B4\uD504\uB808\uC784" },
+    log: "\uB85C\uADF8 \uB9AC\uC2A4\uD2B8",
+    logHeading: "\uB85C\uADF8 \uC2EC\uC744 \uC9C0\uC810 & \uACF5\uD1B5 \uC18D\uC131",
+    commonProps: "\uACF5\uD1B5 \uC18D\uC131",
+    propColumns: { name: "\uC18D\uC131", use: "\uC6A9\uB3C4" },
+    eventColumns: { id: "\uC774\uBCA4\uD2B8", type: "\uC720\uD615", at: "\uBC1C\uC0DD \uC704\uCE58", props: "\uC18D\uC131", note: "\uBA54\uBAA8" },
+    eventTypes: { normal: "\uC815\uC0C1", drop: "\uC774\uD0C8", error: "\uC5D0\uB7EC" },
+    noEvents: "\uC544\uC9C1 \uC801\uC740 \uC774\uBCA4\uD2B8\uAC00 \uC5C6\uC5B4\uC694",
+    unplaced: "\uC704\uCE58\uB97C \uCC3E\uC9C0 \uBABB\uD55C \uC774\uBCA4\uD2B8",
+    nodeEvents: "\uC774 \uB178\uB4DC\uC5D0 \uAC78\uB9B0 \uC774\uBCA4\uD2B8",
+    chips: "\uC0C1\uD0DC\xB7\uC9C0\uD45C\xB7\uC2E4\uD5D8\xB7\uC54C\uB9BC",
+    chipTypes: {
+      state: "\uC0C1\uD0DC\uAC12",
+      metric: "\uC9C0\uD45C",
+      experiment: "\uC2E4\uD5D8 \uBCC0\uC218",
+      notify: "\uBC1C\uC1A1 \uC54C\uB9BC",
+      code: "\uC608\uC678 \uCF54\uB4DC"
+    },
+    legend: { primary: "\uAE30\uBCF8 \uACBD\uB85C", exception: "\uC608\uC678", dormant: "\uBB38\uB9CC \uC5F4\uC5B4\uB460" },
+    stageJump: "\uB2E8\uACC4\uB85C \uC774\uB3D9",
+    kinds: {
+      screen: "\uD654\uBA74",
+      message: "\uBA54\uC2DC\uC9C0",
+      email: "\uC774\uBA54\uC77C",
+      document: "\uBB38\uC11C",
+      step: "\uB2E8\uACC4",
+      decision: "\uBD84\uAE30",
+      system: "\uC2DC\uC2A4\uD15C",
+      wait: "\uB300\uAE30",
+      end: "\uC885\uB8CC"
+    }
+  };
+  var EN = {
+    path: "Path",
+    fit: "Fit all",
+    review: "Review",
+    close: "Close",
+    play: "Walk through",
+    requests: "Change requests",
+    allActions: "All connections",
+    summary: "Review summary",
+    findings: "Findings",
+    none: "No findings",
+    scenarios: "Scenarios",
+    reqs: "Requirements",
+    proposals: "Proposed fixes (preview only)",
+    decisions: "Open decisions",
+    brief: "Planning intent",
+    notes: "Conditions & branches",
+    actions: "Buttons, branches & links",
+    missing: "not connected",
+    request: "Add a change request",
+    whole: "Whole node",
+    add: "Add",
+    copy: "Copy all",
+    clear: "Clear",
+    copied: "Copied",
+    empty: "No requests yet",
+    reset: "Restart",
+    vars: "State",
+    trail: "Trail",
+    noDest: "This button has no destination yet",
+    guard: "This button does nothing in the current state",
+    passed: "passed",
+    failed: "failed",
+    uncovered: "unchecked",
+    applied: "Applied proposals",
+    file: "File",
+    placeholder: "Describe what to change and why",
+    exitHint: "Back to overview",
+    actor: "Actor",
+    device: "Device",
+    requestHeading: "## Wireflow change requests",
+    origin: {
+      source: "From brief",
+      inferred: "AI inferred",
+      observed: "Current build",
+      proposed: "Proposed"
+    },
+    views: { board: "Board", wireframe: "Wireframe" },
+    log: "Event log",
+    logHeading: "Where to log & common properties",
+    commonProps: "Common properties",
+    propColumns: { name: "Property", use: "Used for" },
+    eventColumns: { id: "Event", type: "Type", at: "Fires at", props: "Properties", note: "Note" },
+    eventTypes: { normal: "Normal", drop: "Drop-off", error: "Error" },
+    noEvents: "No events yet",
+    unplaced: "Events with no known location",
+    nodeEvents: "Events at this node",
+    chips: "State, metrics, experiments, alerts",
+    chipTypes: {
+      state: "State",
+      metric: "Metric",
+      experiment: "Experiment",
+      notify: "Notification",
+      code: "Exception code"
+    },
+    legend: { primary: "Primary path", exception: "Exception", dormant: "Door left open" },
+    stageJump: "Jump to stage",
+    kinds: {
+      screen: "Screen",
+      message: "Message",
+      email: "Email",
+      document: "Document",
+      step: "Step",
+      decision: "Decision",
+      system: "System",
+      wait: "Wait",
+      end: "End"
+    }
+  };
+  function texts(locale) {
+    return locale === "en" ? EN : KO;
+  }
+
+  // scripts/viewer/src/components/chips.mjs
+  function renderChips(node, exceptionCodes2, T2) {
+    const chips = cardChips(node, exceptionCodes2);
+    if (!chips.length) return "";
+    const chip = ({ type, text: text2 }) => html`<span class="chip ${type}" title="${T2.chipTypes[type]}">${text2}</span>`;
+    return html`<div class="chips">${chips.map(chip)}</div>`;
+  }
+
+  // scripts/viewer/src/components/board-card.mjs
+  function renderBoardCard(node, ctx, T2) {
+    const { flow } = ctx;
+    const kind = kindOf(node);
+    const origin = node.origin || "source";
+    const classes = classNames(
+      "card",
+      `k-${kind}`,
+      origin,
+      isException(node) && "exception",
+      node.dormant && "dormant",
+      ctx.primary && "primary",
+      ctx.selected && "sel",
+      ctx.dim && "dim"
+    );
+    const style = [ctx.box && boxStyle(ctx.box), ctx.color && `--actor:${ctx.color}`];
+    return html`<article class="${classes}" data-id="${node.id}"
+    style="${style.filter(Boolean).join(";")}">
+    <div class="c-top">
+      ${node.actor && html`<span class="c-actor">${node.actor}</span>`}
+      <span class="c-num">${KIND_ICONS[kind]} ${displayNumber(flow, node)}</span>
+      ${isException(node) && html`<span class="c-code">${node.exception}</span>`}
+      ${origin !== "source" && html`<span class="badge ${origin}">${T2.origin[origin] || origin}</span>`}
+    </div>
+    <h4 class="c-title">${node.title}</h4>
+    ${node.body && html`<p class="c-body">${fillVars(node.body, previewVars(flow, node))}</p>`}
+    ${renderChips(node, ctx.codes, T2)}
+  </article>`;
+  }
+
+  // scripts/viewer/src/components/board-edges.mjs
+  var LABEL_SIZE = 15;
+  var LABEL_PADDING = 24;
+  var labelFits = (edge) => textWidth(edge.label, LABEL_SIZE) + LABEL_PADDING <= edge.labelRoom;
+  var arrow = (id) => html`<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5"
+  markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10z"/></marker>`;
+  var DEFS = html`<defs>${["b-arrow", "b-arrow-primary", "b-arrow-exception"].map(arrow)}</defs>`;
+  var isExceptionEdge = (edge) => edge.kind === "exception" || edge.kind === "from-exception";
+  function markerOf(edge) {
+    if (isExceptionEdge(edge)) return "b-arrow-exception";
+    return edge.primary ? "b-arrow-primary" : "b-arrow";
+  }
+  function render2(edges, size, path) {
+    const onPath = (edge) => edge.ids.some((id) => path.edgeSteps.has(id));
+    const classesOf = (edge) => classNames(
+      isExceptionEdge(edge) ? "exception" : edge.kind,
+      edge.primary && "primary",
+      edge.dormant && "dormant",
+      path && (onPath(edge) ? "on" : "dim")
+    );
+    const line = (edge) => html`<path class="${classesOf(edge)}" d="${toPathD(edge.points)}"
+      marker-end="url(#${markerOf(edge)})"/>`;
+    const label = (edge) => edge.label && labelFits(edge) && html`<span class="edge-label ${classesOf(edge)}"
+      style="left:${edge.labelAt[0]}px;top:${edge.labelAt[1]}px">${edge.label}</span>`;
+    const drawOrder = [...edges].sort((a, b) => Number(a.primary) - Number(b.primary));
+    return html`<svg class="edges board-edges" width="${size.w}" height="${size.h}">
+    ${DEFS}${drawOrder.map(line)}</svg>${edges.map(label)}`;
+  }
+
+  // scripts/viewer/src/components/board-view.mjs
+  function render3({ layout, edges }, { flow, scenario, selected }, T2) {
+    const primary = primaryPath(flow).nodes;
+    const codes = exceptionCodes(flow);
+    const colors = new Map(actorList(flow).map((a) => [a.name, a.color]));
+    const path = scenarioPath(flow, scenario);
+    const card = (node) => renderBoardCard(
+      node,
+      {
+        flow,
+        box: layout.nodes.get(node.id),
+        color: colors.get(node.actor),
+        codes: codes.get(node.id),
+        primary: primary.has(node.id),
+        selected: selected === node.id,
+        dim: path && !path.nodes.has(node.id)
+      },
+      T2
+    );
+    const stageHeader = (header, i) => html`<div class="stage-head" style="${boxStyle(header)}"><b>${i + 1}</b>${header.label}</div>`;
     return html`
-    ${layout.stageHeaders.map(stage)}
-    <svg class="edges" width="${size.w}" height="${size.h}">${edges.map(line)}</svg>
+    ${render(layout.bands, flow.stages)}
+    ${layout.stageHeaders.map(stageHeader)}
+    ${render2(edges, layout.size, path)}
     ${flow.screens.map(card)}`;
   }
 
@@ -1423,7 +1780,7 @@
   <marker id="arrow-on" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4"
     orient="auto"><path d="M0,0 L10,5 L0,10z" fill="#2b59c3" stroke="none"/></marker>
 </defs>`;
-  function render2({ flow, nodes, anchors, path }) {
+  function render4({ flow, nodes, anchors, path }) {
     const curves = [];
     const steps = [];
     for (const node of flow.screens) {
@@ -1495,139 +1852,8 @@
   var midpoint = ([p0, p1, p2, p3]) => [0, 1].map((axis) => (p0[axis] + 3 * p1[axis] + 3 * p2[axis] + p3[axis]) / 8);
   var stepBadge = ([x, y], numbers) => html`<circle cx="${x}" cy="${y}" r="18"/><text x="${x}" y="${y}">${numbers.join(",")}</text>`;
 
-  // scripts/viewer/src/i18n.mjs
-  var KIND_ICONS = {
-    screen: "\u{1F4F1}",
-    message: "\u{1F4AC}",
-    email: "\u2709\uFE0F",
-    document: "\u{1F4C4}",
-    step: "\u25AD",
-    decision: "\u25C6",
-    system: "\u2699\uFE0E",
-    wait: "\u23F3",
-    end: "\u25A0"
-  };
-  var KO = {
-    path: "\uACBD\uB85C",
-    fit: "\uC804\uCCB4 \uBCF4\uAE30",
-    review: "\uAC80\uD1A0",
-    close: "\uB2EB\uAE30",
-    play: "\uC9C1\uC811 \uAC78\uC5B4\uBCF4\uAE30",
-    requests: "\uC218\uC815 \uC694\uCCAD",
-    allActions: "\uC804\uCCB4 \uC5F0\uACB0 \uBCF4\uAE30",
-    summary: "\uAC80\uD1A0 \uC694\uC57D",
-    findings: "\uBC1C\uACAC \uC0AC\uD56D",
-    none: "\uBC1C\uACAC \uC0AC\uD56D \uC5C6\uC74C",
-    scenarios: "\uC2DC\uB098\uB9AC\uC624",
-    reqs: "\uC694\uAD6C\uC0AC\uD56D",
-    proposals: "\uAC1C\uC120 \uC81C\uC548 (\uD654\uBA74\uC5D0\uB9CC \uC801\uC6A9)",
-    decisions: "\uBBF8\uC815 \uACB0\uC815",
-    brief: "\uAE30\uD68D \uADFC\uAC70",
-    notes: "\uC870\uAC74\xB7\uBD84\uAE30",
-    actions: "\uBC84\uD2BC\xB7\uBD84\uAE30\uC640 \uC5F0\uACB0",
-    missing: "\uC5F0\uACB0 \uC5C6\uC74C",
-    request: "\uC218\uC815 \uC694\uCCAD \uB2F4\uAE30",
-    whole: "\uB178\uB4DC \uC804\uCCB4",
-    add: "\uB2F4\uAE30",
-    copy: "\uBAA8\uB450 \uBCF5\uC0AC",
-    clear: "\uBE44\uC6B0\uAE30",
-    copied: "\uBCF5\uC0AC\uD588\uC5B4\uC694",
-    empty: "\uC544\uC9C1 \uB2F4\uC740 \uC694\uCCAD\uC774 \uC5C6\uC5B4\uC694",
-    reset: "\uCC98\uC74C\uBD80\uD130",
-    vars: "\uD604\uC7AC \uC0C1\uD0DC",
-    trail: "\uC9C0\uB098\uC628 \uACBD\uB85C",
-    noDest: "\uC774 \uBC84\uD2BC\uC740 \uC544\uC9C1 \uC5F0\uACB0\uB41C \uACF3\uC774 \uC5C6\uC5B4\uC694",
-    guard: "\uC9C0\uAE08 \uC0C1\uD0DC\uC5D0\uC11C\uB294 \uB3D9\uC791\uD558\uC9C0 \uC54A\uB294 \uBC84\uD2BC\uC774\uC5D0\uC694",
-    passed: "\uD1B5\uACFC",
-    failed: "\uC2E4\uD328",
-    uncovered: "\uBBF8\uAC80\uC99D",
-    applied: "\uC801\uC6A9 \uC911\uC778 \uC81C\uC548",
-    file: "\uD30C\uC77C",
-    placeholder: "\uBB34\uC5C7\uC744 \uC5B4\uB5BB\uAC8C \uBC14\uAFB8\uACE0 \uC2F6\uC740\uC9C0 \uC801\uC5B4\uC8FC\uC138\uC694",
-    exitHint: "\uAC1C\uC694\uB85C \uB3CC\uC544\uAC00\uAE30",
-    actor: "\uB2F4\uB2F9",
-    device: "\uAE30\uAE30",
-    requestHeading: "## Wireflow \uC218\uC815 \uC694\uCCAD",
-    origin: { source: "\uAE30\uD68D \uC6D0\uBB38", inferred: "AI \uCD94\uC815", observed: "\uD604\uC7AC \uAD6C\uD604", proposed: "\uC81C\uC548" },
-    views: { board: "\uBCF4\uB4DC", wireframe: "\uC640\uC774\uC5B4\uD504\uB808\uC784" },
-    kinds: {
-      screen: "\uD654\uBA74",
-      message: "\uBA54\uC2DC\uC9C0",
-      email: "\uC774\uBA54\uC77C",
-      document: "\uBB38\uC11C",
-      step: "\uB2E8\uACC4",
-      decision: "\uBD84\uAE30",
-      system: "\uC2DC\uC2A4\uD15C",
-      wait: "\uB300\uAE30",
-      end: "\uC885\uB8CC"
-    }
-  };
-  var EN = {
-    path: "Path",
-    fit: "Fit all",
-    review: "Review",
-    close: "Close",
-    play: "Walk through",
-    requests: "Change requests",
-    allActions: "All connections",
-    summary: "Review summary",
-    findings: "Findings",
-    none: "No findings",
-    scenarios: "Scenarios",
-    reqs: "Requirements",
-    proposals: "Proposed fixes (preview only)",
-    decisions: "Open decisions",
-    brief: "Planning intent",
-    notes: "Conditions & branches",
-    actions: "Buttons, branches & links",
-    missing: "not connected",
-    request: "Add a change request",
-    whole: "Whole node",
-    add: "Add",
-    copy: "Copy all",
-    clear: "Clear",
-    copied: "Copied",
-    empty: "No requests yet",
-    reset: "Restart",
-    vars: "State",
-    trail: "Trail",
-    noDest: "This button has no destination yet",
-    guard: "This button does nothing in the current state",
-    passed: "passed",
-    failed: "failed",
-    uncovered: "unchecked",
-    applied: "Applied proposals",
-    file: "File",
-    placeholder: "Describe what to change and why",
-    exitHint: "Back to overview",
-    actor: "Actor",
-    device: "Device",
-    requestHeading: "## Wireflow change requests",
-    origin: {
-      source: "From brief",
-      inferred: "AI inferred",
-      observed: "Current build",
-      proposed: "Proposed"
-    },
-    views: { board: "Board", wireframe: "Wireframe" },
-    kinds: {
-      screen: "Screen",
-      message: "Message",
-      email: "Email",
-      document: "Document",
-      step: "Step",
-      decision: "Decision",
-      system: "System",
-      wait: "Wait",
-      end: "End"
-    }
-  };
-  function texts(locale) {
-    return locale === "en" ? EN : KO;
-  }
-
   // scripts/viewer/src/components/frame-node.mjs
-  function render3(node, ctx, T2) {
+  function render5(node, ctx, T2) {
     const style = nodeStyle(node);
     const withText = { ...ctx, text: (s) => fillVars(s, ctx.vars) };
     const body = { frame: frameBody, card: cardBody, box: boxBody }[style](node, withText, T2);
@@ -1764,14 +1990,14 @@
         ),
         style: boxStyle(box)
       };
-      return html`${nodeTag(node, box, flow, T2)}${render3(node, ctx, T2)}`;
+      return html`${nodeTag(node, box, flow, T2)}${render5(node, ctx, T2)}`;
     });
     const stageRow = (stage) => html`<div class="group" style="${boxStyle(stage)}"><h3>${stage.label}</h3></div>`;
     canvas.innerHTML = String(html`
     ${scene.stages.map(stageRow)}
     <svg class="edges" width="${scene.size.w}" height="${scene.size.h}"></svg>
     ${nodes}`);
-    canvas.querySelector(".edges").innerHTML = render2({
+    canvas.querySelector(".edges").innerHTML = render4({
       flow,
       nodes: scene.nodes,
       anchors: buttonAnchors(canvas, scene.nodes),
@@ -1810,7 +2036,7 @@
       canvas.style.width = `${scene.size.w}px`;
       canvas.style.height = `${scene.size.h}px`;
       if (state.view === "board") {
-        canvas.innerHTML = String(render(scene, state));
+        canvas.innerHTML = String(render3(scene, state, T2));
       } else {
         draw(canvas, scene, state, T2);
       }
@@ -1826,8 +2052,95 @@
     });
   }
 
+  // scripts/viewer/src/components/legend.mjs
+  function mount3(el, store2, T2) {
+    watch(
+      store2,
+      (s) => [s.flow],
+      ({ flow }) => {
+        el.innerHTML = String(renderLegend(flow, T2));
+      }
+    );
+  }
+  function renderLegend(flow, T2) {
+    const actor = ({ name, color }) => html`<span class="key"><i class="swatch" style="background:${color}"></i>${name}</span>`;
+    return html`
+    ${actorList(flow).map(actor)}
+    <span class="key"><i class="line primary"></i>${T2.legend.primary}</span>
+    <span class="key"><i class="line exception"></i>${T2.legend.exception}</span>
+    <span class="key"><i class="mini dormant"></i>${T2.legend.dormant}</span>`;
+  }
+
+  // scripts/viewer/src/components/log-page.mjs
+  function mount4(el, store2, T2) {
+    watch(
+      store2,
+      (s) => [s.flow],
+      ({ flow }) => {
+        el.innerHTML = String(renderLogPage(flow, T2));
+      }
+    );
+  }
+  function renderLogPage(flow, T2) {
+    const events = flow.events || [];
+    const props = flow.eventProps || [];
+    if (!events.length && !props.length) {
+      return html`<h2>${T2.logHeading}</h2><div class="sub">${T2.noEvents}</div>`;
+    }
+    return html`<h2>${T2.logHeading}</h2>
+    ${props.length > 0 && propTable(props, T2)}
+    ${stageGroups(flow, events, T2).map((group) => eventTable(flow, group, T2))}`;
+  }
+  function propTable(props, T2) {
+    const row = (p) => html`<tr><td><code>${p.name}</code></td><td>${p.use}</td></tr>`;
+    return html`<h3>${T2.commonProps}</h3>
+    <table class="lt props">
+      <thead><tr><th>${T2.propColumns.name}</th><th>${T2.propColumns.use}</th></tr></thead>
+      <tbody>${props.map(row)}</tbody>
+    </table>`;
+  }
+  function stageGroups(flow, events, T2) {
+    const stageOf = (event) => {
+      const [first] = eventLocations(event);
+      return first ? findNode(flow, splitLocation(first)[0])?.stage : void 0;
+    };
+    const groups = flow.stages.map((label, stage) => ({
+      label,
+      number: stage + 1,
+      events: events.filter((e) => stageOf(e) === stage)
+    }));
+    const placed = new Set(groups.flatMap((g) => g.events));
+    groups.push({ label: T2.unplaced, events: events.filter((e) => !placed.has(e)) });
+    return groups.filter((g) => g.events.length);
+  }
+  function eventTable(flow, { label, number, events }, T2) {
+    const cols = T2.eventColumns;
+    const row = (e) => html`<tr>
+    <td><code>${e.id}</code></td>
+    <td><span class="ty ${e.type}">${T2.eventTypes[e.type] || e.type}</span></td>
+    <td>${eventLocations(e).map((at) => html`<div>${locationLink(flow, at)}</div>`)}</td>
+    <td>${(e.props || []).map((p) => html`<code>${p}</code> `)}</td>
+    <td>${e.note}</td>
+  </tr>`;
+    return html`<h3>${number && html`<span class="ph">${number}</span>`} ${label}</h3>
+    <table class="lt events">
+      <thead><tr>
+        <th>${cols.id}</th><th>${cols.type}</th><th>${cols.at}</th>
+        <th>${cols.props}</th><th>${cols.note}</th>
+      </tr></thead>
+      <tbody>${events.map(row)}</tbody>
+    </table>`;
+  }
+  function locationLink(flow, at) {
+    const [nodeId, actionId] = splitLocation(at);
+    const node = findNode(flow, nodeId);
+    if (!node) return html`<code>${at}</code>`;
+    const action = actionId && node.actions.find((a) => a.id === actionId);
+    return html`<a href="#" ${onClick({ type: "select", id: node.id })}>${displayNumber(flow, node)} ${node.title}</a>${actionId && ` \u203A ${action?.label || actionId}`}`;
+  }
+
   // scripts/viewer/src/components/finding-list.mjs
-  function render4(findings, flow, T2) {
+  function render6(findings, flow, T2) {
     return findings.map((f) => {
       const node = f.screen && findNode(flow, f.screen);
       const where = [
@@ -1842,7 +2155,7 @@
   }
 
   // scripts/viewer/src/components/proposal-list.mjs
-  function render5({ authored, applied }, T2, nodeId) {
+  function render7({ authored, applied }, T2, nodeId) {
     const touches = (p) => (p.changes || []).some(
       (c) => c.screen === nodeId || c.addScreen?.id === nodeId || c.action?.to === nodeId
     );
@@ -1863,7 +2176,7 @@
     target: el.querySelector("[name=request-target]").value,
     text: el.querySelector("[name=request-text]").value
   });
-  function mount3(el, store2, T2) {
+  function mount5(el, store2, T2) {
     let shown = null;
     watch(
       store2,
@@ -1872,7 +2185,7 @@
         const open = state.tab === "canvas" && state.mode === "overview";
         const node = open && state.selected && findNode(state.flow, state.selected);
         const draft = node && node.id === shown ? readDraft(el) : NO_DRAFT;
-        el.innerHTML = node ? String(render6(node, state, draft, T2)) : "";
+        el.innerHTML = node ? String(render8(node, state, draft, T2)) : "";
         shown = node ? node.id : null;
       }
     );
@@ -1885,7 +2198,7 @@
       el.querySelector("[name=request-text]").value = "";
     });
   }
-  function render6(node, state, draft, T2) {
+  function render8(node, state, draft, T2) {
     const { flow, result } = state;
     const kind = kindOf(node);
     const origin = node.origin || "source";
@@ -1915,10 +2228,12 @@
     ${node.brief && html`<h3>${T2.brief}</h3><div>${node.brief}</div>`}
     ${node.notes?.length > 0 && html`<h3>${T2.notes}</h3>${bullets(node.notes)}`}
     ${node.decisions?.length > 0 && html`<h3>${T2.decisions}</h3>${bullets(node.decisions)}`}
-    ${findings.length > 0 && html`<h3>${T2.findings}</h3>${render4(findings, flow, T2)}`}
+    ${chipSection(node, flow, T2)}
+    ${eventSection(node, flow, T2)}
+    ${findings.length > 0 && html`<h3>${T2.findings}</h3>${render6(findings, flow, T2)}`}
     <h3>${T2.actions}</h3>
     <ul>${actions.length ? actions : html`<li class="sub">—</li>`}</ul>
-    ${render5(state, T2, node.id)}
+    ${render7(state, T2, node.id)}
     <h3>${T2.request}</h3>
     <div class="req-form">
       <select name="request-target">
@@ -1932,14 +2247,31 @@
       <div class="row"><button name="add-request">${T2.add}</button></div>
     </div>`;
   }
+  function chipSection(node, flow, T2) {
+    const chips = renderChips(node, exceptionCodes(flow).get(node.id), T2);
+    return chips && html`<h3>${T2.chips}</h3>${chips}`;
+  }
+  function eventSection(node, flow, T2) {
+    const here = (flow.events || []).map((event) => ({
+      event,
+      spots: eventLocations(event).map(splitLocation).filter(([id]) => id === node.id)
+    })).filter(({ spots }) => spots.length);
+    if (!here.length) return "";
+    const label = ([, actionId]) => actionId && (node.actions.find((a) => a.id === actionId)?.label || actionId);
+    const row = ({ event, spots }) => html`<li>
+    <code>${event.id}</code>
+    <span class="ty ${event.type}">${T2.eventTypes[event.type] || event.type}</span>
+    ${spots.map(label).filter(Boolean).join(", ")}</li>`;
+    return html`<h3>${T2.nodeEvents}</h3><ul>${here.map(row)}</ul>`;
+  }
 
   // scripts/viewer/src/components/player.mjs
-  function mount4(el, store2, T2) {
+  function mount6(el, store2, T2) {
     watch(
       store2,
       (s) => [s.mode, s.play, s.flow, s.scenario],
       (state) => {
-        el.innerHTML = state.mode === "play" ? String(render7(state, el, T2)) : "";
+        el.innerHTML = state.mode === "play" ? String(render9(state, el, T2)) : "";
       }
     );
     el.addEventListener("click", (e) => {
@@ -1949,7 +2281,7 @@
       }
     });
   }
-  function render7({ flow, play, scenario }, el, T2) {
+  function render9({ flow, play, scenario }, el, T2) {
     const node = findNode(flow, play.node);
     const nextStep = findScenario(flow, scenario)?.steps[play.trail.length - 1];
     const pathSteps = nextStep && /* @__PURE__ */ new Map([[`${node.id}.${nextStep.action}`, [play.trail.length]]]);
@@ -1959,7 +2291,7 @@
       return html`<li>${t.action && html`<code>${t.action}</code> → `}${n ? `${displayNumber(flow, n)} ${n.title}` : t.node}</li>`;
     });
     return html`
-    ${render3(node, ctx, T2)}
+    ${render5(node, ctx, T2)}
     <div class="trail">
       <h3>${displayNumber(flow, node)} ${node.title}${node.actor && html` <small class="sub">· ${node.actor}</small>`}</h3>
       <div class="row">
@@ -2006,12 +2338,12 @@
   }
 
   // scripts/viewer/src/components/requests.mjs
-  function mount5(el, store2, T2) {
+  function mount7(el, store2, T2) {
     watch(
       store2,
       (s) => [s.requests],
       ({ requests }) => {
-        el.innerHTML = String(render8(requests, T2));
+        el.innerHTML = String(render10(requests, T2));
       }
     );
     el.addEventListener("click", async (e) => {
@@ -2020,7 +2352,7 @@
       store2.dispatch({ type: "notify", message: "copied" });
     });
   }
-  function render8(requests, T2) {
+  function render10(requests, T2) {
     const empty = requests.length === 0;
     const item = (q, i) => html`<div class="req">
     <div><code>${q.number} ${q.screen}${q.action && ` \u203A ${q.action}`}</code><br>${q.text}</div>
@@ -2049,16 +2381,16 @@
 
   // scripts/viewer/src/components/review-page.mjs
   var STATUS_CLASS = { passed: "pass", failed: "fail", uncovered: "unc" };
-  function mount6(el, store2, T2) {
+  function mount8(el, store2, T2) {
     watch(
       store2,
       (s) => [s.flow, s.result, s.applied],
       (state) => {
-        el.innerHTML = String(render9(state, T2));
+        el.innerHTML = String(render11(state, T2));
       }
     );
   }
-  function render9(state, T2) {
+  function render11(state, T2) {
     const { authored, flow, meta, result } = state;
     const scenarios = result.scenarios.map(
       (s) => html`<li>
@@ -2073,11 +2405,11 @@
     </div>
     ${authored.source && html`<div class="sub">${authored.source}</div>`}
     <h3>${T2.findings} (${result.findings.length})</h3>
-    ${result.findings.length ? render4(result.findings, flow, T2) : html`<div class="sub">${T2.none}</div>`}
+    ${result.findings.length ? render6(result.findings, flow, T2) : html`<div class="sub">${T2.none}</div>`}
     <h3>${T2.scenarios}</h3>
     <ul>${scenarios}</ul>
     ${requirementList(state, T2)}
-    ${render5(state, T2)}
+    ${render7(state, T2)}
     ${decisionList(flow, T2)}`;
   }
   function requirementList({ authored, result }, T2) {
@@ -2104,22 +2436,23 @@
   }
 
   // scripts/viewer/src/components/tabs.mjs
-  function mount7(el, store2, T2) {
+  function mount9(el, store2, T2) {
     watch(
       store2,
       (s) => [s.tab, s.view, s.result],
       (state) => {
-        el.innerHTML = String(render10(state, T2));
+        el.innerHTML = String(render12(state, T2));
       }
     );
   }
-  function render10({ tab, view, result }, T2) {
+  function render12({ tab, view, result }, T2) {
     const tabButton = (label, active, action) => html`<button role="tab" aria-selected="${active}" class="${active && "on"}"
       ${onClick(action)}>${label}</button>`;
     return html`
     ${["board", "wireframe"].map(
       (v) => tabButton(T2.views[v], tab === "canvas" && view === v, { type: "setView", view: v })
     )}
+    ${tabButton(T2.log, tab === "log", { type: "setTab", tab: "log" })}
     ${tabButton(
       html`${T2.review} <span class="count">${result.findings.length}</span>`,
       tab === "review",
@@ -2129,7 +2462,7 @@
 
   // scripts/viewer/src/components/toast.mjs
   var SHOWN_MS = 2200;
-  function mount8(el, store2, T2) {
+  function mount10(el, store2, T2) {
     let timer;
     watch(
       store2,
@@ -2163,22 +2496,32 @@
   }
 
   // scripts/viewer/src/components/toolbar.mjs
-  function mount9(el, store2, T2) {
+  function mount11(el, store2, T2) {
     watch(
       store2,
-      (s) => [s.flow, s.scenario, s.mode, s.selected, s.requests],
+      (s) => [s.flow, s.view, s.tab, s.scenario, s.mode, s.selected, s.requests],
       (state) => {
-        el.innerHTML = String(render11(state, T2));
+        el.innerHTML = String(render13(state, T2));
       }
     );
     el.addEventListener("change", (e) => {
-      if (e.target.name === "scenario") store2.dispatch({ type: "setScenario", id: e.target.value });
+      const { name, value } = e.target;
+      if (name === "scenario") store2.dispatch({ type: "setScenario", id: value });
+      if (name === "stage" && value !== "") {
+        store2.dispatch({ type: "focusStage", stage: Number(value) });
+        e.target.value = "";
+      }
     });
   }
-  function render11({ flow, scenario, mode, selected, requests }, T2) {
+  function render13({ flow, view, tab, scenario, mode, selected, requests }, T2) {
     const playing = mode === "play";
     const option = (s) => html`<option value="${s.id}" ${s.id === scenario && html`selected`}>${s.title}</option>`;
+    const stageJump = view === "board" && tab === "canvas" && html`<select name="stage" class="jump" aria-label="${T2.stageJump}">
+      <option value="">${T2.stageJump}</option>
+      ${flow.stages.map((label, i) => html`<option value="${i}">${i + 1}. ${label}</option>`)}
+    </select>`;
     return html`
+    ${stageJump}
     <label class="pick"><span>${T2.path}</span><select name="scenario">
       <option value="">${T2.allActions}</option>${(flow.scenarios || []).map(option)}
     </select></label>
@@ -2198,9 +2541,9 @@
   $("flow-goal").textContent = FLOW.goal || "";
   watch(
     store,
-    (s) => [s.tab, s.mode],
-    ({ tab, mode }) => {
-      Object.assign(document.body.dataset, { tab, mode });
+    (s) => [s.tab, s.view, s.mode],
+    ({ tab, view, mode }) => {
+      Object.assign(document.body.dataset, { tab, view, mode });
     }
   );
   document.addEventListener("click", (e) => {
@@ -2209,13 +2552,15 @@
     e.preventDefault();
     store.dispatch(JSON.parse(target.dataset.dispatch));
   });
-  mount7($("tabs"), store, T);
-  mount9($("tools"), store, T);
+  mount9($("tabs"), store, T);
+  mount11($("tools"), store, T);
+  mount3($("legend"), store, T);
   mount2($("canvas"), store, T);
   mount($("stage"), store);
-  mount3($("panel"), store, T);
-  mount4($("player"), store, T);
-  mount5($("requests"), store, T);
-  mount6($("review"), store, T);
-  mount8($("toast"), store, T);
+  mount5($("panel"), store, T);
+  mount6($("player"), store, T);
+  mount7($("requests"), store, T);
+  mount4($("log"), store, T);
+  mount8($("review"), store, T);
+  mount10($("toast"), store, T);
 })();

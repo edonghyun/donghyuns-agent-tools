@@ -7,19 +7,20 @@
 import { primaryPath } from '../../../lib/board.mjs';
 import { backEdges, edgeKey, isException, screensById } from '../../../lib/graph.mjs';
 import { bottomOf } from './geometry.mjs';
-import { crossesAny, labelAnchor, simplify } from './path-geometry.mjs';
+import { crossesAny, labelSpot, simplify } from './path-geometry.mjs';
 import { channelSlots, detourLanes } from './route-space.mjs';
 
 /**
  * Routes every edge between two screens: `{edges, lanes}`. Actions sharing a source and a target
  * make one edge, so `edges` follows `screens` and then `actions` order by each edge's first
  * action. An edge is
- * `{id, ids, from, to, points: [[x, y], …], kind, primary, dormant, label?, labelAt?}`:
+ * `{id, ids, from, to, points: [[x, y], …], kind, primary, dormant, label?, labelAt?, labelRoom?}`:
  * - `id` is its first action's 'node.action' and `ids` lists all of them.
  * - `kind` is 'forward', 'back' (self-loops included), 'exception' (into an exception), or
  *   'from-exception' (out of one).
  * - `primary`: one of its actions is a primary-path step. `dormant`: either end is dormant.
- * - `label` (its actions' labels joined by ' / ') and `labelAt` only on edges out of a decision.
+ * - `label` (its actions' labels joined by ' / '), `labelAt` and `labelRoom` only on edges out of
+ *   a decision. The label centers on `labelAt`, on a horizontal run `labelRoom` wide.
  * `lanes` counts the detour lanes used above (`top`) and below (`bottom`) the main area.
  */
 export function routeEdges(flow, layout) {
@@ -40,10 +41,15 @@ export function routeEdges(flow, layout) {
     edges: edges.map(({ source, target, ...edge }) => ({
       ...edge,
       points: points.get(edge.id),
-      ...(edge.label !== undefined && { labelAt: labelAnchor(points.get(edge.id)) }),
+      ...(edge.label !== undefined && labelFields(points.get(edge.id))),
     })),
     lanes: lanes.used(),
   };
+}
+
+function labelFields(points) {
+  const { at, room } = labelSpot(points);
+  return { labelAt: at, labelRoom: room };
 }
 
 /** Points as an SVG path of M, H, V and L commands. */
