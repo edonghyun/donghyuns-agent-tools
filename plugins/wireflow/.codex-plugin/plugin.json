@@ -1,7 +1,7 @@
 {
   "name": "wireflow",
-  "version": "0.2.0",
-  "description": "Clickable wireflow review: connected mock screens, scenario checks for journeys and recovery paths, and copyable change requests.",
+  "version": "0.3.0",
+  "description": "Clickable wireflow review: a journey board with primary path, exceptions, decisions, metrics, and log events, connected mock screens, scenario checks, and copyable change requests.",
   "author": {
     "name": "Donghyun",
     "email": "edonghyun@hankyopa.com",
@@ -10,17 +10,17 @@
   "homepage": "https://github.com/edonghyun/donghyuns-agent-tools/tree/main/plugins/wireflow",
   "repository": "https://github.com/edonghyun/donghyuns-agent-tools",
   "license": "MIT",
-  "keywords": ["wireflow", "wireframe", "user-flow", "planning", "review"],
+  "keywords": ["wireflow", "wireframe", "user-flow", "journey-board", "service-blueprint", "event-logging", "planning", "review"],
   "skills": "./skills/",
   "interface": {
     "displayName": "Wireflow",
-    "shortDescription": "Review app structure and user flow as clickable connected mock screens.",
-    "longDescription": "Wireflow turns a brief, screenshots, routes, or a feature-intake analysis into an editable flow JSON and a single self-contained HTML viewer. Screens are grouped by task and connected by arrows; scenarios replay main journeys and recovery paths (cancel, back, retry) and flag dead ends and missing links. Fix proposals can be previewed without touching the baseline, and reviewers copy precise per-screen change requests back to the agent.",
+    "shortDescription": "Review a user journey as an auto-laid-out board or clickable mock screens.",
+    "longDescription": "Wireflow turns a brief, screenshots, routes, or a feature-intake analysis into an editable flow JSON and a single self-contained HTML viewer. Before screens exist, the journey board lays the flow out by stage: the primary path runs along a spine, drop-out exceptions and open decisions sit in bands below, cards carry chips for state, metrics, experiments, notifications, and exception codes, and a log-list tab lists the events to track. The same file opens as connected mock screens per device. Scenarios replay main journeys and recovery paths (cancel, back, retry) and flag dead ends and missing links. Fix proposals can be previewed without touching the baseline, and reviewers copy precise per-screen change requests back to the agent.",
     "developerName": "Donghyun",
     "category": "Productivity",
     "capabilities": ["Write"],
     "defaultPrompt": [
-      "이 기획 메모로 와이어플로우 만들어줘",
+      "이 기획 메모로 유저 저니 보드 만들어줘",
       "결제 실패 후 재시도 흐름이 막혔는지 와이어플로우로 보여줘",
       "## Wireflow 수정 요청 반영해줘"
     ],

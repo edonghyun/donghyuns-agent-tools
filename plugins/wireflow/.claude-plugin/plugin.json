@@ -1,7 +1,7 @@
 {
   "name": "wireflow",
-  "version": "0.2.0",
-  "description": "Clickable wireflow review for planners and developers: turn briefs, screenshots, or intake analysis into simple connected mock screens, replay journeys and recovery paths, and copy precise change requests back to the agent.",
+  "version": "0.3.0",
+  "description": "Clickable wireflow review for planners and developers: turn briefs, screenshots, or intake analysis into a journey board (primary path, exceptions, open decisions, metrics, and log events) or connected mock screens, replay journeys and recovery paths, and copy precise change requests back to the agent.",
   "author": {
     "name": "Donghyun",
     "email": "edonghyun@hankyopa.com"
