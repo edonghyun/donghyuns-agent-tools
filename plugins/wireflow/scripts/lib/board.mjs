@@ -2,6 +2,7 @@
 // and which nodes lead into each exception node.
 
 import { ACTOR_PALETTE } from './constants.mjs';
+import { isException } from './graph.mjs';
 import { runScenario } from './scenario.mjs';
 
 export const resolveView = (flow) =>
@@ -40,7 +41,7 @@ export const eventLocations = (event) => [event.at ?? []].flat();
 export function exceptionSources(flow) {
   const sources = new Map();
   for (const s of flow.screens) {
-    if (s.exception !== undefined) {
+    if (isException(s)) {
       sources.set(s.id, []);
     }
   }

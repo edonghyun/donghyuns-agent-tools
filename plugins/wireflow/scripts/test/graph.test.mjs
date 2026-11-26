@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { isBackEdge, rankNodes } from '../lib/index.mjs';
+import { edgesOf, entryIds, isException, reach, screensById } from '../lib/graph.mjs';
+import { backEdges, edgeKey, isBackEdge, rankNodes } from '../lib/index.mjs';
 
 // Nodes as [id, stage, [targets], exception?]; the first node is the start.
 const flowOf = (nodes, extra = {}) => ({
@@ -115,4 +117,43 @@ test('actions to missing screens are skipped', () => {
   ]);
   assert.deepEqual(ranks(flow), { a: 0, b: 1 });
   assert.equal(isBackEdge(flow, 'a', 'ghost'), false);
+});
+
+test('a retry edge out of an exception is the back edge, whatever the action order', () => {
+  const flow = flowOf([
+    ['a', 0, ['failed', 'b']],
+    ['b', 0, ['failed']],
+    ['failed', 0, ['b'], 'E01'],
+  ]);
+  assert.deepEqual([...backEdges(flow)], [edgeKey('failed', 'b')]);
+  assert.equal(isBackEdge(flow, 'b', 'failed'), false);
+  assert.deepEqual(ranks(flow), { a: 0, b: 1, failed: 0 });
+});
+
+const exampleDir = new URL('../../examples/', import.meta.url);
+const examples = readdirSync(exampleDir)
+  .filter((f) => f.endsWith('.flow.json'))
+  .map((f) => [f, JSON.parse(readFileSync(new URL(f, exampleDir), 'utf8'))]);
+
+test('in every example, a ranking edge between reached nodes moves right', () => {
+  assert.ok(examples.length > 0);
+  for (const [name, flow] of examples) {
+    const rank = rankNodes(flow);
+    const back = backEdges(flow);
+    const byId = screensById(flow);
+    const kept = new Map(
+      [...edgesOf(flow).fwd].map(([from, tos]) => [
+        from,
+        tos.filter((to) => !back.has(edgeKey(from, to)) && !isException(byId.get(to))),
+      ]),
+    );
+    const reached = reach(entryIds(flow), kept);
+    for (const [from, tos] of kept) {
+      for (const to of tos) {
+        if (reached.has(from)) {
+          assert.ok(rank.get(to) > rank.get(from), `${name}: ${from} -> ${to}`);
+        }
+      }
+    }
+  }
 });

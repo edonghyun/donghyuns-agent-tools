@@ -41,44 +41,63 @@ export function reach(starts, edges) {
   return seen;
 }
 
-const edgeKey = (from, to) => `${from} ${to}`;
+/** True for an exception node: one whose `exception` holds its code. */
+export const isException = (screen) => typeof screen.exception === 'string';
+
+/** Key of the edge from → to in a `backEdges` set. */
+export const edgeKey = (from, to) => `${from} ${to}`;
 
 /**
  * Depth-first walk over action edges: entries in order, then unvisited screens in `screens`
- * order, each node's actions in order. A back edge leads into a node still on the walk's path.
+ * order. Each node follows its actions in order, but non-exception targets before exception
+ * targets, so a retry edge out of an exception is the one that closes the loop.
+ * A back edge leads into a node still on the walk's path.
  * `order` lists the nodes topologically once back edges are removed.
  */
 function depthFirst(flow) {
+  const byId = screensById(flow);
   const { fwd } = edgesOf(flow);
   const color = new Map();
   const post = [];
   const back = new Set();
+  const stack = [];
+  const enter = (node) => {
+    const to = fwd.get(node);
+    const targets = [
+      ...to.filter((t) => !isException(byId.get(t))),
+      ...to.filter((t) => isException(byId.get(t))),
+    ];
+    color.set(node, 'grey');
+    stack.push({ node, targets, next: 0 });
+  };
   for (const root of [...entryIds(flow), ...fwd.keys()]) {
     if (color.has(root) || !fwd.has(root)) {
       continue;
     }
-    color.set(root, 'grey');
-    const stack = [{ node: root, next: 0 }];
+    enter(root);
     while (stack.length) {
       const top = stack[stack.length - 1];
-      const to = fwd.get(top.node)[top.next++];
-      if (to === undefined) {
+      if (top.next === top.targets.length) {
         color.set(top.node, 'black');
         post.push(top.node);
         stack.pop();
-      } else if (color.get(to) === 'grey') {
+        continue;
+      }
+      const to = top.targets[top.next++];
+      if (color.get(to) === 'grey') {
         back.add(edgeKey(top.node, to));
       } else if (!color.has(to)) {
-        color.set(to, 'grey');
-        stack.push({ node: to, next: 0 });
+        enter(to);
       }
     }
   }
-  return { fwd, back, order: post.reverse() };
+  return { byId, fwd, back, order: post.reverse() };
 }
 
-/** True when the edge from → to closes a loop in the walk that `rankNodes` ranks by. */
-export const isBackEdge = (flow, from, to) => depthFirst(flow).back.has(edgeKey(from, to));
+/** The `edgeKey`s of the edges that close a loop in the walk `rankNodes` ranks by. */
+export const backEdges = (flow) => depthFirst(flow).back;
+
+export const isBackEdge = (flow, from, to) => backEdges(flow).has(edgeKey(from, to));
 
 /**
  * Each node's column rank, in `screens` order: the longest path from the entries once back edges
@@ -86,8 +105,7 @@ export const isBackEdge = (flow, from, to) => depthFirst(flow).back.has(edgeKey(
  * among reached nodes of its stage, or 0.
  */
 export function rankNodes(flow) {
-  const byId = screensById(flow);
-  const { fwd, back, order } = depthFirst(flow);
+  const { byId, fwd, back, order } = depthFirst(flow);
   const rank = new Map(
     entryIds(flow)
       .filter((id) => fwd.has(id))
@@ -98,7 +116,7 @@ export function rankNodes(flow) {
       continue;
     }
     for (const to of fwd.get(from)) {
-      if (!back.has(edgeKey(from, to)) && typeof byId.get(to).exception !== 'string') {
+      if (!back.has(edgeKey(from, to)) && !isException(byId.get(to))) {
         rank.set(to, Math.max(rank.get(to) ?? 0, rank.get(from) + 1));
       }
     }
