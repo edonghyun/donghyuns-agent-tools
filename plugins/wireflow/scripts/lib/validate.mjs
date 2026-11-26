@@ -4,6 +4,10 @@ import { actorList } from './board.mjs';
 import { DEVICES, EVENT_TYPES, HEX_COLOR, ID, KINDS, VIEWS } from './constants.mjs';
 import { entryIds } from './graph.mjs';
 
+/** An actor is a nonempty label or an object with a nonempty string `name`. */
+const isActor = (a) =>
+  typeof a === 'string' ? a !== '' : typeof a?.name === 'string' && a.name !== '';
+
 const deviceError = (d) => {
   if (d === undefined || (typeof d === 'string' && d in DEVICES)) {
     return null;
@@ -43,7 +47,7 @@ export function validate(flow) {
   }
   const actorNames = Array.isArray(flow.actors) ? actorList(flow).map((a) => a.name) : null;
   for (const a of Array.isArray(flow.actors) ? flow.actors : []) {
-    if (typeof a === 'string' ? !a : typeof a?.name !== 'string' || !a.name) {
+    if (!isActor(a)) {
       errs.push(`actor ${JSON.stringify(a)} must be a label or {name, color}`);
     } else if (typeof a === 'object' && a.color !== undefined && !HEX_COLOR.test(a.color)) {
       errs.push(`actor "${a.name}" has color ${JSON.stringify(a.color)}, expected #RRGGBB`);

@@ -27,10 +27,16 @@ export function primaryPath(flow) {
   return { nodes, steps, order: [...nodes] };
 }
 
+/** A location `node` or `node.action` as [nodeId, actionId or undefined]. */
+export function splitLocation(at) {
+  const dot = at.indexOf('.');
+  return dot < 0 ? [at, undefined] : [at.slice(0, dot), at.slice(dot + 1)];
+}
+
 /** An event's `at` as a list of `node` or `node.action` locations. */
 export const eventLocations = (event) => [event.at ?? []].flat();
 
-/** Each exception node id → ids of the nodes with an action into it, in `screens` order. */
+/** Each exception node id → ids of the other nodes with an action into it, in `screens` order. */
 export function exceptionSources(flow) {
   const sources = new Map();
   for (const s of flow.screens) {
@@ -40,7 +46,9 @@ export function exceptionSources(flow) {
   }
   for (const s of flow.screens) {
     for (const to of new Set(s.actions.map((a) => a.to))) {
-      sources.get(to)?.push(s.id);
+      if (to !== s.id) {
+        sources.get(to)?.push(s.id);
+      }
     }
   }
   return sources;

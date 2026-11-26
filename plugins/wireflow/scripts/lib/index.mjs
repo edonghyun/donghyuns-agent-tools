@@ -6,6 +6,7 @@ export {
   exceptionSources,
   primaryPath,
   resolveView,
+  splitLocation,
 } from './board.mjs';
 export { check, exitCode } from './check.mjs';
 export { ACTOR_PALETTE, DEVICES, EVENT_TYPES, KINDS, VIEWS } from './constants.mjs';

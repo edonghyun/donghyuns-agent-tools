@@ -8,10 +8,11 @@ import {
   exitCode,
   primaryPath,
   resolveView,
+  splitLocation,
   validate,
 } from '../lib/index.mjs';
 
-// home --pay--> pay --ok--> done, pay --fail--> failed (exception E01), lost (exception E02, orphan).
+// home --pay--> pay --ok--> done; pay --fail--> failed (exception E01). Primary scenario: home, pay, done.
 const base = () => ({
   id: 'pay',
   title: '결제',
@@ -103,7 +104,7 @@ test('a scenario must start at a screen, so the primary path never names a missi
   f.scenarios[0].start = 'zz';
   f.events = [{ id: 'seen', type: 'normal', at: 'home' }];
   assert.match(validate(f).join('\n'), /scenario "happy" starts at "zz"/);
-  assert.deepEqual(check(f).errors.length > 0, true);
+  assert.match(check(f).errors.join('\n'), /starts at "zz"/);
 });
 
 test('broken-event is critical for an unknown node and for an unknown action', () => {
@@ -134,16 +135,30 @@ test('unknown-primary is critical', () => {
   assert.match(r.findings[0].message, /"zzz"/);
 });
 
-test('orphan-exception warns when nothing leads into an exception node', () => {
+test('orphan-exception is the only warning for an exception node nothing leads into', () => {
   const f = base();
   f.screens.push({ id: 'lost', title: '분실', stage: 2, exception: 'E02', end: true, actions: [] });
   const r = check(f);
-  const orphan = r.findings.filter((x) => x.code === 'orphan-exception');
   assert.deepEqual(
-    orphan.map((x) => [x.screen, x.severity]),
-    [['lost', 'warning']],
+    r.findings.map((x) => [x.code, x.screen, x.severity]),
+    [['orphan-exception', 'lost', 'warning']],
   );
-  assert.match(orphan[0].message, /E02 분실/);
+  assert.match(r.findings[0].message, /E02 분실/);
+});
+
+test('a self-loop does not lead into an exception node', () => {
+  const f = base();
+  const retry = { id: 'retry', label: '다시', to: 'lost' };
+  f.screens.push({
+    id: 'lost',
+    title: '분실',
+    stage: 2,
+    exception: 'E02',
+    end: true,
+    actions: [retry],
+  });
+  assert.deepEqual(exceptionSources(f).get('lost'), []);
+  assert.deepEqual(codes(check(f)), ['orphan-exception']);
 });
 
 test('exceptionSources maps each exception node to the nodes that lead into it', () => {
@@ -199,6 +214,12 @@ test('primaryPath keeps the steps reached before a failure and is empty without 
   delete f.primary;
   const none = primaryPath(f);
   assert.deepEqual([none.nodes.size, none.steps.size, none.order], [0, 0, []]);
+});
+
+test('splitLocation separates a node id from an optional action id', () => {
+  assert.deepEqual(splitLocation('home'), ['home', undefined]);
+  assert.deepEqual(splitLocation('home.pay'), ['home', 'pay']);
+  assert.deepEqual(splitLocation('home.pay.more'), ['home', 'pay.more']);
 });
 
 test('eventLocations normalizes a single location and a list', () => {

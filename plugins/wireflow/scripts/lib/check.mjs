@@ -1,7 +1,7 @@
 // Static checks of a flow: dangling links, dead ends, scenario replay, requirement coverage,
 // and the board fields (events, primary path, exceptions).
 
-import { eventLocations, exceptionSources, primaryPath } from './board.mjs';
+import { eventLocations, exceptionSources, primaryPath, splitLocation } from './board.mjs';
 import { SEVERITY_ORDER } from './constants.mjs';
 import { edgesOf, entryIds, reach, screensById } from './graph.mjs';
 import { messages } from './messages.mjs';
@@ -52,10 +52,15 @@ export function check(input, opts = {}) {
     }
   }
 
+  const orphans = [...exceptionSources(flow)].filter(([, from]) => !from.length).map(([id]) => id);
   const reachable = reach(entryIds(flow), fwd);
   const exits = [...entryIds(flow), ...flow.screens.filter((s) => s.end).map((s) => s.id)];
   const canExit = reach(exits, back);
   for (const s of flow.screens) {
+    // An orphan exception is unreachable by definition; orphan-exception reports it once.
+    if (orphans.includes(s.id)) {
+      continue;
+    }
     if (!reachable.has(s.id)) {
       add({
         code: 'unreachable',
@@ -105,7 +110,13 @@ export function check(input, opts = {}) {
     return { id: q.id, status, scenarios: linked };
   });
 
-  checkBoard(flow, M, add);
+  const byId = screensById(flow);
+  findings.push(
+    ...brokenEvents(flow, byId, M),
+    ...unknownPrimary(flow, M),
+    ...orphanExceptions(orphans, byId, M),
+    ...untrackedSteps(flow, byId, M),
+  );
 
   findings.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);
   return {
@@ -124,67 +135,73 @@ export function exitCode(result) {
   return result.findings.some((f) => f.severity !== 'info') ? 1 : 0;
 }
 
-function checkBoard(flow, M, add) {
-  const byId = screensById(flow);
-  const events = flow.events || [];
-  const tracked = new Set();
-  for (const e of events) {
-    for (const at of eventLocations(e)) {
-      tracked.add(at);
-      const [node, action] = at.split(/\.(.*)/s);
-      const s = byId.get(node);
-      if (!s || (action !== undefined && !s.actions.some((a) => a.id === action))) {
-        add({
-          code: 'broken-event',
-          severity: 'critical',
-          event: e.id,
-          message: M.brokenEvent(e.id, at),
-        });
-      }
-    }
-  }
+function brokenEvents(flow, byId, M) {
+  const exists = (at) => {
+    const [node, action] = splitLocation(at);
+    const s = byId.get(node);
+    return Boolean(s) && (action === undefined || s.actions.some((a) => a.id === action));
+  };
+  return (flow.events || []).flatMap((e) =>
+    eventLocations(e)
+      .filter((at) => !exists(at))
+      .map((at) => ({
+        code: 'broken-event',
+        severity: 'critical',
+        event: e.id,
+        message: M.brokenEvent(e.id, at),
+      })),
+  );
+}
 
-  if (flow.primary !== undefined && !(flow.scenarios || []).some((sc) => sc.id === flow.primary)) {
-    add({
+function unknownPrimary(flow, M) {
+  if (flow.primary === undefined || (flow.scenarios || []).some((sc) => sc.id === flow.primary)) {
+    return [];
+  }
+  return [
+    {
       code: 'unknown-primary',
       severity: 'critical',
       scenario: flow.primary,
       message: M.unknownPrimary(flow.primary),
-    });
-  }
+    },
+  ];
+}
 
-  for (const [id, sources] of exceptionSources(flow)) {
-    if (sources.length === 0) {
-      const s = byId.get(id);
-      add({
-        code: 'orphan-exception',
-        severity: 'warning',
-        screen: id,
-        message: M.orphanException(s.exception, s.title),
-      });
-    }
-  }
+function orphanExceptions(orphans, byId, M) {
+  return orphans.map((id) => ({
+    code: 'orphan-exception',
+    severity: 'warning',
+    screen: id,
+    message: M.orphanException(byId.get(id).exception, byId.get(id).title),
+  }));
+}
 
+/**
+ * Primary-path steps with no event. A step is the entry node, or a `node.action` transition plus
+ * the node it lands on; an event on either the transition or the landing node tracks it.
+ */
+function untrackedSteps(flow, byId, M) {
+  const events = flow.events || [];
   if (events.length === 0) {
-    return;
+    return [];
   }
+  const tracked = new Set(events.flatMap(eventLocations));
   const { steps, order } = primaryPath(flow);
-  const untracked = (screen, action, landing) =>
-    add({
+  const walk = [...steps].map((transition) => {
+    const [node, action] = splitLocation(transition);
+    const landing = byId.get(node).actions.find((a) => a.id === action).to;
+    return { screen: node, action, transition, landing };
+  });
+  if (order.length) {
+    walk.unshift({ screen: order[0], landing: order[0] });
+  }
+  return walk
+    .filter((w) => !tracked.has(w.transition) && !tracked.has(w.landing))
+    .map((w) => ({
       code: 'untracked-step',
       severity: 'info',
-      screen,
-      action,
-      message: M.untracked(byId.get(landing).title),
-    });
-  if (order.length && !tracked.has(order[0])) {
-    untracked(order[0], undefined, order[0]);
-  }
-  for (const step of steps) {
-    const [node, action] = step.split(/\.(.*)/s);
-    const landing = byId.get(node).actions.find((a) => a.id === action).to;
-    if (!tracked.has(step) && !tracked.has(landing)) {
-      untracked(node, action, landing);
-    }
-  }
+      screen: w.screen,
+      action: w.action,
+      message: M.untracked(byId.get(w.landing).title),
+    }));
 }
