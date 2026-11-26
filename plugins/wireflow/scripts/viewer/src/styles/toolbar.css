@@ -1,0 +1,63 @@
+/* The bar: flow title and goal, the tabs, then the tools. */
+.bar {
+  height: var(--bar-h);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+}
+.ident {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  min-width: 0;
+  flex: 1;
+}
+.ident span {
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tabs {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.tabs button {
+  border-color: transparent;
+  background: none;
+}
+.tabs button.on {
+  background: var(--ink);
+  color: var(--card);
+}
+.tabs .count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--bad);
+}
+.tabs button.on .count {
+  color: #f3b5a8;
+}
+.tools {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.pick {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--muted);
+}
+.pick select {
+  max-width: 260px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--card);
+}

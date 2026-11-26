@@ -1,0 +1,54 @@
+/* The walk-through over the canvas: the live node beside its trail. */
+#player {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: auto;
+  padding: 28px;
+  display: flex;
+  gap: 28px;
+  justify-content: center;
+  align-items: flex-start;
+  background: var(--paper);
+  cursor: default;
+}
+#player .screen {
+  position: relative;
+  cursor: default;
+}
+#player .screen .act {
+  cursor: pointer;
+}
+#player .screen.live {
+  height: auto;
+  min-height: 160px;
+}
+#player .screen.box.live {
+  padding-bottom: 8px;
+}
+#player .screen.box.k-decision.live {
+  border: 2px solid var(--ink);
+  background: #fff8e6;
+  border-radius: 14px;
+}
+#player .screen.box.k-decision.live .shape {
+  display: none;
+}
+#player .screen.box.k-end.live .m-actions {
+  display: none;
+}
+.trail {
+  width: 260px;
+  font-size: 13px;
+}
+.trail ol {
+  padding-left: 20px;
+}
+.trail .vars {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  background: #f1efe9;
+  padding: 8px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+}

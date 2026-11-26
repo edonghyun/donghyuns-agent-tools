@@ -3,9 +3,7 @@
   "files": {
     "includes": [
       "**",
-      "!scripts/viewer/dist",
-      "!scripts/viewer/viewer.css",
-      "!scripts/viewer/viewer.html"
+      "!scripts/viewer/dist"
     ]
   },
   "formatter": {

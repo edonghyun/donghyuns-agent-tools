@@ -1,0 +1,362 @@
+/* Nodes as the wireframe draws them: device frames, cards, and boxes, with their buttons. */
+.screen {
+  position: absolute;
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: 28px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.06);
+}
+.screen.sel {
+  outline: 6px solid var(--path);
+  outline-offset: 6px;
+}
+.screen.dim {
+  opacity: 0.35;
+}
+.screen.inferred {
+  border-style: dashed;
+}
+.screen.proposed {
+  border-color: var(--prop);
+  border-style: dashed;
+}
+.screen.has-bad::after {
+  content: "!";
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--bad);
+  color: #fff;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+/* buttons */
+.act {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--ink);
+  background: var(--ink);
+  color: var(--card);
+  font-weight: 600;
+  text-align: center;
+}
+.act.secondary,
+.act.back {
+  background: var(--card);
+  color: var(--ink);
+}
+.act.sim {
+  background: none;
+  color: var(--muted);
+  border: 1.5px dashed var(--muted);
+  font-weight: 500;
+  font-size: 13px;
+  padding: 8px;
+}
+.act.missing {
+  border-color: var(--bad);
+  border-style: dashed;
+  background: #fbeee9;
+  color: var(--bad);
+}
+.act.missing::after {
+  content: "?";
+  position: absolute;
+  right: 12px;
+}
+.act.proposed {
+  outline: 3px solid var(--prop);
+  outline-offset: 2px;
+}
+.act.on-path {
+  outline: 4px solid var(--path);
+  outline-offset: 3px;
+}
+.act.guard-off {
+  opacity: 0.45;
+}
+.act .step {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--path);
+  color: #fff;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+}
+.m-bar .act {
+  width: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 22px;
+}
+
+/* mock app chrome */
+.m-bar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px;
+  border-bottom: 1.5px solid var(--line);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.m-body {
+  flex: 1;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+}
+.m-body h4 {
+  margin: 0;
+  font-size: 24px;
+}
+.m-text {
+  color: #44413b;
+  white-space: pre-wrap;
+}
+.m-text.detail {
+  color: var(--muted);
+  font-size: 13px;
+}
+.m-notice {
+  border: 1.5px solid var(--line);
+  background: #f1efe9;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.tone-error .m-notice,
+.m-notice.error {
+  border-color: var(--bad);
+  background: #fbeee9;
+}
+.tone-success .m-notice {
+  border-color: var(--ok);
+  background: #ecf5ef;
+}
+.m-visual {
+  background: repeating-linear-gradient(45deg, #ece9e2, #ece9e2 10px, #e4e0d7 10px, #e4e0d7 20px);
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  text-align: center;
+  padding: 8px;
+  min-height: 120px;
+}
+.m-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.m-list div {
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.m-rows {
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+}
+.m-rows div {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+}
+.m-rows div:first-child {
+  border-top: 0;
+}
+.m-rows span {
+  color: var(--muted);
+}
+.m-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.m-field span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.m-field input,
+.m-field textarea {
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  width: 100%;
+}
+.m-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.m-actions {
+  padding: 14px 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.m-tabs {
+  display: flex;
+  border-top: 1.5px solid var(--line);
+  flex-shrink: 0;
+}
+.m-tabs .act {
+  flex: 1;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  padding: 14px 4px;
+}
+
+/* boxes: step, decision, system, wait, end */
+.screen.box {
+  border-radius: 14px;
+  border-width: 2px;
+  justify-content: center;
+  overflow: visible;
+}
+.screen.box .n-inner {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+}
+.screen.box .n-kind {
+  font-size: 12px;
+  color: var(--muted);
+}
+.screen.box .n-title {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.screen.box .n-body {
+  font-size: 13px;
+  color: #44413b;
+}
+.screen.box.k-system {
+  background: #eeece6;
+  border-style: double;
+  border-width: 4px;
+}
+.screen.box.k-wait {
+  border-style: dashed;
+}
+.screen.box.k-end {
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--card);
+  text-align: center;
+}
+.screen.box.k-end .n-kind {
+  color: #cfcac0;
+}
+.screen.box.k-decision {
+  border: 0;
+  background: none;
+  box-shadow: none;
+  text-align: center;
+}
+.screen.box.k-decision .shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.screen.box.k-decision .shape polygon {
+  fill: #fff8e6;
+  stroke: var(--ink);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.screen.box.k-decision .n-inner {
+  padding: 0 40px;
+}
+.screen.box.k-decision .n-title {
+  font-size: 16px;
+}
+.screen.box.k-decision.sel {
+  outline: none;
+}
+.screen.box.k-decision.sel .shape polygon {
+  stroke: var(--path);
+  stroke-width: 5;
+}
+
+/* cards: message, email, document */
+.screen.card {
+  border-radius: 16px;
+}
+.screen.card .c-head {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--muted);
+  border-bottom: 1.5px solid var(--line);
+  flex-shrink: 0;
+}
+.screen.card .c-subject {
+  padding: 10px 14px 0;
+  font-weight: 600;
+  font-size: 17px;
+}
+.screen.card h4 {
+  margin: 0;
+  padding: 14px 14px 0;
+  font-size: 20px;
+}
+.screen.card .c-body {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+.screen.card .m-actions {
+  padding: 10px 14px 14px;
+}
+.screen.card .act {
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+.screen.k-message {
+  background: #fdf6d8;
+  border-color: #8a7a2e;
+}
+.screen.k-message .bubble {
+  background: #fff;
+  border: 1.5px solid #d8cc8a;
+  border-radius: 4px 14px 14px 14px;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+}
+.screen.k-document {
+  border-radius: 3px;
+  box-shadow: 8px 8px 0 #e4e0d7;
+}

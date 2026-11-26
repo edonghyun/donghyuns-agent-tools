@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { edgePath, edgeStart, layoutFlow, nodeSize, nodeStyle } from '../viewer/geometry.mjs';
-import { texts } from '../viewer/i18n.mjs';
-import { html, nodeBody } from '../viewer/render.mjs';
+import { render as renderEdges } from '../viewer/src/components/edges.mjs';
+import { render as renderNode } from '../viewer/src/components/frame-node.mjs';
+import { html } from '../viewer/src/html.mjs';
+import { texts } from '../viewer/src/i18n.mjs';
+import { layoutWireframe, nodeSize, nodeStyle } from '../viewer/src/layout/wireframe.mjs';
 
 const flow = (screens, extra = {}) => ({
   id: 'f',
@@ -15,88 +17,67 @@ const flow = (screens, extra = {}) => ({
 
 test('screen size follows the node device, then the flow device, then mobile', () => {
   const f = flow([{ id: 'x', stage: 0, actions: [] }], { device: 'tablet' });
-  assert.deepEqual(nodeSize({ id: 'x' }, f, 'wireframe'), [820, 1180]);
-  assert.deepEqual(nodeSize({ id: 'x', device: 'desktop' }, f, 'wireframe'), [1280, 800]);
-  assert.deepEqual(
-    nodeSize({ id: 'x', device: { width: 1440, height: 900 } }, f, 'wireframe'),
-    [1440, 900],
-  );
-  assert.deepEqual(
-    nodeSize({ id: 'x' }, flow([{ id: 'x', stage: 0, actions: [] }]), 'wireframe'),
-    [390, 844],
-  );
+  assert.deepEqual(nodeSize({ id: 'x' }, f), [820, 1180]);
+  assert.deepEqual(nodeSize({ id: 'x', device: 'desktop' }, f), [1280, 800]);
+  assert.deepEqual(nodeSize({ id: 'x', device: { width: 1440, height: 900 } }, f), [1440, 900]);
+  assert.deepEqual(nodeSize({ id: 'x' }, flow([{ id: 'x', stage: 0, actions: [] }])), [390, 844]);
 });
 
-test('flowchart view draws every kind as a box; wireframe keeps frames and cards', () => {
-  assert.equal(nodeStyle({ kind: 'screen' }, 'flowchart'), 'box');
-  assert.equal(nodeStyle({}, 'wireframe'), 'frame');
-  assert.equal(nodeStyle({ kind: 'email' }, 'wireframe'), 'card');
-  assert.equal(nodeStyle({ kind: 'decision' }, 'wireframe'), 'box');
+test('screens draw as device frames, touchpoints as cards, the rest as boxes', () => {
+  assert.equal(nodeStyle({}), 'frame');
+  assert.equal(nodeStyle({ kind: 'email' }), 'card');
+  assert.equal(nodeStyle({ kind: 'decision' }), 'box');
 });
 
-test('stage-row layout places nodes left to right without overlap', () => {
+test('the wireframe puts each stage on its own row, left to right without overlap', () => {
   const f = flow([
     { id: 'a', stage: 0, actions: [] },
     { id: 'b', stage: 0, kind: 'message', actions: [] },
     { id: 'c', stage: 1, kind: 'step', actions: [] },
   ]);
-  const { pos } = layoutFlow(f, 'wireframe');
-  const a = pos.get('a'),
-    b = pos.get('b'),
-    c = pos.get('c');
+  const { nodes, stages, size } = layoutWireframe(f);
+  const [a, b, c] = ['a', 'b', 'c'].map((id) => nodes.get(id));
   assert.ok(b.x >= a.x + a.w);
   assert.equal(a.y, b.y);
   assert.ok(c.y > a.y + a.h);
-});
-
-test('flowchart with actors lays out lanes (rows) by stage (columns)', () => {
-  const f = flow(
-    [
-      { id: 'ask', stage: 0, actor: '고객', kind: 'step', actions: [] },
-      { id: 'assign', stage: 1, actor: '상담사', kind: 'step', actions: [] },
-      { id: 'notify', stage: 1, actor: '고객', kind: 'message', actions: [] },
-    ],
-    { actors: ['고객', { name: '상담사', color: '#2F53C4' }] },
-  );
-  const { pos, groups } = layoutFlow(f, 'flowchart', '미지정');
   assert.deepEqual(
-    groups.filter((g) => g.type === 'lane').map((g) => g.label),
-    ['고객', '상담사'],
-  );
-  assert.deepEqual(
-    groups.filter((g) => g.type === 'column').map((g) => g.label),
+    stages.map((s) => s.label),
     ['a', 'b'],
   );
-  assert.equal(pos.get('assign').x, pos.get('notify').x, 'same stage → same column');
-  assert.ok(pos.get('assign').y > pos.get('notify').y, 'second lane is below the first');
-  assert.ok(pos.get('notify').x > pos.get('ask').x, 'later stage → further right');
+  assert.ok(size.w >= b.x + b.w && size.h >= c.y + c.h);
 });
 
-test('edges enter targets from the facing side', () => {
+/** The `d` of each edge path `renderEdges` draws between boxes, by target. */
+function edgePaths(boxes, anchor) {
+  const screens = Object.keys(boxes).map((id) => ({
+    id,
+    actions: id === 'src' ? Object.keys(boxes).map((to) => ({ id: `to-${to}`, to })) : [],
+  }));
+  const anchors = new Map(screens[0].actions.map((a) => [`src.${a.id}`, anchor]));
+  const svg = renderEdges({
+    flow: { screens },
+    nodes: new Map(Object.entries(boxes)),
+    anchors,
+    path: null,
+  });
+  return [...svg.matchAll(/<path class="[^"]*" d="([^"]+)"/g)].map((m) => m[1]);
+}
+
+test('wireframe edges enter their target from the side facing the source', () => {
   const src = { x: 0, y: 0, w: 100, h: 100 };
-  const start = { x: 100, y: 50 };
-  assert.match(
-    edgePath(start, src, { x: 300, y: 0, w: 100, h: 100 }),
-    / 300,50$/,
-    'right → left-middle',
+  const [self, right, below, above] = edgePaths(
+    {
+      src,
+      right: { x: 300, y: 0, w: 100, h: 100 },
+      below: { x: 0, y: 400, w: 100, h: 100 },
+      above: { x: 0, y: -400, w: 100, h: 100 },
+    },
+    { x: 100, y: 50 },
   );
-  assert.match(
-    edgePath(start, src, { x: 0, y: 400, w: 100, h: 100 }),
-    / 50,400$/,
-    'below → top-center',
-  );
-  assert.match(
-    edgePath(start, src, { x: 0, y: -400, w: 100, h: 100 }),
-    / 50,-300$/,
-    'above → bottom-center',
-  );
-  assert.match(edgePath(start, src, src), /^M100,50 c/, 'self loop');
-});
-
-test('decision branches leave from the diamond edge, not the bounding box', () => {
-  const box = { x: 0, y: 0, w: 200, h: 100 };
-  assert.deepEqual(edgeStart(box, 0, 1, true), { x: 200, y: 50 }, 'single branch at the right tip');
-  assert.ok(edgeStart(box, 0, 3, true).x < 200, 'upper branch sits inside the box');
+  assert.match(self, /^M100,50 C/, 'self loop starts at the button');
+  assert.match(right, / 300,50$/, 'right → left-middle');
+  assert.match(below, / 50,400$/, 'below → top-center');
+  assert.match(above, / 50,-300$/, 'above → bottom-center');
 });
 
 test('html`` escapes interpolations, keeps nested html, drops false/null', () => {
@@ -105,7 +86,7 @@ test('html`` escapes interpolations, keeps nested html, drops false/null', () =>
   assert.equal(out, '<b>&lt;script&gt;</b><i>ok</i>&lt;a&gt;<br>');
 });
 
-test('node bodies: boxes hide buttons on the canvas and show them in the walk-through', () => {
+test('box nodes hide their buttons on the canvas and show them in the walk-through', () => {
   const T = texts('ko');
   const node = {
     id: 'q',
@@ -113,8 +94,35 @@ test('node bodies: boxes hide buttons on the canvas and show them in the walk-th
     kind: 'decision',
     actions: [{ id: 'y', label: '예', to: 'q' }],
   };
-  const ctx = { flow: { title: 'F' }, findNode: () => node, vars: {}, live: false };
-  assert.doesNotMatch(String(nodeBody(node, 'flowchart', ctx, T)), /data-action/);
-  assert.match(String(nodeBody(node, 'flowchart', { ...ctx, live: true }, T)), /data-action="y"/);
-  assert.match(String(nodeBody(node, 'flowchart', ctx, T)), /polygon/);
+  const ctx = { flow: { title: 'F', screens: [node] }, vars: {}, live: false };
+  assert.doesNotMatch(String(renderNode(node, ctx, T)), /data-action/);
+  assert.match(String(renderNode(node, { ...ctx, live: true }, T)), /data-action="y"/);
+  assert.match(String(renderNode(node, ctx, T)), /polygon/);
+});
+
+test('frame buttons mark missing links, guards, and scenario steps', () => {
+  const T = texts('ko');
+  const node = {
+    id: 'pay',
+    title: '결제',
+    actions: [
+      { id: 'go', label: '결제', to: 'pay', when: { ready: true } },
+      { id: 'nowhere', label: '?', to: null },
+    ],
+  };
+  const out = String(
+    renderNode(
+      node,
+      {
+        flow: { title: 'F', screens: [node] },
+        vars: { ready: false },
+        live: true,
+        pathSteps: new Map([['pay.go', [2]]]),
+      },
+      T,
+    ),
+  );
+  assert.match(out, /class="act primary guard-off on-path" data-action="go"/);
+  assert.match(out, /<span class="step">2<\/span>/);
+  assert.match(out, /class="act secondary missing" data-action="nowhere"/);
 });

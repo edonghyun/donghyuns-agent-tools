@@ -9,26 +9,6 @@ import { fileURLToPath } from 'node:url';
 import { check, exitCode, validate } from './lib/index.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
-// Browser-safe ES modules inlined into the viewer, in dependency order.
-const VIEWER_MODULES = [
-  'lib/constants.mjs',
-  'lib/messages.mjs',
-  'lib/graph.mjs',
-  'lib/scenario.mjs',
-  'lib/board.mjs',
-  'lib/validate.mjs',
-  'lib/proposals.mjs',
-  'lib/check.mjs',
-  'viewer/i18n.mjs',
-  'viewer/geometry.mjs',
-  'viewer/render.mjs',
-];
-
-/** Turn an ES module into plain script text: drop imports, strip `export`. */
-function inlineModule(path) {
-  const source = readFileSync(join(here, path), 'utf8');
-  return `// --- ${path} ---\n${source.replace(/^import .*;\n/gm, '').replace(/^export /gm, '')}`;
-}
 
 const ICON = { critical: '🔴', warning: '🟡', info: '🔵' };
 
@@ -101,9 +81,9 @@ if (cmd === 'check') {
     printCheck(flow, { errors }, src);
     process.exit(2);
   }
-  const css = readFileSync(join(here, 'viewer/viewer.css'), 'utf8');
-  const app = readFileSync(join(here, 'viewer/app.js'), 'utf8');
-  const modules = VIEWER_MODULES.map(inlineModule).join('\n');
+  // The viewer bundle and styles, built by `npm run bundle` and committed.
+  const css = readFileSync(join(here, 'viewer/dist/viewer.css'), 'utf8');
+  const app = readFileSync(join(here, 'viewer/dist/viewer.js'), 'utf8');
   const tpl = readFileSync(join(here, 'viewer/viewer.html'), 'utf8');
   const meta = {
     source: relative(process.cwd(), resolve(src)) || basename(src),
@@ -119,10 +99,10 @@ if (cmd === 'check') {
     .replace('/*TITLE*/', () =>
       String(flow.title).replace(/[<&]/g, (c) => (c === '<' ? '&lt;' : '&amp;')),
     )
-    .replace('/*LANG*/', () => (flow.locale === 'en' ? 'en' : 'ko'))
+    // The template is Korean, the default locale, so it stays valid HTML for the linter.
+    .replace('<html lang="ko">', () => `<html lang="${flow.locale === 'en' ? 'en' : 'ko'}">`)
     .replace('/*CSS*/', () => css)
     .replace('/*DATA*/', () => `const FLOW = ${safe(flow)};\nconst META = ${safe(meta)};`)
-    .replace('/*MODULES*/', () => modules)
     .replace('/*APP*/', () => app);
   mkdirSync(dirname(resolve(out)), { recursive: true });
   writeFileSync(out, html);

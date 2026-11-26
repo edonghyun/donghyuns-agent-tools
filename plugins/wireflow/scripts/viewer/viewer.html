@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="/*LANG*/">
+<html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,22 +9,21 @@
 <body>
 <header class="bar">
   <div class="ident"><strong id="flow-title"></strong><span id="flow-goal"></span></div>
-  <div class="tools">
-    <label class="pick"><span data-t="path"></span><select id="scenario"></select></label>
-    <button id="btn-view"></button>
-    <button id="btn-fit" data-t="overview"></button>
-    <button id="btn-play" data-t="play"></button>
-    <button id="btn-requests"><span data-t="requests"></span> <b id="req-count">0</b></button>
-  </div>
+  <div id="tabs" class="tabs" role="tablist"></div>
+  <div id="tools" class="tools"></div>
 </header>
 <main>
-  <div id="stage-wrap"><div id="canvas"><svg id="edges"></svg></div><div id="player" hidden></div></div>
+  <div id="stage">
+    <div id="canvas"></div>
+    <button id="fit" class="fit" type="button" data-t="fit"></button>
+    <div id="player"></div>
+  </div>
   <aside id="panel"></aside>
+  <div id="page"><section id="requests"></section><section id="review"></section></div>
 </main>
 <div id="toast" role="status" hidden></div>
 <script>
 /*DATA*/
-/*MODULES*/
 /*APP*/
 </script>
 </body>

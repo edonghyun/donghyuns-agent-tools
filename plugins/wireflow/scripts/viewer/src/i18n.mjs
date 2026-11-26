@@ -1,8 +1,22 @@
-// Viewer copy. Screen content itself is authored in the flow JSON.
+// Viewer copy and node-kind icons. Screen content itself is authored in the flow JSON.
+
+export const KIND_ICONS = {
+  screen: '📱',
+  message: '💬',
+  email: '✉️',
+  document: '📄',
+  step: '▭',
+  decision: '◆',
+  system: '⚙︎',
+  wait: '⏳',
+  end: '■',
+};
 
 const KO = {
   path: '경로',
-  overview: '개요',
+  fit: '전체 보기',
+  review: '검토',
+  close: '닫기',
   play: '직접 걸어보기',
   requests: '수정 요청',
   allActions: '전체 연결 보기',
@@ -38,10 +52,9 @@ const KO = {
   exitHint: '개요로 돌아가기',
   actor: '담당',
   device: '기기',
-  unassigned: '담당 미지정',
   requestHeading: '## Wireflow 수정 요청',
   origin: { source: '기획 원문', inferred: 'AI 추정', observed: '현재 구현', proposed: '제안' },
-  views: { wireframe: '와이어프레임', flowchart: '순서도' },
+  views: { board: '보드', wireframe: '와이어프레임' },
   kinds: {
     screen: '화면',
     message: '메시지',
@@ -57,7 +70,9 @@ const KO = {
 
 const EN = {
   path: 'Path',
-  overview: 'Overview',
+  fit: 'Fit all',
+  review: 'Review',
+  close: 'Close',
   play: 'Walk through',
   requests: 'Change requests',
   allActions: 'All connections',
@@ -93,7 +108,6 @@ const EN = {
   exitHint: 'Back to overview',
   actor: 'Actor',
   device: 'Device',
-  unassigned: 'Unassigned',
   requestHeading: '## Wireflow change requests',
   origin: {
     source: 'From brief',
@@ -101,7 +115,7 @@ const EN = {
     observed: 'Current build',
     proposed: 'Proposed',
   },
-  views: { wireframe: 'Wireframe', flowchart: 'Flowchart' },
+  views: { board: 'Board', wireframe: 'Wireframe' },
   kinds: {
     screen: 'Screen',
     message: 'Message',

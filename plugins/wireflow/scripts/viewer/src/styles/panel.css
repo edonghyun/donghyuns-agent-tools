@@ -1,0 +1,130 @@
+/* The node drawer beside the canvas, and the review page with the change requests. */
+#panel {
+  width: var(--panel-w);
+  flex-shrink: 0;
+  border-left: 1px solid var(--line);
+  background: var(--card);
+  overflow-y: auto;
+  padding: 16px;
+}
+#panel:empty {
+  display: none;
+}
+#panel header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+#panel .close {
+  border: 0;
+  background: none;
+  font-size: 16px;
+}
+#page {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 16px 48px;
+}
+#page > section {
+  max-width: 760px;
+  margin: 0 auto 28px;
+}
+#requests {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+#panel h2,
+#page h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+#panel h3,
+#page h3 {
+  margin: 18px 0 6px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+#panel ul,
+#page ul {
+  margin: 0;
+  padding-left: 18px;
+}
+#panel li,
+#page li {
+  margin: 3px 0;
+}
+#panel code,
+#page code {
+  font-size: 12px;
+  background: #f1efe9;
+  padding: 0 4px;
+  border-radius: 4px;
+}
+
+.f {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: 4px 0;
+  background: none;
+}
+.f.critical {
+  border-left: 4px solid var(--bad);
+}
+.f.warning {
+  border-left: 4px solid var(--warn);
+}
+.f.info {
+  border-left: 4px solid var(--path);
+}
+.f small {
+  color: var(--muted);
+  display: block;
+}
+.prop-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: 4px 0;
+}
+.prop-row small {
+  color: var(--muted);
+  display: block;
+}
+.req-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.req-form textarea {
+  min-height: 72px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.req-form select {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+.req {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: 4px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}

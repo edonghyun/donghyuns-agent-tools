@@ -1,0 +1,113 @@
+/* The stage the camera moves the canvas in, the wireframe's stage rows, tags and edges. */
+#stage {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  cursor: grab;
+  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+#stage.dragging {
+  cursor: grabbing;
+}
+#canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+.fit {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+}
+
+.group {
+  position: absolute;
+  border: 1.5px dashed var(--line);
+  border-radius: 28px;
+}
+.group > h3 {
+  position: absolute;
+  top: -34px;
+  left: 8px;
+  margin: 0;
+  font-size: 22px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.node-tag {
+  position: absolute;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 20px;
+  white-space: nowrap;
+}
+.node-tag b {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.edges {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.edges path,
+.edges polyline {
+  fill: none;
+  stroke: #a7a196;
+  stroke-width: 3;
+}
+.edges path.on,
+.edges polyline.on {
+  stroke: var(--path);
+  stroke-width: 6;
+}
+.edges path.dim {
+  opacity: 0.2;
+}
+.edges path.bad {
+  stroke: var(--bad);
+  stroke-dasharray: 10 8;
+}
+.edges path.prop {
+  stroke: var(--prop);
+  stroke-dasharray: 12 6;
+}
+.edges circle {
+  fill: var(--path);
+}
+.edges text {
+  fill: #fff;
+  font: 700 18px sans-serif;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* Board stand-in until the journey board's cards land. */
+.sketch-stage {
+  position: absolute;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.sketch-card {
+  position: absolute;
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.sketch-card b {
+  color: var(--muted);
+}
+.sketch-card.sel {
+  outline: 5px solid var(--path);
+  outline-offset: 4px;
+}
