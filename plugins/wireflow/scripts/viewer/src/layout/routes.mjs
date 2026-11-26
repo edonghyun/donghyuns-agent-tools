@@ -11,29 +11,39 @@ import { crossesAny, labelAnchor, simplify } from './path-geometry.mjs';
 import { channelSlots, detourLanes } from './route-space.mjs';
 
 /**
- * One route per action whose `to` names a screen, in `screens` and then `actions` order:
- * `{id: 'node.action', from, to, points: [[x, y], …], kind, primary, dormant, label?, labelAt?}`.
- * `kind` is 'forward', 'back' (self-loops included), 'exception' (into an exception), or
- * 'from-exception' (out of one). `primary`: the step is on the primary path. `dormant`: either
- * end is dormant. `label` and `labelAt` only on edges out of a decision.
+ * Routes every edge between two screens: `{edges, lanes}`. Actions sharing a source and a target
+ * make one edge, so `edges` follows `screens` and then `actions` order by each edge's first
+ * action. An edge is
+ * `{id, ids, from, to, points: [[x, y], …], kind, primary, dormant, label?, labelAt?}`:
+ * - `id` is its first action's 'node.action' and `ids` lists all of them.
+ * - `kind` is 'forward', 'back' (self-loops included), 'exception' (into an exception), or
+ *   'from-exception' (out of one).
+ * - `primary`: one of its actions is a primary-path step. `dormant`: either end is dormant.
+ * - `label` (its actions' labels joined by ' / ') and `labelAt` only on edges out of a decision.
+ * `lanes` counts the detour lanes used above (`top`) and below (`bottom`) the main area.
  */
 export function routeEdges(flow, layout) {
   const edges = boardEdges(flow, layout);
+  const decisionCards = layout.bands.flatMap((band) => band.cards || []);
+  const lanes = detourLanes(layout.mainArea);
   const space = {
-    boxes: [...layout.nodes.values()],
+    boxes: [...layout.nodes.values(), ...decisionCards],
     mainArea: layout.mainArea,
     spineY: layout.spineY,
     channels: channelSlots(layout.columns),
-    lanes: detourLanes(layout.mainArea),
+    lanes,
   };
   // Short edges claim first, so they take the inner lanes and longer detours wrap around them.
   const byReach = [...edges].sort((a, b) => reach(a) - reach(b));
   const points = new Map(byReach.map((edge) => [edge.id, routeOf(edge, space)]));
-  return edges.map(({ source, target, ...edge }) => ({
-    ...edge,
-    points: points.get(edge.id),
-    ...(edge.label !== undefined && { labelAt: labelAnchor(points.get(edge.id)) }),
-  }));
+  return {
+    edges: edges.map(({ source, target, ...edge }) => ({
+      ...edge,
+      points: points.get(edge.id),
+      ...(edge.label !== undefined && { labelAt: labelAnchor(points.get(edge.id)) }),
+    })),
+    lanes: lanes.used(),
+  };
 }
 
 /** Points as an SVG path of M, H, V and L commands. */
@@ -52,25 +62,32 @@ function boardEdges(flow, layout) {
   const byId = screensById(flow);
   const back = backEdges(flow);
   const { steps } = primaryPath(flow);
-  return flow.screens.flatMap((from) =>
-    from.actions
-      .filter((action) => byId.has(action.to))
-      .map((action) => {
-        const to = byId.get(action.to);
-        const id = `${from.id}.${action.id}`;
-        return {
-          id,
-          from: from.id,
-          to: to.id,
-          kind: kindOf(from, to, back.has(edgeKey(from.id, to.id))),
-          primary: steps.has(id),
-          dormant: Boolean(from.dormant || to.dormant),
-          ...(from.kind === 'decision' && { label: action.label }),
-          source: layout.nodes.get(from.id),
-          target: layout.nodes.get(to.id),
-        };
+  const actionsOf = new Map(); // edgeKey → the actions from one screen to another
+  for (const from of flow.screens) {
+    for (const action of from.actions.filter((a) => byId.has(a.to))) {
+      const key = edgeKey(from.id, action.to);
+      actionsOf.set(key, [...(actionsOf.get(key) ?? []), { from, action }]);
+    }
+  }
+  return [...actionsOf.values()].map((parallel) => {
+    const { from } = parallel[0];
+    const to = byId.get(parallel[0].action.to);
+    const ids = parallel.map(({ action }) => `${from.id}.${action.id}`);
+    return {
+      id: ids[0],
+      ids,
+      from: from.id,
+      to: to.id,
+      kind: kindOf(from, to, back.has(edgeKey(from.id, to.id))),
+      primary: ids.some((id) => steps.has(id)),
+      dormant: Boolean(from.dormant || to.dormant),
+      ...(from.kind === 'decision' && {
+        label: parallel.map(({ action }) => action.label).join(' / '),
       }),
-  );
+      source: layout.nodes.get(from.id),
+      target: layout.nodes.get(to.id),
+    };
+  });
 }
 
 function kindOf(from, to, isBack) {
@@ -95,7 +112,10 @@ function routeOf(edge, space) {
       (c) => !crossesAny(throughChannel(edge, space.channels.center(c)), space.boxes),
     );
     if (channel !== undefined) {
-      return throughChannel(edge, space.channels.claim(channel));
+      // A straight edge never turns, so it leaves the channel's slots to the edges that do.
+      const turns = centerY(source) !== centerY(target);
+      const x = turns ? space.channels.claim(channel) : space.channels.center(channel);
+      return throughChannel(edge, x);
     }
   }
   return detour(edge, space);

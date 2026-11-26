@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { layoutBoard, SUB_GAP } from '../viewer/src/layout/board.mjs';
+import { layoutAndRoute } from '../viewer/src/layout/board-scene.mjs';
 import { routeEdges, toPathD } from '../viewer/src/layout/routes.mjs';
 import { hakwonLikeFlow } from './fixtures/board-fixture.mjs';
 
@@ -25,7 +26,7 @@ const flowOf = (nodes, primary) => ({
 
 function routed(flow) {
   const board = layoutBoard(flow);
-  const edges = routeEdges(flow, board);
+  const { edges } = routeEdges(flow, board);
   return { board, edges, edge: (id) => edges.find((e) => e.id === id) };
 }
 
@@ -253,7 +254,7 @@ test('no edge on the 20-node board passes through a card', () => {
   const { board, edges } = routed(flow);
   const actions = flow.screens.flatMap((s) => s.actions.map((a) => `${s.id}.${a.id}`));
   assert.deepEqual(
-    edges.map((e) => e.id),
+    edges.flatMap((e) => e.ids),
     actions,
   );
   for (const e of edges) {
@@ -271,5 +272,119 @@ test('toPathD draws points with M, H, V and L only', () => {
       [20, 6],
     ]),
     'M0 0 H10 V5.5 L20 6',
+  );
+});
+
+test('on the 20-node board the primary path through the payment stage runs inside the main area', () => {
+  const { board, edge } = routed(hakwonLikeFlow());
+  const { top, bottom } = board.mainArea;
+  for (const id of ['parent.parent_yes', 'reserve.payment_settled']) {
+    assert.ok(edge(id).primary, id);
+    for (const [, y] of edge(id).points) {
+      assert.ok(y >= top && y <= bottom, `${id} leaves the main area at y=${y}`);
+    }
+  }
+});
+
+test('a straight forward edge leaves the channel center to an edge that turns', () => {
+  // b takes the spine level with a; c stacks above it.
+  const { board, edge } = routed(
+    flowOf([
+      ['a', 0, ['b', 'c']],
+      ['b', 1, []],
+      ['c', 1, []],
+    ]),
+  );
+  const a = board.nodes.get('a');
+  const b = board.nodes.get('b');
+  assert.equal(edge('a.b').points.length, 2);
+  assert.equal(edge('a.c').points[1][0], (a.x + a.w + b.x) / 2);
+});
+
+test('edges into a blocked card in the first column stay inside the board margin', () => {
+  // x and w stack above and below a, so edges into a come in at its left, from the margin.
+  const chain = ['n1', 'n2', 'n3', 'n4', 'n5', 'n6'];
+  const flow = flowOf(
+    [
+      ['a', 0, ['n1']],
+      ['x', 0, []],
+      ['w', 0, []],
+      ...chain.map((id, i) => [id, 1, [chain[i + 1], 'a'].filter(Boolean)]),
+    ],
+    ['a', ...chain],
+  );
+  const { board, edges } = routed(flow);
+  const a = board.nodes.get('a');
+  for (const e of edges) {
+    assertClearOfCards(e, board);
+    for (const [x] of e.points) {
+      assert.ok(x >= 4, `${e.id} reaches x=${x}, outside the board margin`);
+    }
+  }
+  assert.ok(
+    edges.some((e) => e.points.some(([x]) => x < a.x)),
+    'some edge uses the margin',
+  );
+});
+
+test('when detours need more lanes, the board widens its gaps so no lane meets a card or header', () => {
+  // Eight back edges into n0 over the top, and eight exception edges under the main area.
+  const chain = ['n0', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8'];
+  const flow = flowOf(
+    [
+      ...chain.map((id, i) => [
+        id,
+        i % 3,
+        [chain[i + 1], ...(i ? ['n0', 'e'] : [])].filter(Boolean),
+      ]),
+      ['e', 0, [], { exception: 'E01', decisions: ['재안내 기준은?'] }],
+    ],
+    chain,
+  );
+  const { layout, edges } = layoutAndRoute(flow);
+  const headerBottom = Math.max(...layout.stageHeaders.map((h) => h.y + h.h));
+  const bandTop = layout.bands[0].y;
+  const { top, bottom } = layout.mainArea;
+  assert.equal(edges.filter((e) => e.kind === 'back').length, 8);
+  for (const e of edges) {
+    assertClearOfCards(e, layout);
+    for (const [[, y1], [, y2]] of segmentsOf(e.points).filter(([p, q]) => p[1] === q[1])) {
+      assert.ok(y1 === y2 && y1 > headerBottom, `${e.id} runs at y=${y1}, in the stage headers`);
+      if (y1 > bottom) {
+        assert.ok(y1 < bandTop, `${e.id} runs at y=${y1}, inside the first band`);
+      }
+    }
+  }
+  assert.ok(top - headerBottom > 56 && bandTop - bottom > 56, 'both gaps grew');
+});
+
+test('parallel actions between the same two cards merge into one edge', () => {
+  const flow = flowOf([
+    ['a', 0, ['b'], { kind: 'decision' }],
+    ['b', 1, []],
+  ]);
+  flow.screens[0].actions = [
+    { id: 'yes', label: '예', to: 'b' },
+    { id: 'no', label: '아니오', to: 'b' },
+  ];
+  flow.primary = 'p';
+  flow.scenarios = [{ id: 'p', title: 'p', steps: [{ action: 'no' }] }];
+  const { edges } = routed(flow);
+  assert.deepEqual(
+    edges.map(({ id, ids, label, primary, dormant }) => ({ id, ids, label, primary, dormant })),
+    [{ id: 'a.yes', ids: ['a.yes', 'a.no'], label: '예 / 아니오', primary: true, dormant: false }],
+  );
+});
+
+test('an action pointing to no screen is not routed', () => {
+  const { edges } = routed(
+    flowOf([
+      ['a', 0, ['b', 'nowhere']],
+      ['b', 1, []],
+    ]),
+  );
+  assert.deepEqual(
+    edges.map((e) => e.id),
+    ['a.b'],
   );
 });
