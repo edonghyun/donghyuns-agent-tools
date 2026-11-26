@@ -40,3 +40,73 @@ export function reach(starts, edges) {
   }
   return seen;
 }
+
+const edgeKey = (from, to) => `${from} ${to}`;
+
+/**
+ * Depth-first walk over action edges: entries in order, then unvisited screens in `screens`
+ * order, each node's actions in order. A back edge leads into a node still on the walk's path.
+ * `order` lists the nodes topologically once back edges are removed.
+ */
+function depthFirst(flow) {
+  const { fwd } = edgesOf(flow);
+  const color = new Map();
+  const post = [];
+  const back = new Set();
+  for (const root of [...entryIds(flow), ...fwd.keys()]) {
+    if (color.has(root) || !fwd.has(root)) {
+      continue;
+    }
+    color.set(root, 'grey');
+    const stack = [{ node: root, next: 0 }];
+    while (stack.length) {
+      const top = stack[stack.length - 1];
+      const to = fwd.get(top.node)[top.next++];
+      if (to === undefined) {
+        color.set(top.node, 'black');
+        post.push(top.node);
+        stack.pop();
+      } else if (color.get(to) === 'grey') {
+        back.add(edgeKey(top.node, to));
+      } else if (!color.has(to)) {
+        color.set(to, 'grey');
+        stack.push({ node: to, next: 0 });
+      }
+    }
+  }
+  return { fwd, back, order: post.reverse() };
+}
+
+/** True when the edge from → to closes a loop in the walk that `rankNodes` ranks by. */
+export const isBackEdge = (flow, from, to) => depthFirst(flow).back.has(edgeKey(from, to));
+
+/**
+ * Each node's column rank, in `screens` order: the longest path from the entries once back edges
+ * and edges into exception nodes are dropped. A node no entry reaches takes the lowest rank
+ * among reached nodes of its stage, or 0.
+ */
+export function rankNodes(flow) {
+  const byId = screensById(flow);
+  const { fwd, back, order } = depthFirst(flow);
+  const rank = new Map(
+    entryIds(flow)
+      .filter((id) => fwd.has(id))
+      .map((id) => [id, 0]),
+  );
+  for (const from of order) {
+    if (!rank.has(from)) {
+      continue;
+    }
+    for (const to of fwd.get(from)) {
+      if (!back.has(edgeKey(from, to)) && typeof byId.get(to).exception !== 'string') {
+        rank.set(to, Math.max(rank.get(to) ?? 0, rank.get(from) + 1));
+      }
+    }
+  }
+  const stageMin = new Map();
+  for (const [id, r] of rank) {
+    const stage = byId.get(id).stage;
+    stageMin.set(stage, Math.min(stageMin.get(stage) ?? r, r));
+  }
+  return new Map(flow.screens.map((s) => [s.id, rank.get(s.id) ?? stageMin.get(s.stage) ?? 0]));
+}

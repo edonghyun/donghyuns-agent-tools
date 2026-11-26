@@ -10,6 +10,7 @@ export {
 } from './board.mjs';
 export { check, exitCode } from './check.mjs';
 export { ACTOR_PALETTE, DEVICES, EVENT_TYPES, KINDS, VIEWS } from './constants.mjs';
+export { isBackEdge, rankNodes } from './graph.mjs';
 export { applyProposals } from './proposals.mjs';
 export { applyAction, enabledActions, runScenario } from './scenario.mjs';
 export { validate } from './validate.mjs';
