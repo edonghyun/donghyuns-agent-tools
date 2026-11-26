@@ -12,7 +12,7 @@ One UTF-8 JSON object. Everything the viewer shows comes from this file; the HTM
 | `locale` | | `ko` (default) or `en`. Viewer chrome and check messages follow it. Author screen text in the same language. |
 | `view` | | Initial view: `board` or `wireframe` (default when omitted). The 0.2 value `flowchart` reads as `board`. The viewer toggles between them; the file is the same. `wireflow:start` always writes it. |
 | `device` | | Default device for `screen` nodes: `mobile` (390×844, default), `tablet` (820×1180), `desktop` (1280×800), `watch` (198×242), `kiosk` (1080×1920), or `{"width": 1440, "height": 900}`. |
-| `actors` | | Ordered actor names (`고객`, `상담사`, `시스템`), each a string or `{"name": "강사", "color": "#148A6E"}`. Nodes name theirs in `actor`; the board colors each card's actor tag and edge, using a palette color when `color` is omitted. |
+| `actors` | | Ordered actor names (`고객`, `상담사`, `시스템`), each a string or `{"name": "강사", "color": "#148A6E"}`. Nodes name theirs in `actor`; the board colors each card's actor tag and left accent stripe with it, using a palette color when `color` is omitted. Edges are not actor-colored. |
 | `source` | | Where this came from: brief file, screenshots, routes, feature-intake slug. |
 | `start` | ✓ | Entry screen id. `entries` lists other entry ids (deep links, push). |
 | `stages` | ✓ | Ordered task-group labels. A row in the wireframe view, a column group on the board. |
@@ -80,7 +80,7 @@ One UTF-8 JSON object. Everything the viewer shows comes from this file; the HTM
 ```
 
 - `state` — the stored status after this step; a mono chip.
-- `metrics`, `experiments`, `notify` — what to measure here, which variable an experiment changes here, and which notification goes out. One chip each.
+- `metrics`, `experiments`, `notify` — what to measure here, which variable an experiment changes here, and which notification goes out. Each is a list of nonempty strings, one chip per entry; `check` and `build` reject anything else, as they do for `notes`, `decisions`, an event's `props`, and `eventProps` entries without a string `name`.
 - `exception` — a unique code (`E01`, …) that marks a drop-out or stuck node. It moves to the exception band, and every node with an action into it gets the code as a chip automatically; do not write that chip by hand.
 - `dormant: true` — a branch left for later: drawn faint and kept off the spine.
 - `decisions` are gathered per stage into the decision band.

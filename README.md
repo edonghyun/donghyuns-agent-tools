@@ -39,7 +39,7 @@ python3 -m unittest discover -s plugins/qa-operator/scripts -p 'test_*.py' -v
 (cd plugins/wireflow && npm ci && npm run lint && npm test)
 ```
 
-[GitHub CI](https://github.com/edonghyun/donghyuns-agent-tools/actions/workflows/runtime-checks.yml)는 Python 3.12와 Node 20에서 같은 검사를 실행하고, wireflow 뷰어 번들이 커밋된 `dist`와 같은지, 모든 예제가 `check`·`build`를 통과하는지도 확인합니다.
+[GitHub CI](https://github.com/edonghyun/donghyuns-agent-tools/actions/workflows/runtime-checks.yml)는 Python 3.12와 Node 20에서 같은 검사를 실행하고, wireflow 뷰어 번들이 커밋된 `dist`와 같은지, 예제마다 개선 제안을 하나씩 적용한 `check`가 통과하는지(제안이 없는 예제는 그대로), 모든 예제가 `build`되는지도 확인합니다. 제안 없이 검사하면 `class-booking`은 일부러 남긴 결함 때문에 실패(종료 코드 1)합니다.
 이 검사는 QA 도구의 파일·상태 관리와 wireflow 모델·뷰어 번들 범위이며, 실제 브라우저 QA나 전체 플러그인의 호스트별 설치·동작을 검증하지 않습니다.
 
 ---
