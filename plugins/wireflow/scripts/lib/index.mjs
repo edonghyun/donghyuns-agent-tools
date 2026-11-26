@@ -2,6 +2,7 @@
 
 export {
   actorList,
+  cardChips,
   eventLocations,
   exceptionCodes,
   exceptionSources,

@@ -29,8 +29,20 @@ const flowOf = (nodes, extra = {}) => ({
 });
 
 /** The board as the canvas draws it, with nothing selected and no scenario. */
-const boardHtml = (flow) =>
-  String(renderBoard(layoutAndRoute(flow), { flow, scenario: '', selected: null }, T));
+const boardHtml = (flow, scenario = '') =>
+  String(renderBoard(layoutAndRoute(flow), { flow, scenario, selected: null }, T));
+
+/** Each drawn edge: its classes, arrow marker, and hover title. */
+const edgesOf = (board) =>
+  [
+    ...board.matchAll(
+      new RegExp(
+        '<g class="edge"><title>([^<]*)</title>[\\s\\S]*?' +
+          '<path class="([^"]*)" d="M[^"]*"\\s*marker-end="url\\(#([^)]*)\\)"',
+        'g',
+      ),
+    ),
+  ].map(([, title, classes, marker]) => ({ title, classes: classes.split(/\s+/), marker }));
 
 /** The markup of the card for `id` on a rendered board. */
 function cardOf(board, id) {
@@ -104,7 +116,7 @@ test('the board draws every edge, stage header, and band', () => {
     ['gone', 1, [], { exception: 'E01' }],
   ]);
   const board = boardHtml(flow);
-  assert.equal([...board.matchAll(/<path class="[^"]*" d="M/g)].length, 2);
+  assert.equal(edgesOf(board).length, 2);
   assert.equal([...board.matchAll(/class="stage-head"/g)].length, 3);
   assert.ok(board.includes('이탈했을 때 확인할 일'));
   assert.ok(board.includes('미정 결정'));
@@ -174,4 +186,49 @@ test('the legend lists every actor with its color', () => {
   for (const label of ['기본 경로', '예외', '문만 열어둠']) {
     assert.ok(legend.includes(label), label);
   }
+});
+
+test('edges name their actions on hover and color by kind; a scenario gets blue arrows', () => {
+  const flow = flowOf(
+    [
+      ['a', 0, ['b', 'gone']],
+      ['b', 1, ['c']],
+      ['gone', 1, ['b'], { exception: 'E01' }],
+      ['c', 2, []],
+    ],
+    { scenarios: [{ id: 's', title: 's', steps: [{ action: 'b' }, { action: 'c' }] }] },
+  );
+  flow.screens[0].actions.push({ id: 'also', label: '다른 버튼', to: 'b' });
+  const byTitle = new Map(edgesOf(boardHtml(flow)).map((e) => [e.title, e]));
+  assert.deepEqual([...byTitle.keys()].sort(), [
+    'b 누르기',
+    'b 누르기 / 다른 버튼',
+    'c 누르기',
+    'gone 누르기',
+  ]);
+  assert.ok(byTitle.get('gone 누르기').classes.includes('exception'));
+  assert.equal(byTitle.get('gone 누르기').marker, 'b-arrow-exception');
+  const back = edgesOf(boardHtml(flow)).find((e) => e.classes.includes('from-exception'));
+  assert.ok(
+    back && !back.classes.includes('exception'),
+    'edges out of an exception are their own kind',
+  );
+  assert.equal(back.marker, 'b-arrow');
+
+  const highlighted = edgesOf(boardHtml(flow, 's')).filter((e) => e.classes.includes('on'));
+  assert.equal(highlighted.length, 2);
+  assert.ok(highlighted.every((e) => e.marker === 'b-arrow-primary'));
+});
+
+test('a decision draws every routed branch label, and a card title fills its vars', () => {
+  const flow = flowOf([
+    ['a', 0, ['b', 'c'], { kind: 'decision', title: '{{who}} 결정' }],
+    ['b', 1, []],
+    ['c', 1, []],
+  ]);
+  flow.vars = { who: '학부모' };
+  const board = boardHtml(flow);
+  const labels = [...board.matchAll(/class="edge-label[^"]*"[^>]*>([^<]*)</g)].map((m) => m[1]);
+  assert.deepEqual(labels.sort(), ['b 누르기', 'c 누르기']);
+  assert.match(cardOf(board, 'a'), /학부모 결정/);
 });

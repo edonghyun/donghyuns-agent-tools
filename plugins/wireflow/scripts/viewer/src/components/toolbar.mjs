@@ -18,7 +18,7 @@ export function mount(el, store, T) {
     if (name === 'scenario') store.dispatch({ type: 'setScenario', id: value });
     if (name === 'stage' && value !== '') {
       store.dispatch({ type: 'focusStage', stage: Number(value) });
-      // The select is a jump, not a setting: back to its prompt, so the same stage can be picked again.
+      // A jump, not a setting: back to its prompt, so the same stage can be picked again.
       e.target.value = '';
     }
   });

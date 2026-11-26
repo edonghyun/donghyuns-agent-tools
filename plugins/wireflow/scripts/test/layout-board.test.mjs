@@ -10,6 +10,7 @@ import {
   SUB_GAP,
 } from '../viewer/src/layout/board.mjs';
 import { estimateCardHeight } from '../viewer/src/layout/card-size.mjs';
+import { LABEL_MARGIN, labelWidth } from '../viewer/src/layout/edge-labels.mjs';
 import { bottomOf } from '../viewer/src/layout/geometry.mjs';
 import { hakwonLikeFlow } from './fixtures/board-fixture.mjs';
 
@@ -400,4 +401,25 @@ test('detour gaps can grow on either side of the main area', () => {
   assert.equal(board.mainArea.top, headerBottom + 120);
   assert.equal(board.bands[0].y, board.mainArea.bottom + 90);
   assert.deepEqual(layoutBoard(flow, {}), layoutBoard(flow), 'both default to DETOUR_GAP');
+});
+
+test("the gap after a decision's column fits its widest forward branch label", () => {
+  const long = '아주 길게 적은 분기 버튼 라벨';
+  const flow = flowOf([
+    ['a', 0, ['b', 'c'], { kind: 'decision' }],
+    ['b', 0, []],
+    ['c', 1, ['a']],
+  ]);
+  flow.screens[0].actions[0].label = long;
+  const { nodes } = layoutBoard(flow);
+  const gap = nodes.get('b').x - (nodes.get('a').x + CARD_W);
+  assert.equal(gap, labelWidth(long) + 2 * LABEL_MARGIN);
+  assert.ok(gap > SUB_GAP);
+  const plain = layoutBoard(
+    flowOf([
+      ['a', 0, ['b']],
+      ['b', 0, []],
+    ]),
+  ).nodes;
+  assert.equal(plain.get('b').x - (plain.get('a').x + CARD_W), SUB_GAP, 'no decision, no widening');
 });

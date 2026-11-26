@@ -33,6 +33,6 @@ export function render({ layout, edges }, { flow, scenario, selected }, T) {
   return html`
     ${bands.render(layout.bands, flow.stages)}
     ${layout.stageHeaders.map(stageHeader)}
-    ${boardEdges.render(edges, layout.size, path)}
+    ${boardEdges.render(edges, layout.size, path, flow)}
     ${flow.screens.map(card)}`;
 }

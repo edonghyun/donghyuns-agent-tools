@@ -2,7 +2,9 @@
 // text widths, and the same flow always gives the same boxes. The sizes below mirror
 // styles/board.css: change the two together.
 
+import { cardChips } from '../../../lib/board.mjs';
 import { CARD_W } from './geometry.mjs';
+import { textWidth } from './text-width.mjs';
 
 // Inside a card: 14px padding each side, a 1px border right and the 4px actor stripe left.
 const INNER_W = CARD_W - 33;
@@ -11,38 +13,14 @@ const GAP = 6; // between the rows of a card
 const TOP_ROW = 20; // actor tag and number
 const TITLE = { size: 22, line: 28, max: 2 };
 const BODY = { size: 14, line: 20, max: 2 };
-const CHIP = { size: 13, padding: 14, h: 22, gap: 4 };
+const CHIP = { size: 13, line: 18, padding: 14, h: 22, gap: 4 };
 const DECISION = { heading: 24, size: 14, line: 20, indent: 12, gap: 4 };
 
-// Advance widths in em, measured in Chrome with Apple SD Gothic Neo (Hangul 0.86em) and rounded
-// up toward Pretendard and Malgun Gothic, so a line estimated to fit never wraps.
-const WIDE = /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uff00-\uffef]/;
-const emOf = (ch) => {
-  if (WIDE.test(ch)) return 0.92;
-  if (ch === ' ') return 0.27;
-  return /[A-Z0-9]/.test(ch) ? 0.64 : 0.52;
-};
-
-/** Estimated width of `text` set at `size` px: Hangul, CJK and full-width forms near a full em. */
-export function textWidth(text, size) {
-  let em = 0;
-  for (const ch of String(text ?? '')) {
-    em += emOf(ch);
-  }
-  return Math.ceil(em * size);
-}
+/** The sizes above, for the test that holds board.css to them. */
+export const CARD_SIZES = { GAP, TOP_ROW, TITLE, BODY, CHIP, DECISION };
 
 const lineCount = (text, font, width = INNER_W) =>
   Math.max(1, Math.ceil(textWidth(text, font.size) / width));
-
-/** A card's chips in order: its state, metrics, experiments, notifications, then `codes`. */
-export const cardChips = (node, codes = []) => [
-  ...(node.state ? [{ type: 'state', text: node.state }] : []),
-  ...(node.metrics ?? []).map((text) => ({ type: 'metric', text })),
-  ...(node.experiments ?? []).map((text) => ({ type: 'experiment', text })),
-  ...(node.notify ?? []).map((text) => ({ type: 'notify', text })),
-  ...codes.map((text) => ({ type: 'code', text })),
-];
 
 /** Rows the chips wrap into, filled left to right; a chip wider than the card is cut to fit. */
 function chipRows(chips) {

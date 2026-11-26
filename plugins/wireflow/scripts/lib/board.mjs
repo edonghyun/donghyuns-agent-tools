@@ -1,5 +1,6 @@
 // Board reading of a flow: the view alias, actor colors, the primary path, event locations,
-// which nodes lead into each exception node, and the exception codes each node leads into.
+// which nodes lead into each exception node, the exception codes each node leads into, and the
+// chips a node shows.
 
 import { ACTOR_PALETTE } from './constants.mjs';
 import { isException } from './graph.mjs';
@@ -69,3 +70,12 @@ export function exceptionCodes(flow) {
   }
   return codes;
 }
+
+/** A card's chips in order: its state, metrics, experiments, notifications, then `codes`. */
+export const cardChips = (node, codes = []) => [
+  ...(node.state ? [{ type: 'state', text: node.state }] : []),
+  ...(node.metrics ?? []).map((text) => ({ type: 'metric', text })),
+  ...(node.experiments ?? []).map((text) => ({ type: 'experiment', text })),
+  ...(node.notify ?? []).map((text) => ({ type: 'notify', text })),
+  ...codes.map((text) => ({ type: 'code', text })),
+];

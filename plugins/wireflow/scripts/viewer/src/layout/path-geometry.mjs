@@ -1,4 +1,4 @@
-// Axis-aligned paths as point lists: card crossing, cleanup, and label anchors.
+// Axis-aligned paths as point lists: card crossing, cleanup, and horizontal runs for labels.
 
 const segmentsOf = (points) => points.slice(1).map((p, i) => [points[i], p]);
 
@@ -31,16 +31,15 @@ export function simplify(points) {
   });
 }
 
-/**
- * Where a label goes on the path: `at` the middle of its longest horizontal segment (the later one
- * on a tie, or else of its first segment), with `room` the width of that horizontal run.
- */
-export function labelSpot(points) {
-  const segments = segmentsOf(points);
-  const runs = segments.filter(([a, b]) => a[1] === b[1]);
-  const length = ([a, b]) => Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]);
-  const [[x1, y1], [x2, y2]] = (runs.length ? runs : segments).reduce((best, s) =>
-    length(s) >= length(best) ? s : best,
-  );
-  return { at: [(x1 + x2) / 2, (y1 + y2) / 2], room: y1 === y2 ? Math.abs(x2 - x1) : 0 };
+/** The path's horizontal runs as `[[left, y], [right, y]]`, longest first, the later on a tie. */
+export function horizontalRuns(points) {
+  return segmentsOf(points)
+    .filter(([a, b]) => a[1] === b[1] && a[0] !== b[0])
+    .map(([a, b]) => (a[0] < b[0] ? [a, b] : [b, a]))
+    .reverse()
+    .sort(([a, b], [c, d]) => d[0] - c[0] - (b[0] - a[0]));
 }
+
+/** True when two boxes share interior. */
+export const boxesOverlap = (a, b) =>
+  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;

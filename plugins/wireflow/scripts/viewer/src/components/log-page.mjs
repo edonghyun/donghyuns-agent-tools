@@ -80,5 +80,7 @@ function locationLink(flow, at) {
   const node = findNode(flow, nodeId);
   if (!node) return html`<code>${at}</code>`;
   const action = actionId && node.actions.find((a) => a.id === actionId);
-  return html`<a href="#" ${onClick({ type: 'select', id: node.id })}>${displayNumber(flow, node)} ${node.title}</a>${actionId && ` › ${action?.label || actionId}`}`;
+  const link = html`<a href="#" ${onClick({ type: 'select', id: node.id })}>
+    ${displayNumber(flow, node)} ${node.title}</a>`;
+  return html`${link}${actionId && ` › ${action?.label || actionId}`}`;
 }

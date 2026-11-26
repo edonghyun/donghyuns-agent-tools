@@ -1,5 +1,6 @@
 // The canvas: draws the current view's scene (the wireframe, or the journey board) and routes
-// clicks on it. Clicking a node selects it; clicking a button on the selected node follows its link.
+// clicks on it. Clicking a node selects it; clicking a button on the selected node follows its
+// link.
 
 import { sceneOf } from '../layout/scene.mjs';
 import { findNode } from '../selectors.mjs';

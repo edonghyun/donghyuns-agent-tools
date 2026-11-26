@@ -421,6 +421,14 @@ body:not([data-mode="play"]) #player {
   stroke: #c2605b;
   stroke-dasharray: 8 6;
 }
+.board-edges path.from-exception {
+  stroke-dasharray: 8 6;
+}
+.board-edges path.hit {
+  stroke: transparent;
+  stroke-width: 16;
+  pointer-events: stroke;
+}
 .board-edges path.dormant {
   stroke-dasharray: 4 6;
   opacity: 0.45;
@@ -465,14 +473,13 @@ body:not([data-mode="play"]) #player {
 
 /* A card: actor tag and number, title, body, chips. Its box is the layout's estimate. */
 .card {
-  --actor: #8a92a0;
   position: absolute;
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding: 12px 14px;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--actor) 30%, #fff);
+  border: 1px solid var(--actor-line);
   border-left: 4px solid var(--actor);
   border-radius: 12px;
   background: var(--card);
@@ -497,7 +504,7 @@ body:not([data-mode="play"]) #player {
   font-weight: 700;
   line-height: 18px;
   color: var(--actor);
-  background: color-mix(in srgb, var(--actor) 12%, #fff);
+  background: var(--actor-tint);
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -538,7 +545,7 @@ body:not([data-mode="play"]) #player {
 
 .card.primary {
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--path) 30%, transparent),
+    0 0 0 1px rgb(47 83 196 / 30%),
     0 4px 12px rgb(47 83 196 / 14%);
 }
 .card.k-decision {

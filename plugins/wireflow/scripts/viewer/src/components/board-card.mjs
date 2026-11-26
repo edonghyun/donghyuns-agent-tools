@@ -8,6 +8,15 @@ import { KIND_ICONS } from '../i18n.mjs';
 import { displayNumber, previewVars } from '../selectors.mjs';
 import { renderChips } from './chips.mjs';
 
+// The color of a card whose actor has none.
+const NO_ACTOR = '#8A92A0';
+
+/** `hex` (#rrggbb) mixed into white at `share` between 0 and 1. */
+function onWhite(hex, share) {
+  const channel = (i) => 255 - (255 - Number.parseInt(hex.slice(i, i + 2), 16)) * share;
+  return `#${[1, 3, 5].map((i) => Math.round(channel(i)).toString(16).padStart(2, '0')).join('')}`;
+}
+
 /**
  * ctx: `{flow, box?, color?, codes?, primary?, selected?, dim?}`. `color` is the actor's, `codes`
  * the exception codes the node leads into, `dim` fades a card off the highlighted scenario.
@@ -26,17 +35,25 @@ export function renderBoardCard(node, ctx, T) {
     ctx.selected && 'sel',
     ctx.dim && 'dim',
   );
-  const style = [ctx.box && boxStyle(ctx.box), ctx.color && `--actor:${ctx.color}`];
+  const vars = previewVars(flow, node);
+  const color = ctx.color || NO_ACTOR;
+  const style = [
+    ctx.box && boxStyle(ctx.box),
+    `--actor:${color};--actor-tint:${onWhite(color, 0.12)};--actor-line:${onWhite(color, 0.3)}`,
+  ];
   return html`<article class="${classes}" data-id="${node.id}"
     style="${style.filter(Boolean).join(';')}">
     <div class="c-top">
       ${node.actor && html`<span class="c-actor">${node.actor}</span>`}
       <span class="c-num">${KIND_ICONS[kind]} ${displayNumber(flow, node)}</span>
       ${isException(node) && html`<span class="c-code">${node.exception}</span>`}
-      ${origin !== 'source' && html`<span class="badge ${origin}">${T.origin[origin] || origin}</span>`}
+      ${
+        origin !== 'source' &&
+        html`<span class="badge ${origin}">${T.origin[origin] || origin}</span>`
+      }
     </div>
-    <h4 class="c-title">${node.title}</h4>
-    ${node.body && html`<p class="c-body">${fillVars(node.body, previewVars(flow, node))}</p>`}
+    <h4 class="c-title">${fillVars(node.title, vars)}</h4>
+    ${node.body && html`<p class="c-body">${fillVars(node.body, vars)}</p>`}
     ${renderChips(node, ctx.codes, T)}
   </article>`;
 }

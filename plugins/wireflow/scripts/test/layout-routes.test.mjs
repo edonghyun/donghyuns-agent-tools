@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { layoutBoard, STAGE_GAP, SUB_GAP } from '../viewer/src/layout/board.mjs';
+import { layoutBoard, SUB_GAP } from '../viewer/src/layout/board.mjs';
 import { layoutAndRoute } from '../viewer/src/layout/board-scene.mjs';
+import { LABEL_H, labelWidth } from '../viewer/src/layout/edge-labels.mjs';
 import { routeEdges, toPathD } from '../viewer/src/layout/routes.mjs';
 import { hakwonLikeFlow } from './fixtures/board-fixture.mjs';
 
@@ -246,9 +248,7 @@ test('edges carry primary and dormant flags, and only decisions label theirs', (
     ],
   );
   assert.equal(edge('a.b').labelAt.length, 2);
-  assert.equal(edge('a.b').labelRoom, STAGE_GAP, 'the label sits on the run between the stages');
   assert.equal(edge('b.c').labelAt, undefined);
-  assert.equal(edge('b.c').labelRoom, undefined);
 });
 
 test('no edge on the 20-node board passes through a card', () => {
@@ -389,4 +389,34 @@ test('an action pointing to no screen is not routed', () => {
     edges.map((e) => e.id),
     ['a.b'],
   );
+});
+
+test('every forward branch of a decision gets a label that clears every card', () => {
+  const consulting = JSON.parse(
+    readFileSync(new URL('../../examples/consulting-request.flow.json', import.meta.url), 'utf8'),
+  );
+  for (const [flow, decision] of [
+    [hakwonLikeFlow(), 'survey'],
+    [consulting, 'capacity'],
+  ]) {
+    const { layout, edges } = layoutAndRoute(flow);
+    const branches = edges.filter((e) => e.from === decision);
+    assert.ok(branches.length >= 2, decision);
+    for (const edge of branches) {
+      assert.ok(edge.labelAt, `${edge.id} has no room for "${edge.label}"`);
+    }
+    for (const edge of edges.filter((e) => e.labelAt)) {
+      const [x, y] = edge.labelAt;
+      const w = labelWidth(edge.label);
+      const box = { x: x - w / 2, y: y - LABEL_H / 2, w, h: LABEL_H };
+      for (const card of cardsOf(layout)) {
+        const overlaps =
+          box.x < card.x + card.w &&
+          card.x < box.x + box.w &&
+          box.y < card.y + card.h &&
+          card.y < box.y + box.h;
+        assert.ok(!overlaps, `the label of ${edge.id} overlaps ${card.id}`);
+      }
+    }
+  }
 });

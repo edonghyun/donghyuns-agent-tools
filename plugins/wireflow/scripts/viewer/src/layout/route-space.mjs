@@ -11,7 +11,9 @@ export const LANE_GAP = 14; // between detour lanes
  * x positions in the channels. Channel `c` is the gap right of column `c`. Channel -1, left of
  * the first column, and the channel right of the last one are the board's margins. Slots
  * alternate around the gap's center (0, +6, -6, +12, …) and stop short of its sides: a crowded
- * channel overlaps its outermost lines rather than run one through a card.
+ * channel overlaps its outermost lines rather than run one through a card. `claimBeside` hands
+ * out slots from the gap's left side instead (+6, +12, …), for a decision's branches: turning
+ * early leaves the rest of the gap to the label on the run into the target.
  */
 export function channelSlots(columns) {
   const taken = new Map();
@@ -31,7 +33,13 @@ export function channelSlots(columns) {
     const x = center(c) + Math.ceil(i / 2) * SLOT_GAP * (i % 2 ? 1 : -1);
     return Math.min(right - CLEARANCE, Math.max(left + CLEARANCE, x));
   };
-  return { center, claim };
+  const besideTaken = new Map();
+  const claimBeside = (c) => {
+    const i = (besideTaken.get(c) ?? 0) + 1;
+    besideTaken.set(c, i);
+    return Math.min(center(c), sides(c)[0] + i * SLOT_GAP);
+  };
+  return { center, claim, claimBeside };
 }
 
 /**

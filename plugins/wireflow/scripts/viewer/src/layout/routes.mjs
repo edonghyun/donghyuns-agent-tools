@@ -6,21 +6,23 @@
 
 import { primaryPath } from '../../../lib/board.mjs';
 import { backEdges, edgeKey, isException, screensById } from '../../../lib/graph.mjs';
+import { branchLabels, LABEL_H, LABEL_MARGIN, labelWidth } from './edge-labels.mjs';
 import { bottomOf } from './geometry.mjs';
-import { crossesAny, labelSpot, simplify } from './path-geometry.mjs';
+import { boxesOverlap, crossesAny, horizontalRuns, simplify } from './path-geometry.mjs';
 import { channelSlots, detourLanes } from './route-space.mjs';
 
 /**
  * Routes every edge between two screens: `{edges, lanes}`. Actions sharing a source and a target
  * make one edge, so `edges` follows `screens` and then `actions` order by each edge's first
  * action. An edge is
- * `{id, ids, from, to, points: [[x, y], …], kind, primary, dormant, label?, labelAt?, labelRoom?}`:
+ * `{id, ids, from, to, points: [[x, y], …], kind, primary, dormant, label?, labelAt?}`:
  * - `id` is its first action's 'node.action' and `ids` lists all of them.
  * - `kind` is 'forward', 'back' (self-loops included), 'exception' (into an exception), or
  *   'from-exception' (out of one).
  * - `primary`: one of its actions is a primary-path step. `dormant`: either end is dormant.
- * - `label` (its actions' labels joined by ' / '), `labelAt` and `labelRoom` only on edges out of
- *   a decision. The label centers on `labelAt`, on a horizontal run `labelRoom` wide.
+ * - `label` (its actions' labels joined by ' / ') only on edges out of a decision. `labelAt` is
+ *   where the label centers, on a horizontal run of the edge, clear of every card; an edge whose
+ *   route has no such spot has no `labelAt`. The columns leave room for every forward branch's.
  * `lanes` counts the detour lanes used above (`top`) and below (`bottom`) the main area.
  */
 export function routeEdges(flow, layout) {
@@ -41,15 +43,27 @@ export function routeEdges(flow, layout) {
     edges: edges.map(({ source, target, ...edge }) => ({
       ...edge,
       points: points.get(edge.id),
-      ...(edge.label !== undefined && labelFields(points.get(edge.id))),
+      ...(edge.label !== undefined && labelPlace(edge.label, points.get(edge.id), space.boxes)),
     })),
     lanes: lanes.used(),
   };
 }
 
-function labelFields(points) {
-  const { at, room } = labelSpot(points);
-  return { labelAt: at, labelRoom: room };
+/**
+ * `{labelAt}` for the first spot clear of every box, else {}. Runs are tried longest first, each
+ * at its middle and then beside either end, LABEL_MARGIN/2 in from it.
+ */
+function labelPlace(label, points, boxes) {
+  const w = labelWidth(label);
+  const half = (w + LABEL_MARGIN) / 2;
+  for (const [[left, y], [right]] of horizontalRuns(points)) {
+    if (right - left < w + LABEL_MARGIN) continue;
+    for (const x of [(left + right) / 2, left + half, right - half]) {
+      const box = { x: x - w / 2, y: y - LABEL_H / 2, w, h: LABEL_H };
+      if (!boxes.some((card) => boxesOverlap(box, card))) return { labelAt: [x, y] };
+    }
+  }
+  return {};
 }
 
 /** Points as an SVG path of M, H, V and L commands. */
@@ -87,9 +101,7 @@ function boardEdges(flow, layout) {
       kind: kindOf(from, to, back.has(edgeKey(from.id, to.id))),
       primary: ids.some((id) => steps.has(id)),
       dormant: Boolean(from.dormant || to.dormant),
-      ...(from.kind === 'decision' && {
-        label: parallel.map(({ action }) => action.label).join(' / '),
-      }),
+      ...(from.kind === 'decision' && { label: branchLabels(from, new Set([to.id])).get(to.id) }),
       source: layout.nodes.get(from.id),
       target: layout.nodes.get(to.id),
     };
@@ -120,7 +132,9 @@ function routeOf(edge, space) {
     if (channel !== undefined) {
       // A straight edge never turns, so it leaves the channel's slots to the edges that do.
       const turns = centerY(source) !== centerY(target);
-      const x = turns ? space.channels.claim(channel) : space.channels.center(channel);
+      const besideDecision = edge.label !== undefined && channel === source.column;
+      const slot = besideDecision ? space.channels.claimBeside : space.channels.claim;
+      const x = turns ? slot(channel) : space.channels.center(channel);
       return throughChannel(edge, x);
     }
   }

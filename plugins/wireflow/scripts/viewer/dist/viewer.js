@@ -275,6 +275,13 @@
     }
     return codes;
   }
+  var cardChips = (node, codes = []) => [
+    ...node.state ? [{ type: "state", text: node.state }] : [],
+    ...(node.metrics ?? []).map((text2) => ({ type: "metric", text: text2 })),
+    ...(node.experiments ?? []).map((text2) => ({ type: "experiment", text: text2 })),
+    ...(node.notify ?? []).map((text2) => ({ type: "notify", text: text2 })),
+    ...codes.map((text2) => ({ type: "code", text: text2 }))
+  ];
 
   // scripts/viewer/src/layout/geometry.mjs
   var CARD_W = 220;
@@ -285,15 +292,7 @@
   var DETOUR_GAP = 56;
   var bottomOf = (box) => box.y + box.h;
 
-  // scripts/viewer/src/layout/card-size.mjs
-  var INNER_W = CARD_W - 33;
-  var PADDING = 26;
-  var GAP = 6;
-  var TOP_ROW = 20;
-  var TITLE = { size: 22, line: 28, max: 2 };
-  var BODY = { size: 14, line: 20, max: 2 };
-  var CHIP = { size: 13, padding: 14, h: 22, gap: 4 };
-  var DECISION = { heading: 24, size: 14, line: 20, indent: 12, gap: 4 };
+  // scripts/viewer/src/layout/text-width.mjs
   var WIDE = /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uff00-\uffef]/;
   var emOf = (ch) => {
     if (WIDE.test(ch)) return 0.92;
@@ -307,14 +306,17 @@
     }
     return Math.ceil(em * size);
   }
+
+  // scripts/viewer/src/layout/card-size.mjs
+  var INNER_W = CARD_W - 33;
+  var PADDING = 26;
+  var GAP = 6;
+  var TOP_ROW = 20;
+  var TITLE = { size: 22, line: 28, max: 2 };
+  var BODY = { size: 14, line: 20, max: 2 };
+  var CHIP = { size: 13, line: 18, padding: 14, h: 22, gap: 4 };
+  var DECISION = { heading: 24, size: 14, line: 20, indent: 12, gap: 4 };
   var lineCount = (text2, font, width = INNER_W) => Math.max(1, Math.ceil(textWidth(text2, font.size) / width));
-  var cardChips = (node, codes = []) => [
-    ...node.state ? [{ type: "state", text: node.state }] : [],
-    ...(node.metrics ?? []).map((text2) => ({ type: "metric", text: text2 })),
-    ...(node.experiments ?? []).map((text2) => ({ type: "experiment", text: text2 })),
-    ...(node.notify ?? []).map((text2) => ({ type: "notify", text: text2 })),
-    ...codes.map((text2) => ({ type: "code", text: text2 }))
-  ];
   function chipRows(chips) {
     let rows = 0;
     let x = INNER_W;
@@ -407,28 +409,62 @@
     return { type, label: labels[type], x, y, w: right - x, h };
   }
 
+  // scripts/viewer/src/layout/edge-labels.mjs
+  var LABEL_SIZE = 15;
+  var LABEL_PADDING = 16;
+  var LABEL_H = 24;
+  var LABEL_MARGIN = 12;
+  var labelWidth = (label) => textWidth(label, LABEL_SIZE) + LABEL_PADDING;
+  function branchLabels(node, targetIds) {
+    const labels = /* @__PURE__ */ new Map();
+    for (const { to, label } of node.actions.filter((a) => targetIds.has(a.to))) {
+      labels.set(to, labels.has(to) ? `${labels.get(to)} / ${label}` : label);
+    }
+    return labels;
+  }
+
   // scripts/viewer/src/layout/columns.mjs
   function placeColumns(flow) {
     const rank = rankNodes(flow);
     const columns = [];
-    const stageHeaders = [];
     const columnOf = /* @__PURE__ */ new Map();
-    let x = MARGIN;
-    flow.stages.forEach((label, stage) => {
+    flow.stages.forEach((_, stage) => {
       const nodes = flow.screens.filter((s) => s.stage === stage && !isException(s));
       const ranks = [...new Set(nodes.map((s) => rank.get(s.id)))].sort((a, b) => a - b);
       const first = columns.length;
       for (let sub = 0; sub < Math.max(1, ranks.length); sub++) {
-        columns.push({ stage, sub, x: x + sub * (CARD_W + SUB_GAP) });
+        columns.push({ stage, sub, x: 0 });
       }
       for (const s of nodes) {
         columnOf.set(s.id, first + ranks.indexOf(rank.get(s.id)));
       }
-      const w = (columns.length - first) * (CARD_W + SUB_GAP) - SUB_GAP;
-      stageHeaders.push({ label, x, y: MARGIN, w, h: HEADER_H });
-      x += w + STAGE_GAP;
+    });
+    const labelRoom = labelRoomAfter(flow, columnOf);
+    columns.forEach((column, i) => {
+      const prev = columns[i - 1];
+      if (!prev) {
+        column.x = MARGIN;
+        return;
+      }
+      const gap = prev.stage === column.stage ? SUB_GAP : STAGE_GAP;
+      column.x = prev.x + CARD_W + Math.max(gap, labelRoom.get(i - 1) ?? 0);
+    });
+    const stageHeaders = flow.stages.map((label, stage) => {
+      const own = columns.filter((c) => c.stage === stage);
+      const x = own[0].x;
+      return { label, x, y: MARGIN, w: own[own.length - 1].x + CARD_W - x, h: HEADER_H };
     });
     return { columns, stageHeaders, columnOf };
+  }
+  function labelRoomAfter(flow, columnOf) {
+    const room = /* @__PURE__ */ new Map();
+    for (const s of flow.screens.filter((s2) => s2.kind === "decision" && columnOf.has(s2.id))) {
+      const column = columnOf.get(s.id);
+      const ahead = new Set([...columnOf].filter(([, c]) => c > column).map(([id]) => id));
+      const widths = [...branchLabels(s, ahead).values()].map((label) => labelWidth(label));
+      room.set(column, Math.max(room.get(column) ?? 0, ...widths.map((w) => w + 2 * LABEL_MARGIN)));
+    }
+    return room;
   }
 
   // scripts/viewer/src/layout/rows.mjs
@@ -558,7 +594,13 @@
       const x = center(c) + Math.ceil(i / 2) * SLOT_GAP * (i % 2 ? 1 : -1);
       return Math.min(right - CLEARANCE, Math.max(left + CLEARANCE, x));
     };
-    return { center, claim };
+    const besideTaken = /* @__PURE__ */ new Map();
+    const claimBeside = (c) => {
+      const i = (besideTaken.get(c) ?? 0) + 1;
+      besideTaken.set(c, i);
+      return Math.min(center(c), sides(c)[0] + i * SLOT_GAP);
+    };
+    return { center, claim, claimBeside };
   }
   function detourLanes(mainArea) {
     const lanes = { top: [], bottom: [] };
@@ -601,15 +643,10 @@
       return !straight;
     });
   }
-  function labelSpot(points) {
-    const segments = segmentsOf(points);
-    const runs = segments.filter(([a, b]) => a[1] === b[1]);
-    const length = ([a, b]) => Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]);
-    const [[x1, y1], [x2, y2]] = (runs.length ? runs : segments).reduce(
-      (best, s) => length(s) >= length(best) ? s : best
-    );
-    return { at: [(x1 + x2) / 2, (y1 + y2) / 2], room: y1 === y2 ? Math.abs(x2 - x1) : 0 };
+  function horizontalRuns(points) {
+    return segmentsOf(points).filter(([a, b]) => a[1] === b[1] && a[0] !== b[0]).map(([a, b]) => a[0] < b[0] ? [a, b] : [b, a]).reverse().sort(([a, b], [c, d]) => d[0] - c[0] - (b[0] - a[0]));
   }
+  var boxesOverlap = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
   // scripts/viewer/src/layout/routes.mjs
   function routeEdges(flow, layout) {
@@ -629,14 +666,22 @@
       edges: edges.map(({ source, target, ...edge }) => ({
         ...edge,
         points: points.get(edge.id),
-        ...edge.label !== void 0 && labelFields(points.get(edge.id))
+        ...edge.label !== void 0 && labelPlace(edge.label, points.get(edge.id), space.boxes)
       })),
       lanes: lanes.used()
     };
   }
-  function labelFields(points) {
-    const { at, room } = labelSpot(points);
-    return { labelAt: at, labelRoom: room };
+  function labelPlace(label, points, boxes) {
+    const w = labelWidth(label);
+    const half = (w + LABEL_MARGIN) / 2;
+    for (const [[left, y], [right]] of horizontalRuns(points)) {
+      if (right - left < w + LABEL_MARGIN) continue;
+      for (const x of [(left + right) / 2, left + half, right - half]) {
+        const box = { x: x - w / 2, y: y - LABEL_H / 2, w, h: LABEL_H };
+        if (!boxes.some((card) => boxesOverlap(box, card))) return { labelAt: [x, y] };
+      }
+    }
+    return {};
   }
   function toPathD(points) {
     const steps = points.slice(1).map(([x, y], i) => {
@@ -671,9 +716,7 @@
         kind: kindOf2(from, to, back.has(edgeKey(from.id, to.id))),
         primary: ids.some((id) => steps.has(id)),
         dormant: Boolean(from.dormant || to.dormant),
-        ...from.kind === "decision" && {
-          label: parallel.map(({ action }) => action.label).join(" / ")
-        },
+        ...from.kind === "decision" && { label: branchLabels(from, /* @__PURE__ */ new Set([to.id])).get(to.id) },
         source: layout.nodes.get(from.id),
         target: layout.nodes.get(to.id)
       };
@@ -699,7 +742,9 @@
       );
       if (channel !== void 0) {
         const turns = centerY(source) !== centerY(target);
-        const x = turns ? space.channels.claim(channel) : space.channels.center(channel);
+        const besideDecision = edge.label !== void 0 && channel === source.column;
+        const slot = besideDecision ? space.channels.claimBeside : space.channels.claim;
+        const x = turns ? slot(channel) : space.channels.center(channel);
         return throughChannel(edge, x);
       }
     }
@@ -1688,6 +1733,11 @@
   }
 
   // scripts/viewer/src/components/board-card.mjs
+  var NO_ACTOR = "#8A92A0";
+  function onWhite(hex, share) {
+    const channel = (i) => 255 - (255 - Number.parseInt(hex.slice(i, i + 2), 16)) * share;
+    return `#${[1, 3, 5].map((i) => Math.round(channel(i)).toString(16).padStart(2, "0")).join("")}`;
+  }
   function renderBoardCard(node, ctx, T2) {
     const { flow } = ctx;
     const kind = kindOf(node);
@@ -1702,7 +1752,12 @@
       ctx.selected && "sel",
       ctx.dim && "dim"
     );
-    const style = [ctx.box && boxStyle(ctx.box), ctx.color && `--actor:${ctx.color}`];
+    const vars = previewVars(flow, node);
+    const color = ctx.color || NO_ACTOR;
+    const style = [
+      ctx.box && boxStyle(ctx.box),
+      `--actor:${color};--actor-tint:${onWhite(color, 0.12)};--actor-line:${onWhite(color, 0.3)}`
+    ];
     return html`<article class="${classes}" data-id="${node.id}"
     style="${style.filter(Boolean).join(";")}">
     <div class="c-top">
@@ -1711,35 +1766,37 @@
       ${isException(node) && html`<span class="c-code">${node.exception}</span>`}
       ${origin !== "source" && html`<span class="badge ${origin}">${T2.origin[origin] || origin}</span>`}
     </div>
-    <h4 class="c-title">${node.title}</h4>
-    ${node.body && html`<p class="c-body">${fillVars(node.body, previewVars(flow, node))}</p>`}
+    <h4 class="c-title">${fillVars(node.title, vars)}</h4>
+    ${node.body && html`<p class="c-body">${fillVars(node.body, vars)}</p>`}
     ${renderChips(node, ctx.codes, T2)}
   </article>`;
   }
 
   // scripts/viewer/src/components/board-edges.mjs
-  var LABEL_SIZE = 15;
-  var LABEL_PADDING = 24;
-  var labelFits = (edge) => textWidth(edge.label, LABEL_SIZE) + LABEL_PADDING <= edge.labelRoom;
   var arrow = (id) => html`<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5"
   markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10z"/></marker>`;
   var DEFS = html`<defs>${["b-arrow", "b-arrow-primary", "b-arrow-exception"].map(arrow)}</defs>`;
-  var isExceptionEdge = (edge) => edge.kind === "exception" || edge.kind === "from-exception";
-  function markerOf(edge) {
-    if (isExceptionEdge(edge)) return "b-arrow-exception";
-    return edge.primary ? "b-arrow-primary" : "b-arrow";
+  function actionLabels(flow, edge) {
+    const node = findNode(flow, edge.from);
+    return edge.ids.map((id) => node.actions.find((a) => `${node.id}.${a.id}` === id)?.label ?? id).join(" / ");
   }
-  function render2(edges, size, path) {
-    const onPath = (edge) => edge.ids.some((id) => path.edgeSteps.has(id));
+  function render2(edges, size, path, flow) {
+    const onPath = (edge) => Boolean(path) && edge.ids.some((id) => path.edgeSteps.has(id));
     const classesOf = (edge) => classNames(
-      isExceptionEdge(edge) ? "exception" : edge.kind,
+      edge.kind,
       edge.primary && "primary",
       edge.dormant && "dormant",
       path && (onPath(edge) ? "on" : "dim")
     );
-    const line = (edge) => html`<path class="${classesOf(edge)}" d="${toPathD(edge.points)}"
-      marker-end="url(#${markerOf(edge)})"/>`;
-    const label = (edge) => edge.label && labelFits(edge) && html`<span class="edge-label ${classesOf(edge)}"
+    const markerOf = (edge) => {
+      if (onPath(edge) || !path && edge.primary) return "b-arrow-primary";
+      return edge.kind === "exception" ? "b-arrow-exception" : "b-arrow";
+    };
+    const line = (edge) => html`<g class="edge"><title>${actionLabels(flow, edge)}</title>
+    <path class="hit" d="${toPathD(edge.points)}"/>
+    <path class="${classesOf(edge)}" d="${toPathD(edge.points)}"
+      marker-end="url(#${markerOf(edge)})"/></g>`;
+    const label = (edge) => edge.labelAt && html`<span class="edge-label ${classesOf(edge)}"
       style="left:${edge.labelAt[0]}px;top:${edge.labelAt[1]}px">${edge.label}</span>`;
     const drawOrder = [...edges].sort((a, b) => Number(a.primary) - Number(b.primary));
     return html`<svg class="edges board-edges" width="${size.w}" height="${size.h}">
@@ -1769,7 +1826,7 @@
     return html`
     ${render(layout.bands, flow.stages)}
     ${layout.stageHeaders.map(stageHeader)}
-    ${render2(edges, layout.size, path)}
+    ${render2(edges, layout.size, path, flow)}
     ${flow.screens.map(card)}`;
   }
 
@@ -2136,7 +2193,9 @@
     const node = findNode(flow, nodeId);
     if (!node) return html`<code>${at}</code>`;
     const action = actionId && node.actions.find((a) => a.id === actionId);
-    return html`<a href="#" ${onClick({ type: "select", id: node.id })}>${displayNumber(flow, node)} ${node.title}</a>${actionId && ` \u203A ${action?.label || actionId}`}`;
+    const link = html`<a href="#" ${onClick({ type: "select", id: node.id })}>
+    ${displayNumber(flow, node)} ${node.title}</a>`;
+    return html`${link}${actionId && ` \u203A ${action?.label || actionId}`}`;
   }
 
   // scripts/viewer/src/components/finding-list.mjs

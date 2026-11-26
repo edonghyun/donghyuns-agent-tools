@@ -1,8 +1,8 @@
 // A node's chips: its state, metrics, experiments, notifications, and the codes of the exceptions
 // it leads into. Board cards and the node drawer both show them.
 
+import { cardChips } from '../../../lib/index.mjs';
 import { html } from '../html.mjs';
-import { cardChips } from '../layout/card-size.mjs';
 
 /** The chip row, or nothing when the node has no chips. Each chip names its type on hover. */
 export function renderChips(node, exceptionCodes, T) {
