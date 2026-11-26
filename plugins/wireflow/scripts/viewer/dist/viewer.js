@@ -931,7 +931,11 @@
   }
 
   // scripts/lib/validate.mjs
-  var isActor = (a) => typeof a === "string" ? a !== "" : typeof a?.name === "string" && a.name !== "";
+  var isLabel = (x) => typeof x === "string" && x !== "";
+  var isLabelList = (v) => Array.isArray(v) && v.every(isLabel);
+  var isActor = (a) => isLabel(a) || isLabel(a?.name);
+  var NODE_LISTS = ["metrics", "experiments", "notify", "notes", "decisions"];
+  var isEventProp = (p) => isLabel(p?.name) && (p.use === void 0 || typeof p.use === "string");
   var deviceError = (d) => {
     if (d === void 0 || typeof d === "string" && d in DEVICES) {
       return null;
@@ -1012,6 +1016,16 @@
         }
         codes.add(s.exception);
       }
+      for (const field of NODE_LISTS) {
+        if (s[field] !== void 0 && !isLabelList(s[field])) {
+          errs.push(
+            `screen "${s.id}" has ${field} ${JSON.stringify(s[field])}, expected a list of labels`
+          );
+        }
+      }
+      if (s.state !== void 0 && typeof s.state !== "string") {
+        errs.push(`screen "${s.id}" has state ${JSON.stringify(s.state)}, expected a label`);
+      }
       const sd = deviceError(s.device);
       if (sd) {
         errs.push(`screen "${s.id}" ${sd}`);
@@ -1080,9 +1094,15 @@
         errs.push(`event "${e.id}" has type "${e.type}", expected one of ${EVENT_TYPES.join("/")}`);
       }
       const at = [e.at].flat();
-      if (at.length === 0 || !at.every((l) => typeof l === "string" && l)) {
+      if (at.length === 0 || !at.every(isLabel)) {
         errs.push(`event "${e.id}" needs "at": a node id, node.action, or a list of them`);
       }
+      if (e.props !== void 0 && !isLabelList(e.props)) {
+        errs.push(`event "${e.id}" has props ${JSON.stringify(e.props)}, expected a list of names`);
+      }
+    }
+    if (flow.eventProps !== void 0 && !(Array.isArray(flow.eventProps) && flow.eventProps.every(isEventProp))) {
+      errs.push('"eventProps" must be an array of {name, use}');
     }
     return errs;
   }

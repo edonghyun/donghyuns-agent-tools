@@ -4,9 +4,17 @@ import { actorList } from './board.mjs';
 import { DEVICES, EVENT_TYPES, HEX_COLOR, ID, KINDS, VIEWS } from './constants.mjs';
 import { entryIds } from './graph.mjs';
 
-/** An actor is a nonempty label or an object with a nonempty string `name`. */
-const isActor = (a) =>
-  typeof a === 'string' ? a !== '' : typeof a?.name === 'string' && a.name !== '';
+const isLabel = (x) => typeof x === 'string' && x !== '';
+const isLabelList = (v) => Array.isArray(v) && v.every(isLabel);
+
+/** An actor is a label or an object whose `name` is one. */
+const isActor = (a) => isLabel(a) || isLabel(a?.name);
+
+/** A node's fields that the viewer lists one entry per label. */
+const NODE_LISTS = ['metrics', 'experiments', 'notify', 'notes', 'decisions'];
+
+/** A common event property: `{name, use?}`. */
+const isEventProp = (p) => isLabel(p?.name) && (p.use === undefined || typeof p.use === 'string');
 
 const deviceError = (d) => {
   if (d === undefined || (typeof d === 'string' && d in DEVICES)) {
@@ -90,6 +98,16 @@ export function validate(flow) {
       }
       codes.add(s.exception);
     }
+    for (const field of NODE_LISTS) {
+      if (s[field] !== undefined && !isLabelList(s[field])) {
+        errs.push(
+          `screen "${s.id}" has ${field} ${JSON.stringify(s[field])}, expected a list of labels`,
+        );
+      }
+    }
+    if (s.state !== undefined && typeof s.state !== 'string') {
+      errs.push(`screen "${s.id}" has state ${JSON.stringify(s.state)}, expected a label`);
+    }
     const sd = deviceError(s.device);
     if (sd) {
       errs.push(`screen "${s.id}" ${sd}`);
@@ -158,9 +176,18 @@ export function validate(flow) {
       errs.push(`event "${e.id}" has type "${e.type}", expected one of ${EVENT_TYPES.join('/')}`);
     }
     const at = [e.at].flat();
-    if (at.length === 0 || !at.every((l) => typeof l === 'string' && l)) {
+    if (at.length === 0 || !at.every(isLabel)) {
       errs.push(`event "${e.id}" needs "at": a node id, node.action, or a list of them`);
     }
+    if (e.props !== undefined && !isLabelList(e.props)) {
+      errs.push(`event "${e.id}" has props ${JSON.stringify(e.props)}, expected a list of names`);
+    }
+  }
+  if (
+    flow.eventProps !== undefined &&
+    !(Array.isArray(flow.eventProps) && flow.eventProps.every(isEventProp))
+  ) {
+    errs.push('"eventProps" must be an array of {name, use}');
   }
   return errs;
 }

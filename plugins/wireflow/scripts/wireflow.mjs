@@ -19,12 +19,19 @@ function usage(code = 2) {
   process.exit(code);
 }
 
-/** Replaces each marker in viewer.html once. A missing marker is a broken template: throw. */
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Replaces every marker in viewer.html with its fill, in one pass over the template: a fill that
+ * contains marker text, such as a flow title, stays as written. A missing marker is a broken
+ * template: throw.
+ */
 function fillTemplate(template, fills) {
-  return fills.reduce((html, [marker, value]) => {
-    if (!html.includes(marker)) throw new Error(`viewer.html has no ${marker}`);
-    return html.replace(marker, () => value);
-  }, template);
+  const markers = Object.keys(fills);
+  const missing = markers.find((marker) => !template.includes(marker));
+  if (missing) throw new Error(`viewer.html has no ${missing}`);
+  const anyMarker = new RegExp(markers.map(escapeRegExp).join('|'), 'g');
+  return template.replace(anyMarker, (marker) => fills[marker]);
 }
 
 function load(path) {
@@ -103,14 +110,14 @@ if (cmd === 'check') {
       .replace(/</g, '\\u003c')
       .replace(/\u2028/g, '\\u2028')
       .replace(/\u2029/g, '\\u2029');
-  const html = fillTemplate(tpl, [
-    ['/*TITLE*/', String(flow.title).replace(/[<&]/g, (c) => (c === '<' ? '&lt;' : '&amp;'))],
+  const html = fillTemplate(tpl, {
+    '/*TITLE*/': String(flow.title).replace(/[<&]/g, (c) => (c === '<' ? '&lt;' : '&amp;')),
     // The template says Korean, the default locale, so it stays valid HTML for the linter.
-    ['<html lang="ko">', `<html lang="${flow.locale === 'en' ? 'en' : 'ko'}">`],
-    ['/*CSS*/', css],
-    ['/*DATA*/', `const FLOW = ${safe(flow)};\nconst META = ${safe(meta)};`],
-    ['/*APP*/', app],
-  ]);
+    '<html lang="ko">': `<html lang="${flow.locale === 'en' ? 'en' : 'ko'}">`,
+    '/*CSS*/': css,
+    '/*DATA*/': `const FLOW = ${safe(flow)};\nconst META = ${safe(meta)};`,
+    '/*APP*/': app,
+  });
   mkdirSync(dirname(resolve(out)), { recursive: true });
   writeFileSync(out, html);
   const r = check(flow);

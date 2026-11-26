@@ -4,9 +4,11 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { validate } from '../lib/index.mjs';
 
 const cli = new URL('../wireflow.mjs', import.meta.url).pathname;
 const example = new URL('../../examples/class-booking.flow.json', import.meta.url);
+const boardExample = new URL('../../examples/trial-enrollment.flow.json', import.meta.url);
 
 /** Builds `flow` with the CLI and returns the HTML it wrote. */
 function build(flow) {
@@ -25,6 +27,51 @@ test('build fills every marker of the viewer template', () => {
     assert.ok(!html.includes(marker), marker);
   }
 });
+
+test('a flow title with marker text in it stays as written', () => {
+  const title = 'a /*CSS*/ b /*APP*/ c /*DATA*/';
+  const html = build({ ...JSON.parse(readFileSync(example, 'utf8')), title });
+  assert.ok(html.includes(`<title>${title} · wireflow</title>`));
+  assert.ok(html.includes(`"title":"${title}"`));
+});
+
+/** The exit status of `build` on `flow`. */
+function buildStatus(flow) {
+  try {
+    build(flow);
+    return 0;
+  } catch (e) {
+    return e.status;
+  }
+}
+
+// Fields the viewer lists entry by entry, each set to a value it cannot draw.
+const where = {
+  node: (f) => f.screens[0],
+  event: (f) => f.events[0],
+  flow: (f) => f,
+};
+const BAD_FIELDS = [
+  ['node', 'metrics', 'CTR'],
+  ['node', 'experiments', [3]],
+  ['node', 'notify', ['']],
+  ['node', 'state', ['draft']],
+  ['node', 'notes', 'one note'],
+  ['node', 'decisions', [{ q: 'why?' }]],
+  ['event', 'props', 'utm_source'],
+  ['flow', 'eventProps', [{ use: 'no name' }]],
+  ['flow', 'eventProps', { name: 'household_id' }],
+];
+
+for (const [owner, field, value] of BAD_FIELDS) {
+  test(`${owner} ${field} ${JSON.stringify(value)} fails validation and does not build`, () => {
+    const flow = JSON.parse(readFileSync(boardExample, 'utf8'));
+    assert.deepEqual(validate(flow), []);
+    where[owner](flow)[field] = value;
+    assert.match(validate(flow).join('\n'), new RegExp(field));
+    assert.equal(buildStatus(flow), 2);
+  });
+}
 
 test('an English flow builds an English page', () => {
   const flow = { ...JSON.parse(readFileSync(example, 'utf8')), locale: 'en' };
