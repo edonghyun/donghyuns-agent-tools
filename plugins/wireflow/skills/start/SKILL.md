@@ -1,13 +1,13 @@
 ---
 name: start
-description: Turns a brief, planning notes, screenshots, routes, or a feature-intake/ui-operator analysis into a clickable wireflow — a flowchart of steps, decisions, and actors before screens exist, or simple mock screens (mobile, desktop, messages, emails, documents) connected by arrows — so the user can walk one goal end to end and find missing steps, dead ends, and recovery gaps before visual design. Triggers include "wireflow", "와이어플로우", "순서도로 보여줘", "업무 흐름 시각화", "기획 단계 플로우", "와이어프레임으로 흐름 보여줘", "화면 흐름 검토", "유저 플로우 클릭해볼 수 있게", "플로우 빠진 단계 찾아줘", "실패하면 어디로 가?", "review the user flow", "clickable flow", "flowchart", "flow review". Writes only docs/wireflow/SLUG/SLUG.flow.json and docs/wireflow/SLUG/SLUG.html in the user's project and never modifies application code. Do not use for pixel-level visual design, for screenshot comparison of an implemented UI (use ui-operator), or for browser QA of a running app (use qa-operator).
+description: Turns a brief, planning notes, screenshots, routes, or a feature-intake/ui-operator analysis into a clickable wireflow — a journey board (primary path on a spine, exceptions and open decisions in bands below, chips for state, metrics, experiments, and notifications, plus a log list of events) before screens exist, or simple mock screens (mobile, desktop, messages, emails, documents) connected by arrows — so the user can walk one goal end to end and find missing steps, dead ends, and recovery gaps before visual design. Triggers include "wireflow", "와이어플로우", "유저 저니 보드", "저니 보드", "서비스 블루프린트", "순서도로 보여줘", "업무 흐름 시각화", "기획 단계 플로우", "와이어프레임으로 흐름 보여줘", "화면 흐름 검토", "유저 플로우 클릭해볼 수 있게", "플로우 빠진 단계 찾아줘", "실패하면 어디로 가?", "journey board", "service blueprint", "review the user flow", "clickable flow", "flow review". Writes only docs/wireflow/SLUG/SLUG.flow.json and docs/wireflow/SLUG/SLUG.html in the user's project and never modifies application code. Do not use for pixel-level visual design, for screenshot comparison of an implemented UI (use ui-operator), or for browser QA of a running app (use qa-operator).
 ---
 
 # wireflow — build and review a clickable flow
 
 ## When to use
 
-- Early planning, before any screen design: the user wants a **flowchart** of who does what, where it branches, and what happens on failure. Use `view: "flowchart"`, `actors`, and `step`/`decision`/`system`/`wait`/`end` nodes.
+- Early planning, before any screen design: the user wants a **journey board** (유저 저니 보드, 서비스 블루프린트) of who does what, where it branches, where people drop out, and what to measure at each step. Use `view: "board"`, `actors`, `primary`, and `step`/`decision`/`system`/`wait`/`end` nodes.
 - Planning a new app or feature and the user wants to see the **structure and flow**, not the visuals.
 - An existing implementation (or PoC) seems to block a journey — "결제 실패하면 갇혀요", "뒤로 가면 입력이 날아가요" — and the user wants the broken flow and the fix options side by side.
 - feature-intake produced `analysis/user-flow.md` / `action-graph.md`, or ui-operator is about to change a multi-screen flow, and a clickable map would make the review faster.
@@ -31,7 +31,7 @@ docs/wireflow/<slug>/
 1. **Collect sources.** Read the brief, notes, screenshots, routes, or `docs/feature-intake/<slug>/analysis/{action-graph,user-flow}.md` when present. Note each source in the flow's `source` field. Pick a slug (kebab-case) and confirm it only if ambiguous.
 
 2. **Model the flow.** Read [`references/flow-model.md`](references/flow-model.md), then write `<slug>.flow.json`:
-   - Pick the fidelity: no screens decided yet → `view: "flowchart"` with `actors` and non-screen kinds; screens matter → `kind: "screen"` with `device` per node (customer `mobile`, staff `desktop`). Notifications, emails, and reports are `message`/`email`/`document`, not fake screens.
+   - Pick the fidelity and always write `view`: no screens decided yet → `view: "board"` with `actors` and non-screen kinds; screens matter → `view: "wireframe"` with `kind: "screen"` and `device` per node (customer `mobile`, staff `desktop`). Notifications, emails, and reports are `message`/`email`/`document`, not fake screens.
    - Group nodes into `stages` by user task. Give every node a stable `id` and `number`.
    - Draw the controls a person actually needs to act. Include normal path, relevant **empty / failed / pending** states, and the **cancel, back, retry** routes around each main journey.
    - Mark provenance: `origin: "source"` for what the brief asks, `"observed"` for what an existing build does, `"inferred"` for screens you added. Put the brief excerpt in `brief`, conditions in `notes`, open policy questions in `decisions`.
@@ -45,7 +45,14 @@ docs/wireflow/<slug>/
    - Exercise empty input where the brief implies validation (`when` guard or a separate error screen).
    Keep unspecified retention/overwrite policy as a `decision`, not an assumption.
 
-4. **Check and build.** From the project root:
+4. **Fill the board fields** (every `view: "board"` flow; optional for wireframes):
+   - `primary` — the id of the main-journey scenario from step 3. Its nodes sit on the spine.
+   - `exception` — a code (`E01`, `E02`, …) on each node where a person drops out or gets stuck. Each one needs an incoming action, or `check` reports `orphan-exception`. The source node gets the code chip automatically.
+   - Chips, only where the source says or the step obviously needs one: `state` (stored status such as `PAID`), `metrics`, `experiments`, `notify`. `dormant: true` on a branch the source leaves for later.
+   - `events` and `eventProps` — the log points: one event per primary-path step (on the transition or the node it lands on), `drop` events on exception nodes, `error` events on failure screens. `check` lists untracked primary steps.
+   Do not invent metrics or experiments the source does not imply; leave the chip out instead.
+
+5. **Check and build.** From the project root:
    ```sh
    WF="${CLAUDE_PLUGIN_ROOT}/scripts/wireflow.mjs"   # or <this skill>/../../scripts/wireflow.mjs
    node "$WF" check docs/wireflow/<slug>/<slug>.flow.json
@@ -54,9 +61,9 @@ docs/wireflow/<slug>/
    ```
    Exit 2 means invalid JSON/model — fix and rerun. Exit 1 on the baseline is expected when it reproduces a real gap; the matching scenario should pass with `--with`. Any *unexpected* finding (typo'd id, unreachable screen you did not intend) is a modeling error: fix it.
 
-5. **Open and walk it.** Open the HTML (`open <file>` on macOS). When browser automation is available, select one main journey and one recovery scenario in **경로**, click **직접 걸어보기**, and click through; capture one screenshot if useful.
+6. **Open and walk it.** Open the HTML (`open <file>` on macOS). When browser automation is available, select one main journey and one recovery scenario in **경로**, click **직접 걸어보기**, and click through; on a board, open **로그 리스트** once to confirm the events; capture one screenshot if useful.
 
-6. **Report in chat** (short):
+7. **Report in chat** (short):
    - Links to the HTML and the JSON.
    - **One path to try first** (scenario title).
    - Findings that matter: trapped / missing / failing scenarios, with screen numbers.
@@ -71,11 +78,13 @@ docs/wireflow/<slug>/
 - Do not claim a journey "works" unless a scenario that asserts its observable result passes. `check` verifies the model, not a real app.
 - When reproducing an existing build, model what was observed (screenshots, routes, code you read). If you could not observe a state, mark it `inferred` and say so.
 - Static reachability ignores `when` guards; only scenarios exercise guards and state.
+- Board chips and events are planning proposals. Add a metric, experiment, or event only when the source names it or the step plainly needs it, and say in the report which ones you added.
 
 ## Done criteria
 
 - [ ] `<slug>.flow.json` passes `check` without exit 2; every remaining finding is either intended (reproduced gap) or reported.
 - [ ] Each required journey has a scenario with screen/var assertions, linked to its requirement.
+- [ ] `view` is written. A board names its `primary` scenario, codes every exception node, and has events on every primary step, or the report says which steps are untracked.
 - [ ] Each proposal was checked with `--with`, and conflicts (alternatives) are labeled as such.
 - [ ] `<slug>.html` built from the current JSON and opened (or the reason it could not be).
 - [ ] Chat report lists the HTML/JSON links, one path to try, findings, decisions, and the feedback loop.

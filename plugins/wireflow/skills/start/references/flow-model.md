@@ -10,17 +10,20 @@ One UTF-8 JSON object. Everything the viewer shows comes from this file; the HTM
 | `title` | ✓ | App or feature name. |
 | `goal` | | One sentence: what the user finishes. |
 | `locale` | | `ko` (default) or `en`. Viewer chrome and check messages follow it. Author screen text in the same language. |
-| `view` | | Initial view: `wireframe` (default) or `flowchart`. The viewer toggles between them; the file is the same. |
+| `view` | | Initial view: `board` or `wireframe` (default when omitted). The 0.2 value `flowchart` reads as `board`. The viewer toggles between them; the file is the same. `wireflow:start` always writes it. |
 | `device` | | Default device for `screen` nodes: `mobile` (390×844, default), `tablet` (820×1180), `desktop` (1280×800), `watch` (198×242), `kiosk` (1080×1920), or `{"width": 1440, "height": 900}`. |
-| `actors` | | Ordered lane labels for the flowchart view (`고객`, `상담사`, `시스템`). Nodes name theirs in `actor`. |
+| `actors` | | Ordered actor names (`고객`, `상담사`, `시스템`), each a string or `{"name": "강사", "color": "#148A6E"}`. Nodes name theirs in `actor`; the board colors each card's actor tag and edge, using a palette color when `color` is omitted. |
 | `source` | | Where this came from: brief file, screenshots, routes, feature-intake slug. |
 | `start` | ✓ | Entry screen id. `entries` lists other entry ids (deep links, push). |
-| `stages` | ✓ | Ordered task-group labels. Each becomes a row on the canvas. |
+| `stages` | ✓ | Ordered task-group labels. A row in the wireframe view, a column group on the board. |
 | `vars` | | Initial state (`string`/`number`/`boolean`). Used by `when`/`set`/`inc`, `{{key}}` text, and input fields. |
 | `screens` | ✓ | See below. |
 | `scenarios` | | Main journeys and recovery paths, replayed by `check`. |
 | `requirements` | | Observable requirements from the brief. |
 | `proposals` | | Fix options, applied in memory with `check --with` or the viewer checkbox. |
+| `primary` | | Scenario id of the main journey. Its nodes and transitions form the board's spine and are drawn bold. |
+| `events` | | Log points, listed on the **로그 리스트** tab. See [Events](#events). |
+| `eventProps` | | Properties every event carries: `[{"name": "household_id", "use": "형제·중복 신청 묶기"}]`. |
 
 ## Screen
 
@@ -53,7 +56,7 @@ One UTF-8 JSON object. Everything the viewer shows comes from this file; the HTM
   | `wait` | dashed box | waiting for time or another party |
   | `end` | pill | terminal step (pair with `end: true`) |
 
-  In the `flowchart` view every kind is a small box laid out in actor lanes × stage columns, and action labels appear on the arrows. Start a planning flow with `step`/`decision`/`system` nodes; later change `kind` to `screen` and add `ui` — ids, scenarios, and change requests stay valid.
+  On the board every kind is a card with its kind icon. Start a planning flow with `step`/`decision`/`system` nodes; later change `kind` to `screen` and add `ui` — ids, scenarios, and change requests stay valid.
 - `actor` — who performs the node; must be listed in `actors` when `actors` is set.
 - `device` — per-node device for `screen` nodes, overriding the flow default (e.g. customer on `mobile`, staff on `desktop`).
 - `stage` — zero-based index into `stages`. Order within a stage follows `screens` order.
@@ -68,6 +71,19 @@ One UTF-8 JSON object. Everything the viewer shows comes from this file; the HTM
 - `preview` — var overrides used only when the screen is drawn on the overview, so a non-start screen shows realistic content.
 - `end: true` — the task may intentionally end here. Every other screen must have a way back to `start`/`entries` or to an end screen, or `check` reports `trapped`.
 - `actions` — required, `[]` when none.
+
+### Board fields (all optional)
+
+```json
+{"state": "PAID", "metrics": ["결제 전환율"], "experiments": ["가격 A/B"], "notify": ["결제 완료 알림톡"],
+ "exception": "E02", "dormant": true}
+```
+
+- `state` — the stored status after this step; a mono chip.
+- `metrics`, `experiments`, `notify` — what to measure here, which variable an experiment changes here, and which notification goes out. One chip each.
+- `exception` — a unique code (`E01`, …) that marks a drop-out or stuck node. It moves to the exception band, and every node with an action into it gets the code as a chip automatically; do not write that chip by hand.
+- `dormant: true` — a branch left for later: drawn faint and kept off the spine.
+- `decisions` are gathered per stage into the decision band.
 
 ### UI blocks (`ui.blocks`, in reading order)
 
@@ -104,6 +120,25 @@ All text supports `{{var}}`. Keep blocks minimal: this is a wireframe for flow r
 
 Each step clicks `action` on the current screen, then optionally asserts `screen` and a subset of `vars`. Use a distinctive input value in recovery scenarios so "값이 유지된다" is actually checked. A scenario fails on: action not on screen, unmet `when`, missing/broken link, wrong screen, wrong vars.
 
+## Events
+
+```json
+{"id": "apply_submitted", "type": "normal", "at": "apply-form.submit", "props": ["household_id"], "note": "가구별 중복 제거"}
+```
+
+- `type` — `normal`, `drop` (someone leaves), or `error`.
+- `at` — a node id or `node.action` (the transition), or an array when the same event fires in several places. Ids are unique. Actions are never events on their own; write each event.
+- An event on a transition or on the node it lands on tracks that primary-path step; the entry node counts as a step too.
+- `check` exits 2 on an unknown event `type`, a duplicate event id, a duplicate `exception` code, or an actor `color` that is not `#RRGGBB`.
+
+## Board layout (what the viewer draws)
+
+- Columns are `stages`; inside a stage, nodes fall into sub-columns by graph depth from `start`/`entries`.
+- `primary` nodes sit on the centre spine. Other nodes in a sub-column stack above and below it, above first. Without `primary`, the first node of each sub-column takes the spine.
+- Under the main area are two bands: **이탈했을 때 확인할 일** holds exception nodes, each under the first node that leads into it; **미정 결정** holds each stage's `decisions`.
+- Cards are 220px wide; height follows title, body, and chip count. Edges are orthogonal: forward edges run through the gaps between columns, backward and column-skipping edges detour above or below the cards, edges into an exception are red dashed, and edges out of one are grey dashed. Only `decision` branches carry a label; other labels show on hover.
+- The layout is deterministic: the same file always draws the same board.
+
 ## Requirement
 
 ```json
@@ -133,7 +168,7 @@ node "$WF" check FLOW.json --with a,b      # same checks with proposals applied 
 node "$WF" check FLOW.json --json          # machine-readable result
 node "$WF" build FLOW.json OUT.html        # single self-contained HTML; exit 0 even with findings
 node "$WF" example OUT.flow.json           # copy the screen sample (never overwrites)
-node "$WF" example OUT.flow.json --flowchart   # copy the flowchart sample
+node "$WF" example OUT.flow.json --board   # copy the journey board sample (0.2 alias: --flowchart)
 ```
 
 `$WF` is `${CLAUDE_PLUGIN_ROOT}/scripts/wireflow.mjs`, or `../../scripts/wireflow.mjs` relative to this skill folder. Node 18+, no dependencies.
@@ -148,6 +183,10 @@ node "$WF" example OUT.flow.json --flowchart   # copy the flowchart sample
 | `missing-link` | 🟡 | action with `to: null` |
 | `decision-branches` | 🟡 | `decision` node with fewer than two actions |
 | `unreachable` | 🟡 | no route from start/entries |
+| `broken-event` | 🔴 | `events[].at` names a node or transition that does not exist |
+| `unknown-primary` | 🔴 | `primary` is not a scenario id |
+| `orphan-exception` | 🟡 | an `exception` node has no incoming action |
 | `uncovered-requirement` | 🔵 | requirement that no scenario checks |
+| `untracked-step` | 🔵 | `events` exist, but a primary-path step has none on its transition or landing node |
 
 Static reachability ignores `when` guards; scenarios are the place where guards and state are verified.

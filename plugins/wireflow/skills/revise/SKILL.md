@@ -1,6 +1,6 @@
 ---
 name: revise
-description: Applies change requests copied from a wireflow viewer (the "수정 요청" list) or described in chat to an existing *.flow.json, then rebuilds the same HTML and reruns checks. Also adopts a proposal into the baseline when the user chooses it. Triggers include pasted text starting with "## Wireflow 수정 요청" or "## Wireflow change requests", "와이어플로우 수정", "이 요청 반영해줘", "제안 채택", "플로우 다시 빌드", "apply wireflow requests", "adopt proposal", "rebuild wireflow". Writes only the referenced *.flow.json and its HTML (same paths) and never modifies application code. Do not use when no flow file exists yet (use wireflow:start).
+description: Applies change requests copied from a wireflow viewer (the "수정 요청" list) or described in chat to an existing *.flow.json — screens, actions, board chips, and log events — then rebuilds the same HTML and reruns checks. Also adopts a proposal into the baseline when the user chooses it. Triggers include pasted text starting with "## Wireflow 수정 요청" or "## Wireflow change requests", "와이어플로우 수정", "이 요청 반영해줘", "제안 채택", "플로우 다시 빌드", "로그 이벤트 추가", "지표 칩 바꿔줘", "apply wireflow requests", "adopt proposal", "rebuild wireflow", "add a log event". Writes only the referenced *.flow.json and its HTML (same paths) and never modifies application code. Do not use when no flow file exists yet (use wireflow:start).
 ---
 
 # wireflow — revise from change requests
@@ -21,15 +21,15 @@ Pre-condition: the referenced `*.flow.json` exists. If the path in the header do
 ## Output contract
 
 - Rewrites only the referenced `*.flow.json` and rebuilds the HTML at the **same path and filename** (the browser keys saved requests on flow id + filename).
-- Never changes the flow `id`, existing screen/action ids, or display numbers unless the request explicitly asks for a rename.
+- Never changes the flow `id`, existing screen/action/event ids, or display numbers unless the request explicitly asks for a rename.
 - Never modifies application code, even when a request describes a product bug — say it is a mockup change and point to the relevant tool if the user wants implementation.
 
 ## Pipeline
 
 1. **Identify.** Read the flow JSON. Confirm its `id` matches the header's `flow:`. If not, stop and report the mismatch.
-2. **Locate.** For each numbered request, find the target by stable ids (`screen` id, `action` id). Use the display number only to double-check. If the header lists applied proposals, interpret the request against the flow *with* those proposals.
+2. **Locate.** For each numbered request, find the target by stable ids (`screen` id, `action` id). Use the display number only to double-check. A request on a board may target a chip (`state`, `metrics`, `experiments`, `notify`, `exception`, `dormant` on that node) or an event (an `events[]` entry whose `at` names that node or `node.action`, or one the request names by event id). If the header lists applied proposals, interpret the request against the flow *with* those proposals.
 3. **Classify each request** before editing:
-   - *Mockup edit* — label, block, target, new state screen. Apply it.
+   - *Mockup edit* — label, block, target, new state screen, a chip, an event, `eventProps`, or `primary`. Apply it. Moving a node's `exception` code keeps codes unique; an exception chip on the source node comes from the edge, so edit the edge or the exception node, not the chip.
    - *Adopt proposal* — move the proposal's `changes` into the baseline (`origin` of added screens becomes `source` if the user chose it), then delete that proposal and any alternatives that conflicted with it.
    - *Open question* — the request asks something undecided. Add or update a `decisions` entry instead of guessing.
    - *Out of scope* — application code, visual styling beyond wireframe blocks. Report, do not apply.

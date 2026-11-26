@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { applyProposals, check, exitCode, validate } from '../lib/index.mjs';
 import {
@@ -334,9 +334,12 @@ test('the hakwon-like fixture is valid, passes check, and lays out without overl
   }
 });
 
-test('0.2 flows with no primary path or exceptions lay out every screen without overlaps', () => {
-  for (const name of ['class-booking', 'consulting-request']) {
-    const url = new URL(`../../examples/${name}.flow.json`, import.meta.url);
+test('every example lays out every screen without overlaps', () => {
+  const dir = new URL('../../examples/', import.meta.url);
+  const names = readdirSync(dir).filter((f) => f.endsWith('.flow.json'));
+  assert.ok(names.length >= 3);
+  for (const name of names) {
+    const url = new URL(name, dir);
     const flow = JSON.parse(readFileSync(url, 'utf8'));
     const board = layoutBoard(flow);
     assert.deepEqual(

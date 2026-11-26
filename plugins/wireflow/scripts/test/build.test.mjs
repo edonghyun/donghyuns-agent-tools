@@ -30,3 +30,26 @@ test('an English flow builds an English page', () => {
   const flow = { ...JSON.parse(readFileSync(example, 'utf8')), locale: 'en' };
   assert.match(build(flow), /^<!doctype html>\n<html lang="en">/);
 });
+
+test('example copies the board sample for --board and its 0.2 alias, and never overwrites', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'wireflow-example-'));
+  const idOf = (args) => {
+    execFileSync(process.execPath, [cli, 'example', ...args], { cwd: dir, stdio: 'pipe' });
+    return JSON.parse(readFileSync(join(dir, args[0]), 'utf8')).id;
+  };
+  assert.equal(idOf(['plain.flow.json']), 'class-booking');
+  assert.equal(idOf(['board.flow.json', '--board']), 'trial-enrollment');
+  assert.equal(idOf(['alias.flow.json', '--flowchart']), 'trial-enrollment');
+  assert.throws(
+    () =>
+      execFileSync(process.execPath, [cli, 'example', 'board.flow.json'], {
+        cwd: dir,
+        stdio: 'pipe',
+      }),
+    (e) => e.status === 2,
+  );
+  assert.equal(
+    JSON.parse(readFileSync(join(dir, 'board.flow.json'), 'utf8')).id,
+    'trial-enrollment',
+  );
+});

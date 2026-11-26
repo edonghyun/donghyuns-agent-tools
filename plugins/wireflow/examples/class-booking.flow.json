@@ -3,6 +3,7 @@
   "title": "도자기 클래스 예약",
   "goal": "원하는 날짜의 클래스를 골라 결제까지 마친다.",
   "locale": "ko",
+  "view": "wireframe",
   "device": "mobile",
   "source": "예시 기획 메모 (가상의 공방). 결제 실패 후 재시도 경로가 현재 구현에서 막혀 있는 상황을 재현한다.",
   "start": "home",

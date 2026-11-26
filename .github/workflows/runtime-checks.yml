@@ -23,15 +23,33 @@ jobs:
 
   wireflow-model:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/wireflow
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: "20"
-      - name: wireflow model tests
-        run: node --test plugins/wireflow/scripts/test/*.test.mjs
-      - name: wireflow example builds
+          cache: npm
+          cache-dependency-path: plugins/wireflow/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - name: viewer bundle matches the committed dist
+        run: npm run bundle && git diff --exit-code scripts/viewer/dist
+      - name: check every example (with each proposal)
         run: |
-          node plugins/wireflow/scripts/wireflow.mjs check plugins/wireflow/examples/class-booking.flow.json --with retry-to-detail
-          node plugins/wireflow/scripts/wireflow.mjs build plugins/wireflow/examples/class-booking.flow.json /tmp/class-booking.html
-          node plugins/wireflow/scripts/wireflow.mjs build plugins/wireflow/examples/consulting-request.flow.json /tmp/consulting-request.html
+          for f in examples/*.flow.json; do
+            proposals=$(node -e 'const f = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); console.log((f.proposals || []).map((p) => p.id).join(" "))' "$f")
+            if [ -z "$proposals" ]; then
+              node scripts/wireflow.mjs check "$f"
+            else
+              for p in $proposals; do node scripts/wireflow.mjs check "$f" --with "$p"; done
+            fi
+          done
+      - name: build every example
+        run: |
+          for f in examples/*.flow.json; do
+            node scripts/wireflow.mjs build "$f" "$RUNNER_TEMP/$(basename "$f" .flow.json).html"
+          done

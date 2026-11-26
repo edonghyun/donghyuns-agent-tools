@@ -16,7 +16,7 @@ A host-neutral personal plugin marketplace for coding agents, focused on **safet
 | 외부 PoC를 기존 제품에 편입할지 분석하기 | [feature-intake](plugins/feature-intake/README.md) | 스크린샷과 연결된 분석·스펙·웹 리포트 |
 | 구현과 문서의 차이를 추적하기 | [spec-mirror](plugins/spec-mirror/README.md) | 코드 근거가 연결된 명세·차이·범위 분석 |
 | 실패 증거부터 확인하며 TDD로 변경하기 | [dev-discipline](plugins/dev-discipline/README.md) | 행동 목록·실행 명령·RED/GREEN 근거 |
-| 기획 단계에서 화면 흐름·빠진 단계·복구 경로를 클릭하며 검토하기 | [wireflow](plugins/wireflow/README.md) | 연결된 목업 화면 HTML·시나리오 검사·수정 요청 |
+| 기획 단계에서 유저 저니·빠진 단계·복구 경로를 클릭하며 검토하기 | [wireflow](plugins/wireflow/README.md) | 저니 보드·와이어프레임 HTML·로그 리스트·시나리오 검사·수정 요청 |
 | 긴 대화에서 한 지점을 다른 창·세션으로 떼어 파고들고 다시 합치기 | [thread-keeper](plugins/thread-keeper/README.md) | `.threads/` 캡슐·메인 위치·나중에 볼 것 |
 
 설치 후에는 예를 들어 다음과 같이 요청할 수 있습니다. 이는 사용 예이며 실제 QA 결과는 아닙니다.
@@ -32,14 +32,14 @@ qa-operator로 현재 변경분의 QA 계획을 만들고 브라우저로 검증
 ## Runtime checks
 
 QA 결과 파일 초기화·갱신·동시 업데이트·증거 경로 검증·대시보드 관련 회귀 테스트를 실행합니다.
-Python 표준 라이브러리를 사용하며 별도 패키지 설치가 필요하지 않습니다.
+QA 검사는 Python 표준 라이브러리만 씁니다. wireflow 검사는 개발용 패키지(Biome, esbuild)를 `npm ci`로 설치한 뒤 린트·모델·배치 테스트를 실행합니다.
 
 ```sh
 python3 -m unittest discover -s plugins/qa-operator/scripts -p 'test_*.py' -v
-node --test plugins/wireflow/scripts/test/*.test.mjs
+(cd plugins/wireflow && npm ci && npm run lint && npm test)
 ```
 
-[GitHub CI](https://github.com/edonghyun/donghyuns-agent-tools/actions/workflows/runtime-checks.yml)는 Python 3.12에서 같은 검사를 실행합니다.
+[GitHub CI](https://github.com/edonghyun/donghyuns-agent-tools/actions/workflows/runtime-checks.yml)는 Python 3.12와 Node 20에서 같은 검사를 실행하고, wireflow 뷰어 번들이 커밋된 `dist`와 같은지, 모든 예제가 `check`·`build`를 통과하는지도 확인합니다.
 이 검사는 QA 도구의 파일·상태 관리 범위이며, 실제 브라우저 QA나 전체 플러그인의 호스트별 설치·동작을 검증하지 않습니다.
 
 ---
@@ -110,7 +110,7 @@ Start a new Codex thread after install or update so the refreshed plugin skills 
 
 ### [wireflow](plugins/wireflow/README.md)
 
-Review app structure and user flow before visual design — as a flowchart with actor lanes before screens exist, or as connected mock screens per device. `wireflow` turns a brief, notes, screenshots, routes, or a feature-intake analysis into an editable `*.flow.json` and one self-contained HTML: simple mock screens grouped by task, connected by arrows, with scenarios that replay main journeys and recovery paths (cancel, back, retry) and flag dead ends, missing links, and unchecked requirements. Fix proposals preview in memory without touching the observed baseline, and reviewers copy per-screen change requests back to the agent.
+Review user journeys and app structure before visual design — as a journey board before screens exist, or as connected mock screens per device. The board lays itself out: the primary path runs along a spine, exception and open-decision bands sit below it, cards carry chips for state, metrics, experiments, notifications, and exception codes, and a log-list tab lists the events to track. `wireflow` turns a brief, notes, screenshots, routes, or a feature-intake analysis into an editable `*.flow.json` and one self-contained HTML: simple mock screens grouped by task, connected by arrows, with scenarios that replay main journeys and recovery paths (cancel, back, retry) and flag dead ends, missing links, and unchecked requirements. Fix proposals preview in memory without touching the observed baseline, and reviewers copy per-screen change requests back to the agent.
 
 **Just say:**
 

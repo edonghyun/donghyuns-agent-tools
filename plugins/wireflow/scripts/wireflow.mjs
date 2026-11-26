@@ -2,7 +2,7 @@
 // wireflow CLI — zero dependencies, Node 18+.
 //   node wireflow.mjs check FLOW.json [--with p1,p2] [--json]
 //   node wireflow.mjs build FLOW.json OUT.html
-//   node wireflow.mjs example OUT.flow.json [--flowchart]
+//   node wireflow.mjs example OUT.flow.json [--board]   (--flowchart is the 0.2 alias)
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +14,7 @@ const ICON = { critical: '🔴', warning: '🟡', info: '🔵' };
 
 function usage(code = 2) {
   console.error(
-    'usage:\n  wireflow check FLOW.json [--with p1,p2] [--json]\n  wireflow build FLOW.json OUT.html\n  wireflow example OUT.flow.json [--flowchart]',
+    'usage:\n  wireflow check FLOW.json [--with p1,p2] [--json]\n  wireflow build FLOW.json OUT.html\n  wireflow example OUT.flow.json [--board]',
   );
   process.exit(code);
 }
@@ -130,7 +130,9 @@ if (cmd === 'check') {
       join(
         here,
         '../examples',
-        flags.includes('--flowchart') ? 'consulting-request.flow.json' : 'class-booking.flow.json',
+        flags.includes('--board') || flags.includes('--flowchart')
+          ? 'trial-enrollment.flow.json'
+          : 'class-booking.flow.json',
       ),
       'utf8',
     ),

@@ -1,0 +1,246 @@
+{
+  "id": "trial-enrollment",
+  "title": "체험 수업에서 정규 등록까지",
+  "goal": "학부모가 무료 체험을 신청하고, 학생이 체험 수업을 들은 뒤, 학부모가 정규 수강을 결제한다.",
+  "locale": "ko",
+  "view": "board",
+  "device": "mobile",
+  "source": "예시 기획 메모 (가상의 온라인 수학 교실). 첫 모집 실험의 저니 보드.",
+  "start": "ad-search",
+  "entries": ["ad-referral"],
+  "stages": ["알게 됨", "신청", "체험", "의향 확인", "결제"],
+  "actors": ["학부모", "학생", { "name": "강사", "color": "#148A6E" }, "운영자", "시스템"],
+  "primary": "enroll",
+  "vars": { "household": "", "dup": false, "payFails": false },
+  "screens": [
+    {
+      "id": "ad-search", "title": "검색 광고", "stage": 0, "actor": "학부모", "kind": "step", "origin": "source",
+      "body": "'중등 수학 체험' 검색 광고",
+      "metrics": ["클릭당 광고비"], "experiments": ["광고 문구 ①"],
+      "decisions": ["모집 지역과 회차별 정원은?"],
+      "actions": [{ "id": "click", "label": "광고 클릭", "to": "landing" }]
+    },
+    {
+      "id": "ad-referral", "title": "지인 추천 링크", "stage": 0, "actor": "학부모", "kind": "step", "origin": "source",
+      "body": "먼저 다닌 가구가 보낸 링크",
+      "metrics": ["추천 링크 방문 수"], "experiments": ["추천 보상"],
+      "actions": [{ "id": "click", "label": "링크 열기", "to": "landing" }]
+    },
+    {
+      "id": "landing", "title": "체험 안내 페이지", "stage": 1, "actor": "학부모", "origin": "source",
+      "brief": "두 유입이 같은 페이지에 도착하고, 일정·비용·준비물을 먼저 보여준다.",
+      "metrics": ["신청 시작 / 방문"], "experiments": ["안내 문구 ①/②"],
+      "ui": { "bar": "수학 교실", "heading": "무료 체험 수업", "blocks": [
+        { "type": "rows", "rows": [{ "label": "일정", "value": "토 10:00 · 40분" }, { "label": "비용", "value": "무료" }] },
+        { "type": "text", "label": "태블릿이나 노트북만 있으면 돼요" }
+      ] },
+      "actions": [{ "id": "apply", "label": "체험 신청하기", "to": "apply-form" }]
+    },
+    {
+      "id": "apply-form", "title": "체험 신청서", "stage": 1, "actor": "학부모", "origin": "source",
+      "ui": { "bar": "체험 신청", "blocks": [
+        { "type": "input", "label": "보호자 연락처", "field": "household", "placeholder": "010-0000-0000", "required": true },
+        { "type": "input", "label": "학생 학년", "placeholder": "중2" }
+      ] },
+      "actions": [{ "id": "submit", "label": "신청 완료", "to": "dup-check" }]
+    },
+    {
+      "id": "dup-check", "title": "이미 신청한 가구?", "stage": 1, "actor": "시스템", "kind": "decision", "origin": "inferred",
+      "actions": [
+        { "id": "new", "label": "새 신청", "to": "confirm", "when": { "dup": false } },
+        { "id": "dup", "label": "중복 신청", "to": "duplicate", "when": { "dup": true } }
+      ]
+    },
+    {
+      "id": "duplicate", "title": "중복 신청 안내", "stage": 1, "actor": "운영자", "kind": "message", "channel": "알림톡", "origin": "inferred",
+      "exception": "E01",
+      "body": "기존 신청 회차를 다시 안내",
+      "metrics": ["중복 신청 / 전체 신청"],
+      "actions": [{ "id": "keep", "label": "기존 신청 유지", "to": "confirm", "set": { "dup": false } }]
+    },
+    {
+      "id": "confirm", "title": "신청 확인 알림", "stage": 1, "actor": "운영자", "kind": "message", "channel": "알림톡", "origin": "source",
+      "body": "체험 접속 링크와 시간 안내",
+      "state": "APPLIED", "notify": ["신청 확인 알림톡"],
+      "actions": [
+        { "id": "join", "label": "체험 시간에 접속", "to": "class-room" },
+        { "id": "miss", "label": "체험 시간 미접속", "to": "no-show" }
+      ]
+    },
+    {
+      "id": "no-show", "title": "체험 시간 미접속", "stage": 2, "actor": "운영자", "kind": "wait", "origin": "inferred",
+      "exception": "E02",
+      "body": "안내 전달·기기·시간을 먼저 확인",
+      "metrics": ["미접속 / 확정 학생"],
+      "actions": [{ "id": "rebook", "label": "다음 회차 재안내", "to": "confirm" }]
+    },
+    {
+      "id": "class-room", "title": "체험 수업 입장", "stage": 2, "actor": "학생", "origin": "source",
+      "state": "TRIAL", "metrics": ["접속 / 확정 학생"],
+      "ui": { "bar": "체험 수업", "blocks": [{ "type": "visual", "label": "강사 화면과 문제판", "aspect": "16/9" }] },
+      "actions": [{ "id": "start", "label": "수업 시작", "to": "lesson" }]
+    },
+    {
+      "id": "lesson", "title": "체험 수업 진행", "stage": 2, "actor": "강사", "kind": "step", "origin": "source",
+      "body": "진단 문제 풀이 후 취약 단원 설명",
+      "decisions": ["체험 수업 길이는 40분인가 50분인가?"],
+      "actions": [{ "id": "finish", "label": "수업 종료", "to": "finished" }]
+    },
+    {
+      "id": "finished", "title": "끝까지 들었나?", "stage": 2, "actor": "시스템", "kind": "decision", "origin": "inferred",
+      "metrics": ["완주 / 입장 학생"],
+      "actions": [
+        { "id": "done", "label": "완주", "to": "report" },
+        { "id": "left", "label": "중간 이탈", "to": "dropout" }
+      ]
+    },
+    {
+      "id": "dropout", "title": "수업 중 이탈", "stage": 2, "actor": "강사", "kind": "end", "end": true, "origin": "inferred",
+      "exception": "E03",
+      "body": "이탈 시점과 기기 오류 확인",
+      "actions": []
+    },
+    {
+      "id": "report", "title": "체험 결과 리포트", "stage": 2, "actor": "강사", "kind": "document", "origin": "source",
+      "body": "진단 결과와 추천 수업 계획",
+      "notify": ["리포트 알림톡"],
+      "ui": { "bar": "체험 리포트", "blocks": [{ "type": "list", "items": ["단원별 진단 결과", "추천 수업 계획"] }] },
+      "actions": [{ "id": "read", "label": "리포트 확인", "to": "intent" }]
+    },
+    {
+      "id": "intent", "title": "학부모 등록 의향", "stage": 3, "actor": "학부모", "kind": "decision", "origin": "source",
+      "metrics": ["등록 의향 / 리포트 열람"],
+      "actions": [
+        { "id": "yes", "label": "등록할게요", "to": "plan-pick" },
+        { "id": "sibling", "label": "형제와 함께", "to": "sibling" },
+        { "id": "later", "label": "지금은 보류", "to": "hold" }
+      ]
+    },
+    {
+      "id": "sibling", "title": "형제 함께 등록 상담", "stage": 3, "actor": "운영자", "kind": "step", "origin": "inferred",
+      "dormant": true,
+      "body": "형제 할인 정책이 정해지면 연다",
+      "actions": [{ "id": "pick", "label": "플랜 선택으로", "to": "plan-pick" }]
+    },
+    {
+      "id": "hold", "title": "등록 보류", "stage": 3, "actor": "학부모", "kind": "end", "end": true, "origin": "inferred",
+      "exception": "E04",
+      "body": "가격·시간표 중 보류 이유 확인",
+      "metrics": ["보류 가구 / 리포트 열람"],
+      "actions": []
+    },
+    {
+      "id": "plan-pick", "title": "수강 플랜 선택", "stage": 4, "actor": "학부모", "origin": "source",
+      "experiments": ["가격 A/B"],
+      "decisions": ["월 결제와 3개월 선결제의 할인 폭은?"],
+      "ui": { "bar": "정규 수강", "blocks": [
+        { "type": "rows", "rows": [{ "label": "주 1회", "value": "월 16만원" }, { "label": "주 2회", "value": "월 28만원" }] }
+      ] },
+      "actions": [{ "id": "pay", "label": "결제하기", "to": "payment" }]
+    },
+    {
+      "id": "payment", "title": "결제", "stage": 4, "actor": "학부모", "origin": "source",
+      "ui": { "bar": "결제", "blocks": [{ "type": "rows", "rows": [{ "label": "주 1회 · 1개월", "value": "160,000원" }] }] },
+      "actions": [
+        { "id": "sim-ok", "label": "(시뮬레이션) 결제 성공", "to": "paid", "kind": "sim", "when": { "payFails": false } },
+        { "id": "sim-fail", "label": "(시뮬레이션) 결제 실패", "to": "pay-failed", "kind": "sim", "set": { "payFails": true } }
+      ]
+    },
+    {
+      "id": "pay-failed", "title": "결제 실패 안내", "stage": 4, "actor": "학부모", "tone": "error", "origin": "inferred",
+      "ui": { "blocks": [{ "type": "notice", "tone": "error", "label": "결제가 완료되지 않았어요." }] },
+      "actions": [{ "id": "retry", "label": "다시 결제하기", "to": "payment", "set": { "payFails": false } }]
+    },
+    {
+      "id": "paid", "title": "결제 확인", "stage": 4, "actor": "시스템", "kind": "system", "origin": "source",
+      "state": "PAID", "metrics": ["광고비 / 신규 유료 가구"], "notify": ["결제 완료 알림톡"],
+      "actions": [{ "id": "welcome", "label": "첫 수업 안내", "to": "welcome" }]
+    },
+    {
+      "id": "welcome", "title": "첫 수업 안내", "stage": 4, "actor": "운영자", "kind": "message", "channel": "알림톡", "end": true, "origin": "source",
+      "body": "정규 수업 시간과 준비물 안내",
+      "actions": []
+    }
+  ],
+  "scenarios": [
+    { "id": "enroll", "title": "검색 광고에서 정규 결제까지", "requirements": ["r-apply", "r-pay"], "steps": [
+      { "action": "click", "screen": "landing" },
+      { "action": "apply", "screen": "apply-form" },
+      { "action": "submit", "screen": "dup-check" },
+      { "action": "new", "screen": "confirm" },
+      { "action": "join", "screen": "class-room" },
+      { "action": "start", "screen": "lesson" },
+      { "action": "finish", "screen": "finished" },
+      { "action": "done", "screen": "report" },
+      { "action": "read", "screen": "intent" },
+      { "action": "yes", "screen": "plan-pick" },
+      { "action": "pay", "screen": "payment" },
+      { "action": "sim-ok", "screen": "paid" },
+      { "action": "welcome", "screen": "welcome" }
+    ] },
+    { "id": "referral-dup", "title": "추천 링크로 다시 신청한 가구", "requirements": ["r-dup"], "start": "ad-referral", "vars": { "dup": true }, "steps": [
+      { "action": "click", "screen": "landing" },
+      { "action": "apply" },
+      { "action": "submit", "screen": "dup-check" },
+      { "action": "dup", "screen": "duplicate" },
+      { "action": "keep", "screen": "confirm", "vars": { "dup": false } }
+    ] },
+    { "id": "no-show", "title": "미접속 후 다음 회차 재안내", "requirements": ["r-rebook"], "steps": [
+      { "action": "click" }, { "action": "apply" }, { "action": "submit" }, { "action": "new" },
+      { "action": "miss", "screen": "no-show" },
+      { "action": "rebook", "screen": "confirm" },
+      { "action": "join", "screen": "class-room" }
+    ] },
+    { "id": "dropout", "title": "체험 수업 중간 이탈", "steps": [
+      { "action": "click" }, { "action": "apply" }, { "action": "submit" }, { "action": "new" },
+      { "action": "join" }, { "action": "start" }, { "action": "finish" },
+      { "action": "left", "screen": "dropout" }
+    ] },
+    { "id": "pay-retry", "title": "결제 실패 후 재결제", "requirements": ["r-pay"], "steps": [
+      { "action": "click" }, { "action": "apply" }, { "action": "submit" }, { "action": "new" },
+      { "action": "join" }, { "action": "start" }, { "action": "finish" }, { "action": "done" },
+      { "action": "read" }, { "action": "yes" }, { "action": "pay" },
+      { "action": "sim-fail", "screen": "pay-failed", "vars": { "payFails": true } },
+      { "action": "retry", "screen": "payment", "vars": { "payFails": false } },
+      { "action": "sim-ok", "screen": "paid" }
+    ] },
+    { "id": "hold", "title": "리포트를 보고 등록 보류", "steps": [
+      { "action": "click" }, { "action": "apply" }, { "action": "submit" }, { "action": "new" },
+      { "action": "join" }, { "action": "start" }, { "action": "finish" }, { "action": "done" },
+      { "action": "read" },
+      { "action": "later", "screen": "hold" }
+    ] }
+  ],
+  "requirements": [
+    { "id": "r-apply", "title": "광고에서 체험 신청", "expected": "광고를 누르면 안내 페이지에서 바로 체험을 신청할 수 있다", "origin": "source", "screen": "landing" },
+    { "id": "r-dup", "title": "중복 신청 묶기", "expected": "이미 신청한 가구는 새 신청 대신 기존 회차 안내를 받는다", "origin": "inferred", "screen": "dup-check" },
+    { "id": "r-rebook", "title": "미접속 재안내", "expected": "체험 시간에 접속하지 않으면 다음 회차를 다시 안내받는다", "origin": "inferred", "screen": "no-show" },
+    { "id": "r-pay", "title": "결제 실패 후 재결제", "expected": "결제가 실패해도 같은 플랜으로 다시 결제해 등록을 마친다", "origin": "source", "screen": "payment" }
+  ],
+  "eventProps": [
+    { "name": "household_id", "use": "형제·중복 신청을 한 가구로 묶기" },
+    { "name": "trial_session_id", "use": "체험 회차별 접속·완주 비교" },
+    { "name": "utm_source", "use": "검색 광고·추천 링크 유입 구분" }
+  ],
+  "events": [
+    { "id": "ad_click", "type": "normal", "at": ["ad-search", "ad-referral"], "props": ["utm_source"], "note": "광고·추천 링크 클릭" },
+    { "id": "landing_view", "type": "normal", "at": "landing", "props": ["utm_source"], "note": "안내 문구 실험 변형 기록" },
+    { "id": "apply_form_open", "type": "normal", "at": "landing.apply" },
+    { "id": "apply_submitted", "type": "normal", "at": "apply-form.submit" },
+    { "id": "apply_duplicate", "type": "drop", "at": "duplicate" },
+    { "id": "apply_confirmed", "type": "normal", "at": "confirm", "props": ["trial_session_id"] },
+    { "id": "trial_joined", "type": "normal", "at": "confirm.join", "props": ["trial_session_id"] },
+    { "id": "trial_no_show", "type": "drop", "at": "no-show", "props": ["trial_session_id"] },
+    { "id": "lesson_started", "type": "normal", "at": "class-room.start" },
+    { "id": "lesson_finished", "type": "normal", "at": "lesson.finish" },
+    { "id": "lesson_dropout", "type": "drop", "at": "dropout", "note": "마지막으로 본 문제 번호를 함께 남긴다" },
+    { "id": "report_sent", "type": "normal", "at": "report" },
+    { "id": "report_read", "type": "normal", "at": "report.read" },
+    { "id": "plan_view", "type": "normal", "at": "plan-pick" },
+    { "id": "enroll_hold", "type": "drop", "at": "hold" },
+    { "id": "payment_started", "type": "normal", "at": "plan-pick.pay" },
+    { "id": "payment_failed", "type": "error", "at": "pay-failed" },
+    { "id": "payment_completed", "type": "normal", "at": "paid" },
+    { "id": "welcome_sent", "type": "normal", "at": "welcome" }
+  ]
+}
