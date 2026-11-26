@@ -1,12 +1,7 @@
 // Board columns: each stage splits into sub-columns by graph depth, left to right.
 
 import { isException, rankNodes } from '../../../lib/graph.mjs';
-
-export const CARD_W = 220;
-export const SUB_GAP = 48;
-export const STAGE_GAP = 72;
-export const MARGIN = 32; // around the whole board
-export const HEADER_H = 40; // stage headers, above the columns
+import { CARD_W, HEADER_H, MARGIN, STAGE_GAP, SUB_GAP } from './geometry.mjs';
 
 /**
  * Columns left to right, one header per stage, and the column index of each non-exception node.

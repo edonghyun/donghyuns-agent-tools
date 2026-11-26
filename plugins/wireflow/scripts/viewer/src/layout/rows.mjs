@@ -8,10 +8,11 @@ const ROW_GAP = 24; // between cards stacked in one column
  * A column without a spine node centers its whole stack on the spine.
  */
 export function stackColumns(flow, columnOf, heights, primaryNodes) {
-  const byColumn = Map.groupBy(
-    flow.screens.filter((s) => columnOf.has(s.id)),
-    (s) => columnOf.get(s.id),
-  );
+  const byColumn = new Map();
+  for (const s of flow.screens.filter((s) => columnOf.has(s.id))) {
+    const column = columnOf.get(s.id);
+    byColumn.set(column, [...(byColumn.get(column) ?? []), s]);
+  }
   const tops = new Map();
   for (const nodes of byColumn.values()) {
     const anchor = spineNode(nodes, primaryNodes);

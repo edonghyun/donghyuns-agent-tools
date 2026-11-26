@@ -2,8 +2,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { applyProposals, check, exitCode, validate } from '../lib/index.mjs';
-import { CARD_W, layoutBoard, STAGE_GAP, SUB_GAP } from '../viewer/src/layout/board.mjs';
+import {
+  CARD_W,
+  DETOUR_GAP,
+  layoutBoard,
+  STAGE_GAP,
+  SUB_GAP,
+} from '../viewer/src/layout/board.mjs';
 import { estimateCardHeight } from '../viewer/src/layout/card-size.mjs';
+import { bottomOf } from '../viewer/src/layout/geometry.mjs';
 import { hakwonLikeFlow } from './fixtures/board-fixture.mjs';
 
 // Nodes as [id, stage, [targets], extra?]; the first node is the start. Action ids are the targets.
@@ -26,7 +33,6 @@ const flowOf = (nodes, primary) => ({
 });
 
 const center = (box) => box.y + box.h / 2;
-const bottom = (box) => box.y + box.h;
 const overlaps = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
 /** Every node box and decision card, with a name for failure messages. */
@@ -87,8 +93,8 @@ test('beside one primary node, the others stack above then below the spine', () 
   assert.equal(x.x, b.x);
   assert.equal(y.x, b.x);
   assert.equal(center(b), spineY);
-  assert.ok(bottom(x) < b.y, 'x above b');
-  assert.ok(y.y > bottom(b), 'y below b');
+  assert.ok(bottomOf(x) < b.y, 'x above b');
+  assert.ok(y.y > bottomOf(b), 'y below b');
 });
 
 test('a column with two primary nodes centers its stack on the spine, neither node on it', () => {
@@ -107,7 +113,7 @@ test('a column with two primary nodes centers its stack on the spine, neither no
   assert.equal(b.x, c.x);
   assert.notEqual(center(b), spineY);
   assert.notEqual(center(c), spineY);
-  assert.equal((Math.min(b.y, c.y) + Math.max(bottom(b), bottom(c))) / 2, spineY);
+  assert.equal((Math.min(b.y, c.y) + Math.max(bottomOf(b), bottomOf(c))) / 2, spineY);
 });
 
 test('without a primary path, the first node of each column sits on the spine', () => {
@@ -119,7 +125,7 @@ test('without a primary path, the first node of each column sits on the spine', 
   const { nodes, spineY } = layoutBoard(flow);
   assert.equal(center(nodes.get('a')), spineY);
   assert.equal(center(nodes.get('x')), spineY);
-  assert.ok(bottom(nodes.get('b')) < nodes.get('x').y, 'b stacks above x');
+  assert.ok(bottomOf(nodes.get('b')) < nodes.get('x').y, 'b stacks above x');
 });
 
 test('sequential nodes in one stage take adjacent sub-columns', () => {
@@ -187,7 +193,7 @@ test('an exception sits in the band below every main card, under its source, wha
     ['a', 'b', 'c'],
   );
   const { nodes } = layoutBoard(flow);
-  const mainBottom = Math.max(...['a', 'b', 'c'].map((id) => bottom(nodes.get(id))));
+  const mainBottom = Math.max(...['a', 'b', 'c'].map((id) => bottomOf(nodes.get(id))));
   for (const id of ['e1', 'e2']) {
     assert.equal(nodes.get(id).band, 'exception', id);
     assert.ok(nodes.get(id).y > mainBottom, `${id} below the main cards`);
@@ -269,7 +275,7 @@ test('bands carry titles; the decision band gathers each stage’s decisions in 
   );
   const e = nodes.get('e');
   assert.ok(exceptions.x <= e.x && e.x + e.w <= exceptions.x + exceptions.w);
-  assert.ok(exceptions.y < e.y && bottom(e) <= exceptions.y + exceptions.h);
+  assert.ok(exceptions.y < e.y && bottomOf(e) <= exceptions.y + exceptions.h);
 });
 
 test('the hakwon-like fixture is valid, passes check, and lays out without overlaps', () => {
@@ -293,7 +299,7 @@ test('the hakwon-like fixture is valid, passes check, and lays out without overl
   );
   for (const box of boxesOf(board)) {
     assert.ok(box.x >= 0 && box.y >= 0, `${box.id} inside the board`);
-    assert.ok(box.x + box.w <= board.size.w && bottom(box) <= board.size.h, `${box.id} fits`);
+    assert.ok(box.x + box.w <= board.size.w && bottomOf(box) <= board.size.h, `${box.id} fits`);
   }
 });
 
@@ -329,4 +335,30 @@ test('a screen added by a proposal gets a box', () => {
   const { nodes } = layoutBoard(applyProposals(flow, ['p1']));
   assert.equal(nodes.get('n').band, 'main');
   assert.ok(nodes.get('n').x > nodes.get('b').x);
+});
+
+test('the main area keeps DETOUR_GAP free above it and above the first band', () => {
+  const board = layoutBoard(hakwonLikeFlow());
+  const mainBoxes = [...board.nodes.values()].filter((box) => box.band === 'main');
+  const headerBottom = Math.max(...board.stageHeaders.map(bottomOf));
+  assert.deepEqual(board.mainArea, {
+    top: Math.min(...mainBoxes.map((box) => box.y)),
+    bottom: Math.max(...mainBoxes.map(bottomOf)),
+  });
+  assert.ok(board.mainArea.top >= headerBottom + DETOUR_GAP, 'room above the main area');
+  const exceptions = board.bands.find((band) => band.type === 'exception');
+  assert.ok(exceptions.y >= board.mainArea.bottom + DETOUR_GAP, 'room below the main area');
+});
+
+test('without exceptions, the decision band keeps DETOUR_GAP below the main area', () => {
+  const flow = flowOf([
+    ['a', 0, ['b'], { decisions: ['예산은?'] }],
+    ['b', 1, []],
+  ]);
+  const { mainArea, bands } = layoutBoard(flow);
+  assert.deepEqual(
+    bands.map((band) => band.type),
+    ['decision'],
+  );
+  assert.ok(bands[0].y >= mainArea.bottom + DETOUR_GAP);
 });

@@ -2,9 +2,9 @@
 
 import { isException } from '../../../lib/graph.mjs';
 import { estimateDecisionCardHeight } from './card-size.mjs';
-import { CARD_W, SUB_GAP } from './columns.mjs';
+import { bottomOf, CARD_W, DETOUR_GAP, SUB_GAP } from './geometry.mjs';
 
-const BAND_GAP = 48; // above each band
+const BAND_GAP = 48; // between the two bands
 const BAND_PAD = 24; // inside a band, around its cards
 const BAND_TITLE = 32; // inside a band, above its cards
 
@@ -13,11 +13,11 @@ const BAND_LABELS = {
   en: { exception: 'What to check after a drop-off', decision: 'Open decisions' },
 };
 
-export const bottomOf = (box) => box.y + box.h;
-
 /**
  * The exception boxes and the bands below `mainBottom`. A band with no cards is left out, so
  * `bands` holds zero, one, or both of the exception band and the decision band, in that order.
+ * The first band starts `DETOUR_GAP` below the main area, leaving room for edges that detour
+ * under it.
  */
 export function placeBands(
   flow,
@@ -30,13 +30,14 @@ export function placeBands(
     main,
     columns,
     heights,
-    top: mainBottom + BAND_GAP + BAND_TITLE,
+    top: mainBottom + DETOUR_GAP + BAND_TITLE,
   });
   const exceptionBand = exceptions.size
     ? bandAround('exception', labels, [...exceptions.values()])
     : null;
   const cards = decisionCards(flow, stageHeaders, {
-    top: (exceptionBand ? bottomOf(exceptionBand) : mainBottom) + BAND_GAP + BAND_TITLE,
+    top:
+      (exceptionBand ? bottomOf(exceptionBand) + BAND_GAP : mainBottom + DETOUR_GAP) + BAND_TITLE,
   });
   const decisionBand = cards.length ? { ...bandAround('decision', labels, cards), cards } : null;
   return { exceptions, bands: [exceptionBand, decisionBand].filter(Boolean) };
