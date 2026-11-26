@@ -159,3 +159,22 @@ test('jumping to a stage closes the drawer and asks the camera for that stage, e
   store.dispatch({ type: 'focusStage', stage: 1 });
   assert.notEqual(store.getState().focus, first, 'the same stage again is a new request');
 });
+
+test('a request draft stays with its node while the visitor looks elsewhere', () => {
+  const store = storeFor();
+  const draftOf = (id) => store.getState().drafts[id];
+  store.dispatch({ type: 'select', id: 'detail' });
+  store.dispatch({ type: 'editDraft', screen: 'detail', target: 'pay', text: '문구 확인' });
+  store.dispatch({ type: 'select', id: 'failed' });
+  store.dispatch({ type: 'editDraft', screen: 'failed', target: '', text: '재시도 버튼' });
+  store.dispatch({ type: 'setTab', tab: 'review' });
+  store.dispatch({ type: 'overview' });
+  store.dispatch({ type: 'toggleProposal', id: 'retry-to-detail' });
+  store.dispatch({ type: 'select', id: 'detail' });
+  assert.deepEqual(draftOf('detail'), { target: 'pay', text: '문구 확인' });
+  assert.deepEqual(draftOf('failed'), { target: '', text: '재시도 버튼' });
+
+  store.dispatch({ type: 'addRequest', screen: 'detail', action: 'pay', text: '문구 확인' });
+  assert.deepEqual(draftOf('detail'), { target: 'pay', text: '' });
+  assert.deepEqual(draftOf('failed'), { target: '', text: '재시도 버튼' });
+});

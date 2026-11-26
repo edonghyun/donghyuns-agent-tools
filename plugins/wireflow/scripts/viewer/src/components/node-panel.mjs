@@ -12,8 +12,6 @@ import { renderChips } from './chips.mjs';
 import * as findingList from './finding-list.mjs';
 import * as proposalList from './proposal-list.mjs';
 
-// What the visitor has typed into the request form. The store does not hold it, so a re-render
-// of the same node carries it over.
 const NO_DRAFT = { target: '', text: '' };
 const readDraft = (el) => ({
   target: el.querySelector('[name=request-target]').value,
@@ -21,25 +19,27 @@ const readDraft = (el) => ({
 });
 
 export function mount(el, store, T) {
-  let shown = null;
   watch(
     store,
     (s) => [s.selected, s.tab, s.mode, s.flow, s.result],
     (state) => {
       const open = state.tab === 'canvas' && state.mode === 'overview';
       const node = open && state.selected && findNode(state.flow, state.selected);
-      const draft = node && node.id === shown ? readDraft(el) : NO_DRAFT;
-      el.innerHTML = node ? String(render(node, state, draft, T)) : '';
-      shown = node ? node.id : null;
+      el.innerHTML = node ? String(render(node, state, state.drafts[node.id] ?? NO_DRAFT, T)) : '';
     },
   );
+  // Each keystroke goes to the store, so the draft outlives the form: closing the drawer, another
+  // tab, or another node and coming back brings it back.
+  el.addEventListener('input', () => {
+    store.dispatch({ type: 'editDraft', screen: store.getState().selected, ...readDraft(el) });
+  });
   el.addEventListener('click', (e) => {
     if (!e.target.closest('[name=add-request]')) return;
     const { target, text } = readDraft(el);
     if (!text.trim()) return;
     const screen = store.getState().selected;
     store.dispatch({ type: 'addRequest', screen, action: target, text: text.trim() });
-    // The request is in the store now; the form starts the next one empty.
+    // The store emptied the draft; the form is not redrawn for it, so empty the box here.
     el.querySelector('[name=request-text]').value = '';
   });
 }

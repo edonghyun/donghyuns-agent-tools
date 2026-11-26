@@ -1369,6 +1369,7 @@
       play: null,
       focus: null,
       requests,
+      drafts: {},
       notice: null
     };
   }
@@ -1400,10 +1401,16 @@
       selected: null,
       focus: { stage }
     }),
+    editDraft: (s, { screen, target, text: text2 }) => ({
+      ...s,
+      drafts: { ...s.drafts, [screen]: { target, text: text2 } }
+    }),
+    // The node's form keeps its target and starts the next request empty.
     addRequest: (s, { screen, action, text: text2 }) => {
       const number = displayNumber(s.flow, findNode(s.flow, screen));
       const request = { screen, number, action: action || null, text: text2, at: (/* @__PURE__ */ new Date()).toISOString() };
-      return withNotice({ ...s, requests: [...s.requests, request] }, "requestAdded");
+      const drafts = { ...s.drafts, [screen]: { target: action || "", text: "" } };
+      return withNotice({ ...s, requests: [...s.requests, request], drafts }, "requestAdded");
     },
     removeRequest: (s, { index }) => ({ ...s, requests: s.requests.filter((_, i) => i !== index) }),
     clearRequests: (s) => ({ ...s, requests: [] }),
@@ -2308,18 +2315,18 @@
     text: el.querySelector("[name=request-text]").value
   });
   function mount5(el, store2, T2) {
-    let shown = null;
     watch(
       store2,
       (s) => [s.selected, s.tab, s.mode, s.flow, s.result],
       (state) => {
         const open = state.tab === "canvas" && state.mode === "overview";
         const node = open && state.selected && findNode(state.flow, state.selected);
-        const draft = node && node.id === shown ? readDraft(el) : NO_DRAFT;
-        el.innerHTML = node ? String(render8(node, state, draft, T2)) : "";
-        shown = node ? node.id : null;
+        el.innerHTML = node ? String(render8(node, state, state.drafts[node.id] ?? NO_DRAFT, T2)) : "";
       }
     );
+    el.addEventListener("input", () => {
+      store2.dispatch({ type: "editDraft", screen: store2.getState().selected, ...readDraft(el) });
+    });
     el.addEventListener("click", (e) => {
       if (!e.target.closest("[name=add-request]")) return;
       const { target, text: text2 } = readDraft(el);

@@ -9,7 +9,8 @@
 // - `scenario`: highlighted scenario id or ''. `selected`: node id or null.
 // - `camera`: `{x, y, k}`. `play`: `{node, vars, trail}` while walking through, else null.
 // - `focus`: the latest stage jump, `{stage}`, for the camera to frame; each jump is a new object.
-// - `requests`: change requests. `notice`: the latest `{message, detail}` for the toast; each
+// - `requests`: change requests. `drafts`: node id → `{target, text}`, the request being typed
+//   for that node, kept while the visitor looks elsewhere. `notice`: the latest `{message, detail}` for the toast; each
 //   notice is a new object, so the same message twice still shows twice.
 
 import {
@@ -66,6 +67,7 @@ function initialState(FLOW, META, requests) {
     play: null,
     focus: null,
     requests,
+    drafts: {},
     notice: null,
   };
 }
@@ -99,10 +101,16 @@ const REDUCERS = {
     selected: null,
     focus: { stage },
   }),
+  editDraft: (s, { screen, target, text }) => ({
+    ...s,
+    drafts: { ...s.drafts, [screen]: { target, text } },
+  }),
+  // The node's form keeps its target and starts the next request empty.
   addRequest: (s, { screen, action, text }) => {
     const number = displayNumber(s.flow, findNode(s.flow, screen));
     const request = { screen, number, action: action || null, text, at: new Date().toISOString() };
-    return withNotice({ ...s, requests: [...s.requests, request] }, 'requestAdded');
+    const drafts = { ...s.drafts, [screen]: { target: action || '', text: '' } };
+    return withNotice({ ...s, requests: [...s.requests, request], drafts }, 'requestAdded');
   },
   removeRequest: (s, { index }) => ({ ...s, requests: s.requests.filter((_, i) => i !== index) }),
   clearRequests: (s) => ({ ...s, requests: [] }),
