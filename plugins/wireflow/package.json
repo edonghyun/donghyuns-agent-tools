@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "biome check scripts",
+    "format": "biome check --write scripts",
+    "test": "node --test scripts/test/*.test.mjs",
+    "bundle": "node scripts/bundle.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.9",
+    "esbuild": "0.28.2"
+  }
+}

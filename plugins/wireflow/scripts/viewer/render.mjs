@@ -4,8 +4,12 @@ import { kindOf, nodeStyle } from './geometry.mjs';
 // ---------- html`` tag: interpolations are escaped unless they are Html ----------
 
 class Html {
-  constructor(text) { this.text = text; }
-  toString() { return this.text; }
+  constructor(text) {
+    this.text = text;
+  }
+  toString() {
+    return this.text;
+  }
 }
 
 const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -19,15 +23,25 @@ function renderValue(v) {
 }
 
 export function html(strings, ...values) {
-  return new Html(strings.reduce((out, s, i) => out + s + (i < values.length ? renderValue(values[i]) : ''), ''));
+  return new Html(
+    strings.reduce((out, s, i) => out + s + (i < values.length ? renderValue(values[i]) : ''), ''),
+  );
 }
 
 /** Replace {{var}} with values from the current state. */
-export const fillVars = (text, vars) => String(text ?? '').replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? '');
+export const fillVars = (text, vars) =>
+  String(text ?? '').replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? '');
 
 export const KIND_ICONS = {
-  screen: '📱', message: '💬', email: '✉️', document: '📄',
-  step: '▭', decision: '◆', system: '⚙︎', wait: '⏳', end: '■',
+  screen: '📱',
+  message: '💬',
+  email: '✉️',
+  document: '📄',
+  step: '▭',
+  decision: '◆',
+  system: '⚙︎',
+  wait: '⏳',
+  end: '■',
 };
 
 // ---------- building blocks ----------
@@ -54,7 +68,7 @@ function block(b, vars, live) {
 }
 
 function inputBlock(b, vars, disabled) {
-  const value = b.field ? vars[b.field] ?? '' : '';
+  const value = b.field ? (vars[b.field] ?? '') : '';
   const control = b.multiline
     ? html`<textarea data-field="${b.field}" placeholder="${b.placeholder}" ${disabled && html`disabled`}>${value}</textarea>`
     : html`<input data-field="${b.field}" value="${value}" placeholder="${b.placeholder}" ${disabled && html`disabled`}>`;
@@ -70,7 +84,8 @@ function actionButton(node, a, ctx) {
   const classes = ['act', a.kind || (a === ctx.primary ? 'primary' : 'secondary')];
   if (a.to == null || !ctx.findNode(a.to)) classes.push('missing');
   if (a.proposed) classes.push('proposed');
-  if (ctx.live && a.when && !Object.entries(a.when).every(([k, v]) => ctx.vars[k] === v)) classes.push('guard-off');
+  if (ctx.live && a.when && !Object.entries(a.when).every(([k, v]) => ctx.vars[k] === v))
+    classes.push('guard-off');
   const steps = ctx.pathSteps?.get(`${node.id}.${a.id}`);
   if (steps) classes.push('on-path');
   const label = a.kind === 'back' ? '‹' : fillVars(a.label, ctx.vars);
@@ -117,9 +132,10 @@ function cardBody(node, ctx, T) {
     email: html`<div class="c-head">${KIND_ICONS.email} ${channel}</div><div class="c-subject">${heading}</div>`,
     document: html`<div class="c-head">${KIND_ICONS.document} ${channel}</div><h4>${heading}</h4>`,
   }[kind];
-  const content = kind === 'message'
-    ? html`<div class="bubble">${text(node.body || node.title)}</div>`
-    : node.body && html`<div class="m-text">${text(node.body)}</div>`;
+  const content =
+    kind === 'message'
+      ? html`<div class="bubble">${text(node.body || node.title)}</div>`
+      : node.body && html`<div class="m-text">${text(node.body)}</div>`;
 
   return html`
     ${header}
@@ -154,5 +170,11 @@ export function nodeBody(node, view, ctx, T) {
 }
 
 export function nodeClasses(node, view) {
-  return ['screen', `k-${kindOf(node)}`, nodeStyle(node, view), `tone-${node.tone || 'normal'}`, node.origin || 'source'].join(' ');
+  return [
+    'screen',
+    `k-${kindOf(node)}`,
+    nodeStyle(node, view),
+    `tone-${node.tone || 'normal'}`,
+    node.origin || 'source',
+  ].join(' ');
 }

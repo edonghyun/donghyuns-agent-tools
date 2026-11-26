@@ -1,4 +1,4 @@
-// Wireflow viewer app. Build concatenates: model.mjs, i18n.mjs, geometry.mjs, render.mjs, then this file.
+// Wireflow viewer app. Build concatenates: lib/*.mjs, i18n.mjs, geometry.mjs, render.mjs, then this file.
 // Globals from build: FLOW, META.
 (() => {
   const T = texts(FLOW.locale);
@@ -21,7 +21,8 @@
   const findNode = (id) => state.flow.screens.find((s) => s.id === id);
   const findScenario = (id) => (state.flow.scenarios || []).find((s) => s.id === id);
   const previewVars = (node) => ({ ...(state.flow.vars || {}), ...(node.preview || {}) });
-  const conditionHolds = (when, vars) => Object.entries(when || {}).every(([k, v]) => vars[k] === v);
+  const conditionHolds = (when, vars) =>
+    Object.entries(when || {}).every(([k, v]) => vars[k] === v);
 
   function displayNumber(node) {
     if (node.number) return node.number;
@@ -50,14 +51,24 @@
     key: `wireflow:${FLOW.id}:${META.output}`,
     items: [],
     load() {
-      try { this.items = JSON.parse(localStorage.getItem(this.key) || '[]'); } catch { this.items = []; }
+      try {
+        this.items = JSON.parse(localStorage.getItem(this.key) || '[]');
+      } catch {
+        this.items = [];
+      }
     },
     save() {
-      try { localStorage.setItem(this.key, JSON.stringify(this.items)); } catch { /* storage disabled */ }
+      try {
+        localStorage.setItem(this.key, JSON.stringify(this.items));
+      } catch {
+        /* storage disabled */
+      }
       $('#req-count').textContent = this.items.length;
     },
     toMarkdown() {
-      const applied = state.applied.length ? state.applied.map((id) => `\`${id}\``).join(', ') : '—';
+      const applied = state.applied.length
+        ? state.applied.map((id) => `\`${id}\``).join(', ')
+        : '—';
       const lines = this.items.map((q, i) => {
         const target = `${q.number} \`${q.screen}\`${q.action ? ` › action \`${q.action}\`` : ''}`;
         return `${i + 1}. [${target}] ${q.text}`;
@@ -98,17 +109,23 @@
     const canvas = $('#canvas');
     const { pos, groups, width, height } = state.layout;
     const path = highlightedPath();
-    const critical = new Set(state.result.findings.filter((f) => f.severity === 'critical').map((f) => f.screen));
+    const critical = new Set(
+      state.result.findings.filter((f) => f.severity === 'critical').map((f) => f.screen),
+    );
 
     canvas.className = `view-${state.view}`;
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
-    canvas.querySelectorAll('.group, .screen').forEach((el) => el.remove());
+    canvas.querySelectorAll('.group, .screen').forEach((el) => {
+      el.remove();
+    });
 
     for (const g of groups) canvas.appendChild(groupElement(g));
     for (const node of state.flow.screens) {
       const dimmed = path && !path.nodes.has(node.id) && state.selected !== node.id;
-      canvas.appendChild(nodeElement(node, pos.get(node.id), { path, dimmed, critical: critical.has(node.id) }));
+      canvas.appendChild(
+        nodeElement(node, pos.get(node.id), { path, dimmed, critical: critical.has(node.id) }),
+      );
     }
     requestAnimationFrame(() => drawEdges(path));
     applyCamera();
@@ -117,7 +134,12 @@
   function groupElement(g) {
     const el = document.createElement('div');
     el.className = `group g-${g.type}`;
-    Object.assign(el.style, { left: `${g.x}px`, top: `${g.y}px`, width: `${g.w}px`, height: `${g.h}px` });
+    Object.assign(el.style, {
+      left: `${g.x}px`,
+      top: `${g.y}px`,
+      width: `${g.w}px`,
+      height: `${g.h}px`,
+    });
     el.innerHTML = html`<h3>${g.label}</h3>`;
     return el;
   }
@@ -129,9 +151,20 @@
     el.classList.toggle('sel', state.selected === node.id);
     el.classList.toggle('dim', Boolean(dimmed));
     el.classList.toggle('has-bad', critical);
-    Object.assign(el.style, { left: `${box.x}px`, top: `${box.y}px`, width: `${box.w}px`, height: `${box.h}px` });
+    Object.assign(el.style, {
+      left: `${box.x}px`,
+      top: `${box.y}px`,
+      width: `${box.w}px`,
+      height: `${box.h}px`,
+    });
 
-    const ctx = { flow: state.flow, findNode, vars: previewVars(node), live: false, pathSteps: path?.steps };
+    const ctx = {
+      flow: state.flow,
+      findNode,
+      vars: previewVars(node),
+      live: false,
+      pathSteps: path?.steps,
+    };
     el.innerHTML = `${nodeBody(node, state.view, ctx, T)}${nodeTag(node)}`;
     return el;
   }
@@ -140,7 +173,10 @@
     const origin = node.origin || 'source';
     const framed = nodeStyle(node, state.view) === 'frame';
     const showTitle = state.view === 'wireframe';
-    const device = framed && (node.device || FLOW.device) && html`<span class="badge">${deviceLabel(node, FLOW)}</span>`;
+    const device =
+      framed &&
+      (node.device || FLOW.device) &&
+      html`<span class="badge">${deviceLabel(node, FLOW)}</span>`;
     return html`<div class="tag"><b>${displayNumber(node)}</b> ${showTitle && node.title}
       <span class="badge ${origin}">${T.origin[origin] || origin}</span>${device}</div>`;
   }
@@ -156,7 +192,9 @@
   function actionAnchor(node, index) {
     const box = state.layout.pos.get(node.id);
     const action = node.actions[index];
-    const button = $(`#canvas .screen[data-id="${CSS.escape(node.id)}"] [data-action="${CSS.escape(action.id)}"]`);
+    const button = $(
+      `#canvas .screen[data-id="${CSS.escape(node.id)}"] [data-action="${CSS.escape(action.id)}"]`,
+    );
     if (!button) {
       const diamond = state.view === 'flowchart' && kindOf(node) === 'decision';
       return edgeStart(box, index, node.actions.length, diamond);
@@ -184,16 +222,24 @@
 
         if (!target) {
           paths.push(`<path class="bad ${dim}" d="M${start.x},${start.y} h90"/>`);
-          if (labelBranches) labels.push({ at: { x: start.x + 45, y: start.y - 14 }, text: action.label, cls: 'lbl bad' });
+          if (labelBranches)
+            labels.push({
+              at: { x: start.x + 45, y: start.y - 14 },
+              text: action.label,
+              cls: 'lbl bad',
+            });
           return;
         }
         const d = edgePath(start, pos.get(node.id), target);
         const cls = [onPath && 'on', action.proposed && 'prop', dim].filter(Boolean).join(' ');
-        paths.push(`<path class="${cls}" d="${d}" marker-end="url(#${onPath ? 'arrow-on' : 'arrow'})"/>`);
+        paths.push(
+          `<path class="${cls}" d="${d}" marker-end="url(#${onPath ? 'arrow-on' : 'arrow'})"/>`,
+        );
 
         const branching = node.actions.length > 1 || kindOf(node) === 'decision';
         if (onPath) labels.push({ d, step: path.edgeSteps.get(key).join(',') });
-        else if (labelBranches && branching) labels.push({ d, text: action.label, cls: `lbl ${dim}` });
+        else if (labelBranches && branching)
+          labels.push({ d, text: action.label, cls: `lbl ${dim}` });
       });
     }
 
@@ -205,7 +251,9 @@
 
   function edgeLabel(svg, { d, at, step, text, cls }) {
     const point = at || pointAlong(svg, d, step ? 0.5 : 0.35);
-    if (step) return html`<circle cx="${point.x}" cy="${point.y}" r="18"/><text x="${point.x}" y="${point.y}">${step}</text>`.text;
+    if (step)
+      return html`<circle cx="${point.x}" cy="${point.y}" r="18"/><text x="${point.x}" y="${point.y}">${step}</text>`
+        .text;
     return html`<text class="${cls}" x="${point.x}" y="${point.y}">${text}</text>`.text;
   }
 
@@ -239,7 +287,11 @@
     if (!box) return;
     const wrap = $('#stage-wrap').getBoundingClientRect();
     const k = Math.min((wrap.height * 0.8) / box.h, (wrap.width * 0.8) / box.w, 1);
-    state.camera = { k, x: wrap.width / 2 - (box.x + box.w / 2) * k, y: wrap.height / 2 - (box.y + box.h / 2) * k };
+    state.camera = {
+      k,
+      x: wrap.width / 2 - (box.x + box.w / 2) * k,
+      y: wrap.height / 2 - (box.y + box.h / 2) * k,
+    };
     applyCamera();
   }
 
@@ -261,16 +313,20 @@
       drag = null;
       wrap.classList.remove('dragging');
     });
-    wrap.addEventListener('wheel', (e) => {
-      if (state.mode !== 'overview') return;
-      e.preventDefault();
-      if (e.ctrlKey || e.metaKey) zoomAt(e, wrap.getBoundingClientRect());
-      else {
-        state.camera.x -= e.deltaX;
-        state.camera.y -= e.deltaY;
-      }
-      applyCamera();
-    }, { passive: false });
+    wrap.addEventListener(
+      'wheel',
+      (e) => {
+        if (state.mode !== 'overview') return;
+        e.preventDefault();
+        if (e.ctrlKey || e.metaKey) zoomAt(e, wrap.getBoundingClientRect());
+        else {
+          state.camera.x -= e.deltaX;
+          state.camera.y -= e.deltaY;
+        }
+        applyCamera();
+      },
+      { passive: false },
+    );
   }
 
   function zoomAt(e, rect) {
@@ -294,21 +350,30 @@
   }
 
   function proposalList(nodeId) {
-    const touches = (p) => (p.changes || []).some((c) => c.screen === nodeId || c.addScreen?.id === nodeId || c.action?.to === nodeId);
+    const touches = (p) =>
+      (p.changes || []).some(
+        (c) => c.screen === nodeId || c.addScreen?.id === nodeId || c.action?.to === nodeId,
+      );
     const proposals = (FLOW.proposals || []).filter((p) => !nodeId || touches(p));
     if (!proposals.length) return '';
-    return html`<h3>${T.proposals}</h3>${proposals.map((p) => html`
+    return html`<h3>${T.proposals}</h3>${proposals.map(
+      (p) => html`
       <label class="prop-row">
         <input type="checkbox" data-prop="${p.id}" ${state.applied.includes(p.id) && html`checked`}>
         <span><b>${p.title}</b><small>${p.reason}</small></span>
-      </label>`)}`;
+      </label>`,
+    )}`;
   }
 
   function decisionList() {
-    const items = state.flow.screens.flatMap((s) => (s.decisions || []).map((question) => ({ s, question })));
+    const items = state.flow.screens.flatMap((s) =>
+      (s.decisions || []).map((question) => ({ s, question })),
+    );
     if (!items.length) return '';
-    return html`<h3>${T.decisions}</h3><ul>${items.map(({ s, question }) =>
-      html`<li><a href="#" data-goto="${s.id}">${displayNumber(s)}</a> ${question}</li>`)}</ul>`;
+    return html`<h3>${T.decisions}</h3><ul>${items.map(
+      ({ s, question }) =>
+        html`<li><a href="#" data-goto="${s.id}">${displayNumber(s)}</a> ${question}</li>`,
+    )}</ul>`;
   }
 
   function requirementList() {
@@ -334,10 +399,12 @@
       <h3>${T.findings} (${findings.length})</h3>
       ${findings.length ? findings.map(findingButton) : html`<div class="sub">${T.none}</div>`}
       <h3>${T.scenarios}</h3>
-      <ul>${scenarios.map((s) => html`<li>
+      <ul>${scenarios.map(
+        (s) => html`<li>
         <a href="#" data-scenario="${s.id}">${findScenario(s.id)?.title || s.id}</a> —
         <span class="${s.ok ? 'pass' : 'fail'}">${s.ok ? T.passed : T.failed}</span>
-      </li>`)}</ul>
+      </li>`,
+      )}</ul>
       ${requirementList()}
       ${proposalList()}
       ${decisionList()}`;
@@ -369,10 +436,16 @@
       ${node.decisions?.length > 0 && html`<h3>${T.decisions}</h3>${bullets(node.decisions)}`}
       ${findings.length > 0 && html`<h3>${T.findings}</h3>${findings.map(findingButton)}`}
       <h3>${T.actions}</h3>
-      <ul>${node.actions.length ? node.actions.map((a) => html`<li>
+      <ul>${
+        node.actions.length
+          ? node.actions.map(
+              (a) => html`<li>
         <b>${a.label}</b> <code>${a.id}</code> → ${link(a)}
         ${a.when && html`<small class="sub">when ${JSON.stringify(a.when)}</small>`}
-      </li>`) : html`<li class="sub">—</li>`}</ul>
+      </li>`,
+            )
+          : html`<li class="sub">—</li>`
+      }</ul>
       ${proposalList(node.id)}
       <h3>${T.request}</h3>
       <div class="req-form">
@@ -391,11 +464,17 @@
     return html`
       <a href="#" data-goto="">← ${T.summary}</a>
       <h2>${T.requests} (${items.length})</h2>
-      ${empty ? html`<div class="sub">${T.empty}</div>` : items.map((q, i) => html`
+      ${
+        empty
+          ? html`<div class="sub">${T.empty}</div>`
+          : items.map(
+              (q, i) => html`
         <div class="req">
           <div><code>${q.number} ${q.screen}${q.action && ` › ${q.action}`}</code><br>${q.text}</div>
           <button data-del="${i}">✕</button>
-        </div>`)}
+        </div>`,
+            )
+      }
       <div class="row">
         <button id="req-copy" ${empty && html`disabled`}>${T.copy}</button>
         <button id="req-clear" ${empty && html`disabled`}>${T.clear}</button>
@@ -404,7 +483,8 @@
 
   function renderPanel() {
     const node = state.selected && findNode(state.selected);
-    const content = state.panel === 'requests' ? requestsPanel() : node ? nodePanel(node) : summaryPanel();
+    const content =
+      state.panel === 'requests' ? requestsPanel() : node ? nodePanel(node) : summaryPanel();
     $('#panel').innerHTML = String(content);
   }
 
@@ -425,7 +505,13 @@
     const text = $('#req-text').value.trim();
     if (!text) return;
     const node = findNode(state.selected);
-    requestStore.items.push({ screen: node.id, number: displayNumber(node), action: $('#req-target').value || null, text, at: new Date().toISOString() });
+    requestStore.items.push({
+      screen: node.id,
+      number: displayNumber(node),
+      action: $('#req-target').value || null,
+      text,
+      at: new Date().toISOString(),
+    });
     requestStore.save();
     $('#req-text').value = '';
     toast(`${T.requests} +1`);
@@ -500,10 +586,15 @@
     const cls = nodeClasses(node, state.view);
     if (nodeStyle(node, state.view) === 'frame') {
       const [w, h] = nodeSize(node, FLOW, state.view);
-      const zoom = Math.min(1, (player.clientHeight - 56) / h, (player.clientWidth - 340) / w).toFixed(3);
+      const zoom = Math.min(
+        1,
+        (player.clientHeight - 56) / h,
+        (player.clientWidth - 340) / w,
+      ).toFixed(3);
       return `<div class="${cls}" style="width:${w}px;height:${h}px;zoom:${zoom}">${body}</div>`;
     }
-    const width = nodeStyle(node, state.view) === 'card' ? nodeSize(node, FLOW, state.view)[0] : 360;
+    const width =
+      nodeStyle(node, state.view) === 'card' ? nodeSize(node, FLOW, state.view)[0] : 360;
     return `<div class="${cls} live" style="width:${width}px">${body}</div>`;
   }
 
@@ -511,14 +602,18 @@
     const { node: id, vars, trail } = state.play;
     const node = findNode(id);
     const nextStep = findScenario(state.scenario)?.steps[trail.length - 1];
-    const pathSteps = nextStep ? new Map([[`${node.id}.${nextStep.action}`, [trail.length]]]) : null;
+    const pathSteps = nextStep
+      ? new Map([[`${node.id}.${nextStep.action}`, [trail.length]]])
+      : null;
     const ctx = { flow: state.flow, findNode, vars, live: true, pathSteps };
     const trailItems = trail.map((t) => {
       const n = findNode(t.node);
       return html`<li>${t.action && html`<code>${t.action}</code> → `}${n ? `${displayNumber(n)} ${n.title}` : t.node}</li>`;
     });
 
-    $('#player').innerHTML = playerFrame(node, ctx) + html`
+    $('#player').innerHTML =
+      playerFrame(node, ctx) +
+      html`
       <div class="trail">
         <h3>${displayNumber(node)} ${node.title}${node.actor && html` <small class="sub">· ${node.actor}</small>`}</h3>
         <div class="row"><button id="pl-reset">${T.reset}</button><button id="pl-exit">${T.exitHint}</button></div>
@@ -542,7 +637,8 @@
     const player = $('#player');
     player.addEventListener('input', (e) => {
       const field = e.target.dataset.field;
-      if (field) state.play.vars[field] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+      if (field)
+        state.play.vars[field] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     });
     player.addEventListener('click', (e) => {
       if (e.target.id === 'pl-reset') return startPlay();
@@ -587,7 +683,9 @@
   function renderToolbar() {
     const other = state.view === 'flowchart' ? 'wireframe' : 'flowchart';
     $('#btn-view').textContent = T.views[other];
-    $('#scenario').innerHTML = String(html`<option value="">${T.allActions}</option>${(state.flow.scenarios || []).map((s) => html`<option value="${s.id}">${s.title}</option>`)}`);
+    $('#scenario').innerHTML = String(
+      html`<option value="">${T.allActions}</option>${(state.flow.scenarios || []).map((s) => html`<option value="${s.id}">${s.title}</option>`)}`,
+    );
     $('#scenario').value = state.scenario;
   }
 
@@ -605,7 +703,10 @@
       state.panel = 'auto';
       const id = nodeEl.dataset.id;
       const button = e.target.closest('[data-action]');
-      const target = button && state.selected === id && findNode(id).actions.find((a) => a.id === button.dataset.action)?.to;
+      const target =
+        button &&
+        state.selected === id &&
+        findNode(id).actions.find((a) => a.id === button.dataset.action)?.to;
       if (target && findNode(target)) select(target, { focus: true });
       else select(id, { focus: state.selected !== id });
     });
@@ -617,8 +718,12 @@
       renderPanel();
       fitAll();
     });
-    $('#btn-play').addEventListener('click', () => setMode(state.mode === 'play' ? 'overview' : 'play'));
-    $('#btn-view').addEventListener('click', () => setView(state.view === 'flowchart' ? 'wireframe' : 'flowchart'));
+    $('#btn-play').addEventListener('click', () =>
+      setMode(state.mode === 'play' ? 'overview' : 'play'),
+    );
+    $('#btn-view').addEventListener('click', () =>
+      setView(state.view === 'flowchart' ? 'wireframe' : 'flowchart'),
+    );
     $('#btn-requests').addEventListener('click', () => {
       state.panel = state.panel === 'requests' ? 'auto' : 'requests';
       renderPanel();
@@ -633,7 +738,9 @@
 
   // ---------- boot ----------
 
-  document.querySelectorAll('[data-t]').forEach((el) => (el.textContent = T[el.dataset.t]));
+  document.querySelectorAll('[data-t]').forEach((el) => {
+    el.textContent = T[el.dataset.t];
+  });
   $('#flow-title').textContent = FLOW.title;
   $('#flow-goal').textContent = FLOW.goal || '';
   requestStore.load();

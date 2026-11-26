@@ -1,6 +1,6 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validate, check, applyProposals, runScenario } from '../lib/model.mjs';
+import { test } from 'node:test';
+import { applyProposals, check, runScenario, validate } from '../lib/index.mjs';
 
 const base = () => ({
   id: 'booking',
@@ -10,10 +10,21 @@ const base = () => ({
   stages: ['선택', '결과'],
   vars: { booked: 0 },
   screens: [
-    { id: 'home', title: '홈', stage: 0, actions: [{ id: 'book', label: '예약', to: 'done', inc: { booked: 1 } }] },
+    {
+      id: 'home',
+      title: '홈',
+      stage: 0,
+      actions: [{ id: 'book', label: '예약', to: 'done', inc: { booked: 1 } }],
+    },
     { id: 'done', title: '완료', stage: 1, end: true, actions: [] },
   ],
-  scenarios: [{ id: 'happy', title: '예약 성공', steps: [{ action: 'book', screen: 'done', vars: { booked: 1 } }] }],
+  scenarios: [
+    {
+      id: 'happy',
+      title: '예약 성공',
+      steps: [{ action: 'book', screen: 'done', vars: { booked: 1 } }],
+    },
+  ],
 });
 
 const codes = (r) => r.findings.map((f) => f.code).sort();
@@ -52,7 +63,12 @@ test('unreachable screen and trapped screen are reported', () => {
   const f = base();
   f.screens[0].actions.push({ id: 'err', label: '오류', to: 'fail' });
   f.screens.push({ id: 'fail', title: '실패', stage: 1, actions: [] }); // no way out, not end
-  f.screens.push({ id: 'orphan', title: '고아', stage: 1, actions: [{ id: 'h', label: '홈', to: 'home' }] });
+  f.screens.push({
+    id: 'orphan',
+    title: '고아',
+    stage: 1,
+    actions: [{ id: 'h', label: '홈', to: 'home' }],
+  });
   const r = check(f);
   assert.deepEqual(codes(r), ['trapped', 'unreachable']);
   assert.equal(r.findings.find((x) => x.code === 'trapped').screen, 'fail');
@@ -62,7 +78,12 @@ test('unreachable screen and trapped screen are reported', () => {
 test('a screen that can return to start is not trapped', () => {
   const f = base();
   f.screens[0].actions.push({ id: 'err', label: '오류', to: 'fail' });
-  f.screens.push({ id: 'fail', title: '실패', stage: 1, actions: [{ id: 'back', label: '돌아가기', to: 'home' }] });
+  f.screens.push({
+    id: 'fail',
+    title: '실패',
+    stage: 1,
+    actions: [{ id: 'back', label: '돌아가기', to: 'home' }],
+  });
   assert.deepEqual(check(f).findings, []);
 });
 
@@ -73,7 +94,10 @@ test('runScenario applies set/inc, honors when guards, asserts screen and vars',
     { id: 'book', label: '예약', to: 'done', when: { slot: '14:30' }, inc: { booked: 1 } },
   ];
   f.vars.slot = '';
-  const ok = runScenario(f, { id: 's', steps: [{ action: 'pick' }, { action: 'book', screen: 'done', vars: { booked: 1 } }] });
+  const ok = runScenario(f, {
+    id: 's',
+    steps: [{ action: 'pick' }, { action: 'book', screen: 'done', vars: { booked: 1 } }],
+  });
   assert.equal(ok.ok, true);
   assert.equal(ok.screen, 'done');
   const guarded = runScenario(f, { id: 's', steps: [{ action: 'book' }] });
@@ -94,9 +118,28 @@ test('scenario failures become critical findings', () => {
 test('proposal fixes a missing retry and the same scenario passes with it', () => {
   const f = base();
   f.screens[0].actions.push({ id: 'pay', label: '결제', to: 'fail' });
-  f.screens.push({ id: 'fail', title: '결제 실패', stage: 1, actions: [{ id: 'retry', label: '다시 시도', to: null }] });
-  f.scenarios.push({ id: 'recover', title: '실패 후 재시도', steps: [{ action: 'pay', screen: 'fail' }, { action: 'retry', screen: 'home' }, { action: 'book', screen: 'done' }] });
-  f.proposals = [{ id: 'retry-home', title: '재시도는 홈으로', changes: [{ screen: 'fail', action: { id: 'retry', label: '다시 시도', to: 'home' } }] }];
+  f.screens.push({
+    id: 'fail',
+    title: '결제 실패',
+    stage: 1,
+    actions: [{ id: 'retry', label: '다시 시도', to: null }],
+  });
+  f.scenarios.push({
+    id: 'recover',
+    title: '실패 후 재시도',
+    steps: [
+      { action: 'pay', screen: 'fail' },
+      { action: 'retry', screen: 'home' },
+      { action: 'book', screen: 'done' },
+    ],
+  });
+  f.proposals = [
+    {
+      id: 'retry-home',
+      title: '재시도는 홈으로',
+      changes: [{ screen: 'fail', action: { id: 'retry', label: '다시 시도', to: 'home' } }],
+    },
+  ];
   const before = check(f);
   assert.ok(codes(before).includes('scenario-failed'));
   const after = check(f, { with: ['retry-home'] });
@@ -109,8 +152,26 @@ test('proposal fixes a missing retry and the same scenario passes with it', () =
 test('proposal can add a screen and conflicting proposals throw', () => {
   const f = base();
   f.proposals = [
-    { id: 'a', title: 'A', changes: [{ addScreen: { id: 'help', title: '도움말', stage: 0, actions: [{ id: 'h', label: '홈', to: 'home' }] } }, { screen: 'home', action: { id: 'help', label: '도움말', to: 'help' } }] },
-    { id: 'b', title: 'B', changes: [{ screen: 'home', action: { id: 'help', label: '도움말', to: 'done' } }] },
+    {
+      id: 'a',
+      title: 'A',
+      changes: [
+        {
+          addScreen: {
+            id: 'help',
+            title: '도움말',
+            stage: 0,
+            actions: [{ id: 'h', label: '홈', to: 'home' }],
+          },
+        },
+        { screen: 'home', action: { id: 'help', label: '도움말', to: 'help' } },
+      ],
+    },
+    {
+      id: 'b',
+      title: 'B',
+      changes: [{ screen: 'home', action: { id: 'help', label: '도움말', to: 'done' } }],
+    },
   ];
   const patched = applyProposals(f, ['a']);
   assert.ok(patched.screens.some((s) => s.id === 'help'));

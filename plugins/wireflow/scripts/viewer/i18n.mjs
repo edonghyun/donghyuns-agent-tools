@@ -43,8 +43,15 @@ const KO = {
   origin: { source: '기획 원문', inferred: 'AI 추정', observed: '현재 구현', proposed: '제안' },
   views: { wireframe: '와이어프레임', flowchart: '순서도' },
   kinds: {
-    screen: '화면', message: '메시지', email: '이메일', document: '문서',
-    step: '단계', decision: '분기', system: '시스템', wait: '대기', end: '종료',
+    screen: '화면',
+    message: '메시지',
+    email: '이메일',
+    document: '문서',
+    step: '단계',
+    decision: '분기',
+    system: '시스템',
+    wait: '대기',
+    end: '종료',
   },
 };
 
@@ -88,11 +95,23 @@ const EN = {
   device: 'Device',
   unassigned: 'Unassigned',
   requestHeading: '## Wireflow change requests',
-  origin: { source: 'From brief', inferred: 'AI inferred', observed: 'Current build', proposed: 'Proposed' },
+  origin: {
+    source: 'From brief',
+    inferred: 'AI inferred',
+    observed: 'Current build',
+    proposed: 'Proposed',
+  },
   views: { wireframe: 'Wireframe', flowchart: 'Flowchart' },
   kinds: {
-    screen: 'Screen', message: 'Message', email: 'Email', document: 'Document',
-    step: 'Step', decision: 'Decision', system: 'System', wait: 'Wait', end: 'End',
+    screen: 'Screen',
+    message: 'Message',
+    email: 'Email',
+    document: 'Document',
+    step: 'Step',
+    decision: 'Decision',
+    system: 'System',
+    wait: 'Wait',
+    end: 'End',
   },
 };
 

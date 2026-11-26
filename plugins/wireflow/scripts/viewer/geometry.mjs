@@ -1,5 +1,5 @@
 // Pure layout math: node sizes, canvas positions, edge paths. No DOM.
-import { DEVICES } from '../lib/model.mjs';
+import { DEVICES } from '../lib/constants.mjs';
 
 const PAD = 70;
 const LANE_LABEL_WIDTH = 200;
@@ -7,12 +7,25 @@ const LANE_LABEL_WIDTH = 200;
 /** Fixed sizes for nodes that are not device frames. */
 const BOX_SIZES = {
   wireframe: {
-    step: [260, 140], system: [260, 140], wait: [260, 140], decision: [240, 170], end: [200, 100],
-    message: [340, 320], email: [460, 440], document: [420, 594],
+    step: [260, 140],
+    system: [260, 140],
+    wait: [260, 140],
+    decision: [240, 170],
+    end: [200, 100],
+    message: [340, 320],
+    email: [460, 440],
+    document: [420, 594],
   },
   flowchart: {
-    step: [240, 120], system: [240, 120], wait: [240, 120], decision: [220, 150], end: [180, 90],
-    screen: [240, 120], message: [240, 120], email: [240, 120], document: [240, 120],
+    step: [240, 120],
+    system: [240, 120],
+    wait: [240, 120],
+    decision: [220, 150],
+    end: [180, 90],
+    screen: [240, 120],
+    message: [240, 120],
+    email: [240, 120],
+    document: [240, 120],
   },
 };
 
@@ -95,12 +108,16 @@ function stageRowLayout(flow, view) {
 function laneLayout(flow, view, unassignedLabel) {
   const gap = GAPS[view];
   const lanes = laneNames(flow);
-  const inCell = (lane, stage) => flow.screens.filter((s) => (s.actor || '') === lane && s.stage === stage);
+  const inCell = (lane, stage) =>
+    flow.screens.filter((s) => (s.actor || '') === lane && s.stage === stage);
   const sizeOf = (s) => nodeSize(s, flow, view);
   const minColumn = BOX_SIZES.flowchart.step[0] + gap.x;
 
   const columnWidths = flow.stages.map((_, stage) =>
-    Math.max(minColumn, ...lanes.map((lane) => inCell(lane, stage).reduce((w, s) => w + sizeOf(s)[0] + gap.x, 0))),
+    Math.max(
+      minColumn,
+      ...lanes.map((lane) => inCell(lane, stage).reduce((w, s) => w + sizeOf(s)[0] + gap.x, 0)),
+    ),
   );
   const laneHeights = lanes.map((lane) => {
     const heights = flow.screens.filter((s) => (s.actor || '') === lane).map((s) => sizeOf(s)[1]);
@@ -124,13 +141,27 @@ function laneLayout(flow, view, unassignedLabel) {
       }
       columnX += columnWidths[stage];
     });
-    groups.push({ type: 'lane', label: lane || unassignedLabel, x: PAD, y, w: LANE_LABEL_WIDTH + gridWidth, h: laneHeights[li] });
+    groups.push({
+      type: 'lane',
+      label: lane || unassignedLabel,
+      x: PAD,
+      y,
+      w: LANE_LABEL_WIDTH + gridWidth,
+      h: laneHeights[li],
+    });
     y += laneHeights[li];
   });
 
   let columnX = gridLeft;
   flow.stages.forEach((label, stage) => {
-    groups.push({ type: 'column', label, x: columnX, y: top - 50, w: columnWidths[stage], h: y - top + 50 });
+    groups.push({
+      type: 'column',
+      label,
+      x: columnX,
+      y: top - 50,
+      w: columnWidths[stage],
+      h: y - top + 50,
+    });
     columnX += columnWidths[stage];
   });
 
