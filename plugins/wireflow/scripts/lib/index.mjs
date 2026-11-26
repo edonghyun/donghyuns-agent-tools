@@ -1,4 +1,5 @@
-// Public API of the wireflow model. Browser-safe: no module here imports from node:*.
+// Public API of the wireflow model. Browser-safe: no module here imports from node:*. The viewer
+// imports the model only through this file.
 
 export {
   actorList,
@@ -13,7 +14,14 @@ export {
 } from './board.mjs';
 export { check, exitCode } from './check.mjs';
 export { ACTOR_PALETTE, DEVICES, EVENT_TYPES, KINDS, VIEWS } from './constants.mjs';
-export { backEdges, edgeKey, isBackEdge, isException, rankNodes } from './graph.mjs';
+export {
+  backEdges,
+  edgeKey,
+  isBackEdge,
+  isException,
+  rankNodes,
+  screensById,
+} from './graph.mjs';
 export { applyProposals } from './proposals.mjs';
 export { applyAction, enabledActions, runScenario } from './scenario.mjs';
 export { validate } from './validate.mjs';

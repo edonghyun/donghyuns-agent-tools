@@ -278,7 +278,7 @@ test('an exception with no source sits under the first sub-column of its own sta
   assert.equal(nodes.get('lost').band, 'exception');
 });
 
-test('bands carry titles; the decision band gathers each stage’s decisions in one card', () => {
+test('the exception band comes first; the decision band gathers each stage’s decisions in one card', () => {
   const flow = flowOf([
     ['a', 0, ['b', 'e'], { decisions: ['예산은?'] }],
     ['b', 1, ['c'], { decisions: ['정원은?'] }],
@@ -287,11 +287,8 @@ test('bands carry titles; the decision band gathers each stage’s decisions in 
   ]);
   const { nodes, bands } = layoutBoard(flow);
   assert.deepEqual(
-    bands.map((band) => [band.type, band.label]),
-    [
-      ['exception', '이탈했을 때 확인할 일'],
-      ['decision', '미정 결정'],
-    ],
+    bands.map((band) => band.type),
+    ['exception', 'decision'],
   );
   const [exceptions, decisions] = bands;
   assert.ok(decisions.y >= exceptions.y + exceptions.h, 'decision band below exception band');

@@ -121,6 +121,11 @@ test('the board draws every edge, stage header, and band', () => {
   assert.ok(board.includes('이탈했을 때 확인할 일'));
   assert.ok(board.includes('미정 결정'));
   assert.ok(board.includes('예산은?'));
+  const english = String(
+    renderBoard(layoutAndRoute(flow), { flow, scenario: '', selected: null }, texts('en')),
+  );
+  assert.ok(english.includes('What to check after a drop-off'));
+  assert.ok(english.includes('Open decisions'));
 });
 
 /** The rows of each table on a page, as arrays of cell markup, with the heading before it. */

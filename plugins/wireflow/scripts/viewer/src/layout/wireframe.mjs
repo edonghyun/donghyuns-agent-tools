@@ -1,7 +1,6 @@
 // Wireframe layout: one row per stage, each node at the size it is drawn, left to right. Pure.
 
-import { kindOf } from '../../../lib/board.mjs';
-import { DEVICES } from '../../../lib/constants.mjs';
+import { DEVICES, kindOf } from '../../../lib/index.mjs';
 
 const PAD = 70;
 const GAP = { x: 220, y: 200 };

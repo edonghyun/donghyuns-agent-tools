@@ -1,6 +1,6 @@
 // Board columns: each stage splits into sub-columns by graph depth, left to right.
 
-import { isException, rankNodes } from '../../../lib/graph.mjs';
+import { isException, rankNodes } from '../../../lib/index.mjs';
 import { branchLabels, LABEL_MARGIN, labelWidth } from './edge-labels.mjs';
 import { CARD_W, HEADER_H, MARGIN, STAGE_GAP, SUB_GAP } from './geometry.mjs';
 

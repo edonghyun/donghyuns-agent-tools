@@ -283,600 +283,6 @@
     ...codes.map((text2) => ({ type: "code", text: text2 }))
   ];
 
-  // scripts/viewer/src/layout/geometry.mjs
-  var CARD_W = 220;
-  var SUB_GAP = 48;
-  var STAGE_GAP = 72;
-  var MARGIN = 32;
-  var HEADER_H = 40;
-  var DETOUR_GAP = 56;
-  var bottomOf = (box) => box.y + box.h;
-
-  // scripts/viewer/src/layout/text-width.mjs
-  var WIDE = /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uff00-\uffef]/;
-  var emOf = (ch) => {
-    if (WIDE.test(ch)) return 0.92;
-    if (ch === " ") return 0.27;
-    return /[A-Z0-9]/.test(ch) ? 0.64 : 0.52;
-  };
-  function textWidth(text2, size) {
-    let em = 0;
-    for (const ch of String(text2 ?? "")) {
-      em += emOf(ch);
-    }
-    return Math.ceil(em * size);
-  }
-
-  // scripts/viewer/src/layout/card-size.mjs
-  var INNER_W = CARD_W - 33;
-  var PADDING = 26;
-  var GAP = 6;
-  var TOP_ROW = 20;
-  var TITLE = { size: 22, line: 28, max: 2 };
-  var BODY = { size: 14, line: 20, max: 2 };
-  var CHIP = { size: 13, line: 18, padding: 14, h: 22, gap: 4 };
-  var DECISION = { heading: 24, size: 14, line: 20, indent: 12, gap: 4 };
-  var lineCount = (text2, font, width = INNER_W) => Math.max(1, Math.ceil(textWidth(text2, font.size) / width));
-  function chipRows(chips) {
-    let rows = 0;
-    let x = INNER_W;
-    for (const { text: text2 } of chips) {
-      const w = Math.min(INNER_W, textWidth(text2, CHIP.size) + CHIP.padding);
-      if (x + CHIP.gap + w > INNER_W) {
-        rows += 1;
-        x = w;
-      } else {
-        x += CHIP.gap + w;
-      }
-    }
-    return rows;
-  }
-  function estimateCardHeight(node, codes = []) {
-    const rows = [TOP_ROW, TITLE.line * Math.min(TITLE.max, lineCount(node.title, TITLE))];
-    if (node.body) {
-      rows.push(BODY.line * Math.min(BODY.max, lineCount(node.body, BODY)));
-    }
-    const chips = chipRows(cardChips(node, codes));
-    if (chips) {
-      rows.push(chips * CHIP.h + (chips - 1) * CHIP.gap);
-    }
-    return PADDING + rows.reduce((sum, h) => sum + h, 0) + GAP * (rows.length - 1);
-  }
-  function estimateDecisionCardHeight(items) {
-    const itemLines = items.map((item) => lineCount(item, DECISION, INNER_W - DECISION.indent));
-    const list = itemLines.reduce((sum, n) => sum + n * DECISION.line, 0) + DECISION.gap * (items.length - 1);
-    return PADDING + DECISION.heading + GAP + list;
-  }
-
-  // scripts/viewer/src/layout/bands.mjs
-  var BAND_GAP = 48;
-  var BAND_PAD = 24;
-  var BAND_TITLE = 32;
-  var BAND_LABELS = {
-    ko: { exception: "\uC774\uD0C8\uD588\uC744 \uB54C \uD655\uC778\uD560 \uC77C", decision: "\uBBF8\uC815 \uACB0\uC815" },
-    en: { exception: "What to check after a drop-off", decision: "Open decisions" }
-  };
-  function placeBands(flow, { mainBottom, detourGap, pathOrder, sources, main, columns, stageHeaders, heights }) {
-    const labels = BAND_LABELS[flow.locale === "en" ? "en" : "ko"];
-    const exceptions = placeExceptions(flow, {
-      pathOrder,
-      sources,
-      main,
-      columns,
-      heights,
-      top: mainBottom + detourGap + BAND_TITLE
-    });
-    const exceptionBand = exceptions.size ? bandAround("exception", labels, [...exceptions.values()]) : null;
-    const cards = decisionCards(flow, stageHeaders, {
-      top: (exceptionBand ? bottomOf(exceptionBand) + BAND_GAP : mainBottom + detourGap) + BAND_TITLE
-    });
-    const decisionBand = cards.length ? { ...bandAround("decision", labels, cards), cards } : null;
-    return { exceptions, bands: [exceptionBand, decisionBand].filter(Boolean) };
-  }
-  function placeExceptions(flow, { pathOrder, sources, main, columns, heights, top }) {
-    const pathIndex = (id) => pathOrder.includes(id) ? pathOrder.indexOf(id) : pathOrder.length;
-    const hangFrom = (s) => {
-      const [first] = sources.get(s.id).filter((from) => main.has(from)).sort((a, b) => pathIndex(a) - pathIndex(b));
-      return first ? main.get(first).column : columns.findIndex((c) => c.stage === s.stage);
-    };
-    const wanted = flow.screens.filter(isException).map((s) => ({ id: s.id, column: hangFrom(s) })).sort((a, b) => columns[a.column].x - columns[b.column].x);
-    const step = CARD_W + SUB_GAP;
-    const placed = /* @__PURE__ */ new Map();
-    const blockerAt = (x) => [...placed.values()].find((box) => Math.abs(box.x - x) < step);
-    for (const { id, column } of wanted) {
-      let x = columns[column].x;
-      for (let blocker = blockerAt(x); blocker; blocker = blockerAt(x)) {
-        x = blocker.x + step;
-      }
-      placed.set(id, { x, y: top, w: CARD_W, h: heights.get(id), column, band: "exception" });
-    }
-    return placed;
-  }
-  function decisionCards(flow, stageHeaders, { top }) {
-    return stageHeaders.map((header, stage) => ({
-      stage,
-      items: flow.screens.filter((s) => s.stage === stage).flatMap((s) => s.decisions || []),
-      x: header.x,
-      y: top,
-      w: CARD_W
-    })).filter((card) => card.items.length).map((card) => ({ ...card, h: estimateDecisionCardHeight(card.items) }));
-  }
-  function bandAround(type, labels, cards) {
-    const x = Math.min(...cards.map((c) => c.x)) - BAND_PAD;
-    const y = cards[0].y - BAND_TITLE;
-    const right = Math.max(...cards.map((c) => c.x + c.w)) + BAND_PAD;
-    const h = Math.max(...cards.map(bottomOf)) + BAND_PAD - y;
-    return { type, label: labels[type], x, y, w: right - x, h };
-  }
-
-  // scripts/viewer/src/layout/edge-labels.mjs
-  var LABEL_SIZE = 15;
-  var LABEL_PADDING = 16;
-  var LABEL_H = 24;
-  var LABEL_MARGIN = 12;
-  var labelWidth = (label) => textWidth(label, LABEL_SIZE) + LABEL_PADDING;
-  function branchLabels(node, targetIds) {
-    const labels = /* @__PURE__ */ new Map();
-    for (const { to, label } of node.actions.filter((a) => targetIds.has(a.to))) {
-      labels.set(to, labels.has(to) ? `${labels.get(to)} / ${label}` : label);
-    }
-    return labels;
-  }
-
-  // scripts/viewer/src/layout/columns.mjs
-  function placeColumns(flow) {
-    const rank = rankNodes(flow);
-    const columns = [];
-    const columnOf = /* @__PURE__ */ new Map();
-    flow.stages.forEach((_, stage) => {
-      const nodes = flow.screens.filter((s) => s.stage === stage && !isException(s));
-      const ranks = [...new Set(nodes.map((s) => rank.get(s.id)))].sort((a, b) => a - b);
-      const first = columns.length;
-      for (let sub = 0; sub < Math.max(1, ranks.length); sub++) {
-        columns.push({ stage, sub, x: 0 });
-      }
-      for (const s of nodes) {
-        columnOf.set(s.id, first + ranks.indexOf(rank.get(s.id)));
-      }
-    });
-    const labelRoom = labelRoomAfter(flow, columnOf);
-    columns.forEach((column, i) => {
-      const prev = columns[i - 1];
-      if (!prev) {
-        column.x = MARGIN;
-        return;
-      }
-      const gap = prev.stage === column.stage ? SUB_GAP : STAGE_GAP;
-      column.x = prev.x + CARD_W + Math.max(gap, labelRoom.get(i - 1) ?? 0);
-    });
-    const stageHeaders = flow.stages.map((label, stage) => {
-      const own = columns.filter((c) => c.stage === stage);
-      const x = own[0].x;
-      return { label, x, y: MARGIN, w: own[own.length - 1].x + CARD_W - x, h: HEADER_H };
-    });
-    return { columns, stageHeaders, columnOf };
-  }
-  function labelRoomAfter(flow, columnOf) {
-    const room = /* @__PURE__ */ new Map();
-    for (const s of flow.screens.filter((s2) => s2.kind === "decision" && columnOf.has(s2.id))) {
-      const column = columnOf.get(s.id);
-      const ahead = new Set([...columnOf].filter(([, c]) => c > column).map(([id]) => id));
-      const widths = [...branchLabels(s, ahead).values()].map((label) => labelWidth(label));
-      room.set(column, Math.max(room.get(column) ?? 0, ...widths.map((w) => w + 2 * LABEL_MARGIN)));
-    }
-    return room;
-  }
-
-  // scripts/viewer/src/layout/rows.mjs
-  var ROW_GAP = 24;
-  function stackColumns(flow, columnOf, heights, primaryNodes) {
-    const byColumn = /* @__PURE__ */ new Map();
-    for (const s of flow.screens.filter((s2) => columnOf.has(s2.id))) {
-      const column = columnOf.get(s.id);
-      byColumn.set(column, [...byColumn.get(column) ?? [], s]);
-    }
-    const tops = /* @__PURE__ */ new Map();
-    for (const nodes of byColumn.values()) {
-      for (const [id, top] of stackColumn(nodes, heights, primaryNodes)) {
-        tops.set(id, top);
-      }
-    }
-    return tops;
-  }
-  function stackColumn(nodes, heights, primaryNodes) {
-    if (primaryNodes.size === 0) {
-      return stackAround(nodes[0], nodes.slice(1), heights);
-    }
-    const onPath = nodes.filter((s) => primaryNodes.has(s.id));
-    if (onPath.length > 1) {
-      return stackCentered(nodes, heights);
-    }
-    const [anchor] = onPath;
-    return stackAround(
-      anchor,
-      nodes.filter((s) => s !== anchor),
-      heights
-    );
-  }
-  function stackAround(anchor, others, heights) {
-    let above = anchor ? -heights.get(anchor.id) / 2 : 0;
-    let below = -above;
-    const tops = anchor ? [[anchor.id, above]] : [];
-    others.forEach((s, i) => {
-      const h = heights.get(s.id);
-      if (i % 2 === 0) {
-        above -= h + ROW_GAP;
-        tops.push([s.id, above]);
-      } else {
-        tops.push([s.id, below + ROW_GAP]);
-        below += ROW_GAP + h;
-      }
-    });
-    return tops;
-  }
-  function stackCentered(nodes, heights) {
-    const total = nodes.reduce((sum, s) => sum + heights.get(s.id), ROW_GAP * (nodes.length - 1));
-    let top = -total / 2;
-    return nodes.map((s) => {
-      const at = top;
-      top += heights.get(s.id) + ROW_GAP;
-      return [s.id, at];
-    });
-  }
-
-  // scripts/viewer/src/layout/board.mjs
-  function layoutBoard(flow, { detourTop = DETOUR_GAP, detourBottom = DETOUR_GAP } = {}) {
-    const primary = primaryPath(flow);
-    const sources = exceptionSources(flow);
-    const heights = cardHeights(flow);
-    const { columns, stageHeaders, columnOf } = placeColumns(flow);
-    const rowTops = stackColumns(flow, columnOf, heights, primary.nodes);
-    const firstRow = MARGIN + HEADER_H + detourTop;
-    const spineY = firstRow - Math.min(0, ...rowTops.values());
-    const main = /* @__PURE__ */ new Map();
-    for (const [id, top] of rowTops) {
-      const column = columnOf.get(id);
-      const box = { x: columns[column].x, y: spineY + top, w: CARD_W, h: heights.get(id) };
-      main.set(id, { ...box, column, band: "main" });
-    }
-    const mainBoxes = [...main.values()];
-    const mainArea = {
-      top: Math.min(firstRow, ...mainBoxes.map((box) => box.y)),
-      bottom: Math.max(firstRow, ...mainBoxes.map(bottomOf))
-    };
-    const { exceptions, bands } = placeBands(flow, {
-      mainBottom: mainArea.bottom,
-      detourGap: detourBottom,
-      pathOrder: primary.order,
-      sources,
-      main,
-      columns,
-      stageHeaders,
-      heights
-    });
-    const right = Math.max(...[...stageHeaders, ...bands].map((box) => box.x + box.w));
-    const bottom = bands.length ? bottomOf(bands[bands.length - 1]) : mainArea.bottom + detourBottom;
-    const boxes = new Map([...main, ...exceptions]);
-    return {
-      nodes: new Map(flow.screens.map((s) => [s.id, boxes.get(s.id)])),
-      columns,
-      stageHeaders,
-      mainArea,
-      bands,
-      spineY,
-      size: { w: right + MARGIN, h: bottom + MARGIN }
-    };
-  }
-  function cardHeights(flow) {
-    const codes = exceptionCodes(flow);
-    return new Map(flow.screens.map((s) => [s.id, estimateCardHeight(s, codes.get(s.id))]));
-  }
-
-  // scripts/viewer/src/layout/route-space.mjs
-  var SLOT_GAP = 6;
-  var CLEARANCE = 4;
-  var LANE_GAP = 14;
-  function channelSlots(columns) {
-    const taken = /* @__PURE__ */ new Map();
-    const sides = (c) => {
-      const left = c < 0 ? columns[0].x - MARGIN : columns[c].x + CARD_W;
-      const right = c + 1 < columns.length ? columns[c + 1].x : left + MARGIN;
-      return [left, right];
-    };
-    const center = (c) => {
-      const [left, right] = sides(c);
-      return (left + right) / 2;
-    };
-    const claim = (c) => {
-      const i = taken.get(c) ?? 0;
-      taken.set(c, i + 1);
-      const [left, right] = sides(c);
-      const x = center(c) + Math.ceil(i / 2) * SLOT_GAP * (i % 2 ? 1 : -1);
-      return Math.min(right - CLEARANCE, Math.max(left + CLEARANCE, x));
-    };
-    const besideTaken = /* @__PURE__ */ new Map();
-    const claimBeside = (c) => {
-      const i = (besideTaken.get(c) ?? 0) + 1;
-      besideTaken.set(c, i);
-      return Math.min(center(c), sides(c)[0] + i * SLOT_GAP);
-    };
-    return { center, claim, claimBeside };
-  }
-  function detourLanes(mainArea) {
-    const lanes = { top: [], bottom: [] };
-    const yOf = (side, k) => side === "top" ? mainArea.top - LANE_GAP * (k + 1) : mainArea.bottom + LANE_GAP * (k + 1);
-    const claim = (side, xa, xb) => {
-      const run = [Math.min(xa, xb), Math.max(xa, xb)];
-      if (run[0] === run[1]) {
-        return yOf(side, 0);
-      }
-      const stack = lanes[side];
-      let k = stack.findIndex((lane) => lane.every((other) => apart(run, other)));
-      if (k < 0) {
-        k = stack.push([]) - 1;
-      }
-      stack[k].push(run);
-      return yOf(side, k);
-    };
-    const used = () => ({ top: lanes.top.length, bottom: lanes.bottom.length });
-    return { claim, used };
-  }
-  var apart = ([lo, hi], [otherLo, otherHi]) => hi + SLOT_GAP < otherLo || otherHi + SLOT_GAP < lo;
-
-  // scripts/viewer/src/layout/path-geometry.mjs
-  var segmentsOf = (points) => points.slice(1).map((p, i) => [points[i], p]);
-  function crossesAny(points, boxes) {
-    return segmentsOf(points).some(
-      ([[x1, y1], [x2, y2]]) => boxes.some(
-        (box) => Math.min(x1, x2) < box.x + box.w && Math.max(x1, x2) > box.x && Math.min(y1, y2) < box.y + box.h && Math.max(y1, y2) > box.y
-      )
-    );
-  }
-  function simplify(points) {
-    const kept = points.filter(
-      (p, i) => i === 0 || p[0] !== points[i - 1][0] || p[1] !== points[i - 1][1]
-    );
-    return kept.filter((p, i) => {
-      const prev = kept[i - 1];
-      const next = kept[i + 1];
-      const straight = prev && next && (prev[0] === p[0] && p[0] === next[0] || prev[1] === p[1] && p[1] === next[1]);
-      return !straight;
-    });
-  }
-  function horizontalRuns(points) {
-    return segmentsOf(points).filter(([a, b]) => a[1] === b[1] && a[0] !== b[0]).map(([a, b]) => a[0] < b[0] ? [a, b] : [b, a]).reverse().sort(([a, b], [c, d]) => d[0] - c[0] - (b[0] - a[0]));
-  }
-  var boxesOverlap = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-
-  // scripts/viewer/src/layout/routes.mjs
-  function routeEdges(flow, layout) {
-    const edges = boardEdges(flow, layout);
-    const decisionCards2 = layout.bands.flatMap((band) => band.cards || []);
-    const lanes = detourLanes(layout.mainArea);
-    const space = {
-      boxes: [...layout.nodes.values(), ...decisionCards2],
-      mainArea: layout.mainArea,
-      spineY: layout.spineY,
-      channels: channelSlots(layout.columns),
-      lanes
-    };
-    const byReach = [...edges].sort((a, b) => reach2(a) - reach2(b));
-    const points = new Map(byReach.map((edge) => [edge.id, routeOf(edge, space)]));
-    const taken = [...space.boxes];
-    return {
-      edges: edges.map(({ source, target, ...edge }) => ({
-        ...edge,
-        points: points.get(edge.id),
-        ...edge.label !== void 0 && labelPlace(edge.label, points.get(edge.id), taken)
-      })),
-      lanes: lanes.used()
-    };
-  }
-  function labelPlace(label, points, taken) {
-    const w = labelWidth(label);
-    const half = (w + LABEL_MARGIN) / 2;
-    for (const [[left, y], [right]] of horizontalRuns(points)) {
-      if (right - left < w + LABEL_MARGIN) continue;
-      for (const x of [(left + right) / 2, left + half, right - half]) {
-        const box = { x: x - w / 2, y: y - LABEL_H / 2, w, h: LABEL_H };
-        if (!taken.some((other) => boxesOverlap(box, other))) {
-          taken.push(box);
-          return { labelAt: [x, y] };
-        }
-      }
-    }
-    return {};
-  }
-  function toPathD(points) {
-    const steps = points.slice(1).map(([x, y], i) => {
-      const [px, py] = points[i];
-      if (py === y) {
-        return `H${x}`;
-      }
-      return px === x ? `V${y}` : `L${x} ${y}`;
-    });
-    return [`M${points[0][0]} ${points[0][1]}`, ...steps].join(" ");
-  }
-  function boardEdges(flow, layout) {
-    const byId = screensById(flow);
-    const back = backEdges(flow);
-    const { steps } = primaryPath(flow);
-    const actionsOf = /* @__PURE__ */ new Map();
-    for (const from of flow.screens) {
-      for (const action of from.actions.filter((a) => byId.has(a.to))) {
-        const key = edgeKey(from.id, action.to);
-        actionsOf.set(key, [...actionsOf.get(key) ?? [], { from, action }]);
-      }
-    }
-    return [...actionsOf.values()].map((parallel) => {
-      const { from } = parallel[0];
-      const to = byId.get(parallel[0].action.to);
-      const ids = parallel.map(({ action }) => `${from.id}.${action.id}`);
-      return {
-        id: ids[0],
-        ids,
-        from: from.id,
-        to: to.id,
-        kind: kindOf2(from, to, back.has(edgeKey(from.id, to.id))),
-        primary: ids.some((id) => steps.has(id)),
-        dormant: Boolean(from.dormant || to.dormant),
-        ...from.kind === "decision" && { label: branchLabels(from, /* @__PURE__ */ new Set([to.id])).get(to.id) },
-        source: layout.nodes.get(from.id),
-        target: layout.nodes.get(to.id)
-      };
-    });
-  }
-  function kindOf2(from, to, isBack) {
-    if (isException(from)) {
-      return "from-exception";
-    }
-    if (isException(to)) {
-      return "exception";
-    }
-    return isBack ? "back" : "forward";
-  }
-  var centerX = (box) => box.x + box.w / 2;
-  var centerY = (box) => box.y + box.h / 2;
-  var reach2 = ({ source, target }) => Math.abs(centerX(source) - centerX(target));
-  function routeOf(edge, space) {
-    const { kind, source, target } = edge;
-    if (kind === "forward" && target.column > source.column) {
-      const channel = [source.column, target.column - 1].find(
-        (c) => !crossesAny(throughChannel(edge, space.channels.center(c)), space.boxes)
-      );
-      if (channel !== void 0) {
-        const turns = centerY(source) !== centerY(target);
-        const besideDecision = edge.label !== void 0 && channel === source.column;
-        const slot = besideDecision ? space.channels.claimBeside : space.channels.claim;
-        const x = turns ? slot(channel) : space.channels.center(channel);
-        return throughChannel(edge, x);
-      }
-    }
-    return detour(edge, space);
-  }
-  function throughChannel({ source, target }, x) {
-    return simplify([
-      [source.x + source.w, centerY(source)],
-      [x, centerY(source)],
-      [x, centerY(target)],
-      [target.x, centerY(target)]
-    ]);
-  }
-  function detour({ kind, source, target }, space) {
-    const nearTop = (centerY(source) + centerY(target)) / 2 <= space.spineY;
-    const side = kind === "exception" || kind === "from-exception" || !nearTop ? "bottom" : "top";
-    const out = cardToLane(source, "source", side, space);
-    const into = cardToLane(target, "target", side, space);
-    const outX = out[out.length - 1][0];
-    const intoX = into[into.length - 1][0];
-    const laneY = space.lanes.claim(side, outX, intoX);
-    return simplify([...out, [outX, laneY], [intoX, laneY], ...[...into].reverse()]);
-  }
-  var sendX = (box) => box.x + box.w * (box.band === "exception" ? 0.75 : 0.5);
-  var takeX = (box) => box.x + box.w * (box.band === "exception" ? 0.5 : 0.75);
-  function cardToLane(box, end, side, space) {
-    const x = end === "source" ? sendX(box) : takeX(box);
-    const borderY = side === "top" || box.band === "exception" ? box.y : bottomOf(box);
-    const areaEdgeY = side === "top" ? space.mainArea.top : space.mainArea.bottom;
-    const straightOut = [
-      [x, borderY],
-      [x, areaEdgeY]
-    ];
-    if (!crossesAny(straightOut, space.boxes)) {
-      return [[x, borderY]];
-    }
-    return end === "source" ? [
-      [box.x + box.w, centerY(box)],
-      [space.channels.claim(box.column), centerY(box)]
-    ] : [
-      [box.x, centerY(box)],
-      [space.channels.claim(box.column - 1), centerY(box)]
-    ];
-  }
-
-  // scripts/viewer/src/layout/board-scene.mjs
-  function layoutAndRoute(flow) {
-    const layout = layoutBoard(flow);
-    const { edges, lanes } = routeEdges(flow, layout);
-    const gaps = { detourTop: gapFor(lanes.top), detourBottom: gapFor(lanes.bottom) };
-    if (gaps.detourTop === DETOUR_GAP && gaps.detourBottom === DETOUR_GAP) {
-      return { layout, edges };
-    }
-    const widened = layoutBoard(flow, gaps);
-    return { layout: widened, edges: routeEdges(flow, widened).edges };
-  }
-  var gapFor = (lanes) => Math.max(DETOUR_GAP, (lanes + 2) * LANE_GAP);
-
-  // scripts/viewer/src/layout/wireframe.mjs
-  var PAD = 70;
-  var GAP2 = { x: 220, y: 200 };
-  var BOX_SIZES = {
-    step: [260, 140],
-    system: [260, 140],
-    wait: [260, 140],
-    decision: [240, 170],
-    end: [200, 100],
-    message: [340, 320],
-    email: [460, 440],
-    document: [420, 594]
-  };
-  function deviceSize(device) {
-    if (device && typeof device === "object") return [device.width, device.height];
-    return DEVICES[device] || null;
-  }
-  function deviceLabel(node, flow) {
-    const d = node.device ?? flow.device ?? "mobile";
-    return typeof d === "object" ? `${d.width}\xD7${d.height}` : d;
-  }
-  function nodeStyle(node) {
-    const kind = kindOf(node);
-    if (kind === "screen") return "frame";
-    if (["message", "email", "document"].includes(kind)) return "card";
-    return "box";
-  }
-  function nodeSize(node, flow) {
-    if (nodeStyle(node) === "frame") {
-      return deviceSize(node.device) || deviceSize(flow.device) || DEVICES.mobile;
-    }
-    return BOX_SIZES[kindOf(node)];
-  }
-  function layoutWireframe(flow) {
-    const nodes = /* @__PURE__ */ new Map();
-    const stages = [];
-    let y = PAD + 40;
-    let width = 0;
-    flow.stages.forEach((label, stage) => {
-      const row = flow.screens.filter((s) => s.stage === stage);
-      const sizes = row.map((s) => nodeSize(s, flow));
-      const rowHeight = Math.max(120, ...sizes.map(([, h]) => h));
-      let x = PAD + 40;
-      row.forEach((s, i) => {
-        const [w, h] = sizes[i];
-        nodes.set(s.id, { x, y, w, h });
-        x += w + GAP2.x;
-      });
-      const stageWidth = Math.max(300, x - GAP2.x - PAD + 40);
-      stages.push({ label, x: PAD, y: y - 60, w: stageWidth, h: rowHeight + 100 });
-      width = Math.max(width, PAD + stageWidth);
-      y += rowHeight + GAP2.y + 60;
-    });
-    return { nodes, stages, size: { w: width + PAD, h: y } };
-  }
-
-  // scripts/viewer/src/layout/scene.mjs
-  var last = { flow: null, view: null, scene: null };
-  function sceneOf({ flow, view }) {
-    if (last.flow !== flow || last.view !== view) {
-      last = { flow, view, scene: layoutFor(flow, view) };
-    }
-    return last.scene;
-  }
-  function layoutFor(flow, view) {
-    if (view === "wireframe") return layoutWireframe(flow);
-    const { layout, edges } = layoutAndRoute(flow);
-    return { nodes: layout.nodes, size: layout.size, layout, edges };
-  }
-
   // scripts/lib/proposals.mjs
   var clone = (x) => JSON.parse(JSON.stringify(x));
   function applyProposals(flow, ids = []) {
@@ -1271,6 +677,595 @@
     }));
   }
 
+  // scripts/viewer/src/layout/geometry.mjs
+  var CARD_W = 220;
+  var SUB_GAP = 48;
+  var STAGE_GAP = 72;
+  var MARGIN = 32;
+  var HEADER_H = 40;
+  var DETOUR_GAP = 56;
+  var bottomOf = (box) => box.y + box.h;
+
+  // scripts/viewer/src/layout/text-width.mjs
+  var WIDE = /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uff00-\uffef]/;
+  var emOf = (ch) => {
+    if (WIDE.test(ch)) return 0.92;
+    if (ch === " ") return 0.27;
+    return /[A-Z0-9]/.test(ch) ? 0.64 : 0.52;
+  };
+  function textWidth(text2, size) {
+    let em = 0;
+    for (const ch of String(text2 ?? "")) {
+      em += emOf(ch);
+    }
+    return Math.ceil(em * size);
+  }
+
+  // scripts/viewer/src/layout/card-size.mjs
+  var INNER_W = CARD_W - 33;
+  var PADDING = 26;
+  var GAP = 6;
+  var TOP_ROW = 20;
+  var TITLE = { size: 22, line: 28, max: 2 };
+  var BODY = { size: 14, line: 20, max: 2 };
+  var CHIP = { size: 13, line: 18, padding: 14, h: 22, gap: 4 };
+  var DECISION = { heading: 24, size: 14, line: 20, indent: 12, gap: 4 };
+  var lineCount = (text2, font, width = INNER_W) => Math.max(1, Math.ceil(textWidth(text2, font.size) / width));
+  function chipRows(chips) {
+    let rows = 0;
+    let x = INNER_W;
+    for (const { text: text2 } of chips) {
+      const w = Math.min(INNER_W, textWidth(text2, CHIP.size) + CHIP.padding);
+      if (x + CHIP.gap + w > INNER_W) {
+        rows += 1;
+        x = w;
+      } else {
+        x += CHIP.gap + w;
+      }
+    }
+    return rows;
+  }
+  function estimateCardHeight(node, codes = []) {
+    const rows = [TOP_ROW, TITLE.line * Math.min(TITLE.max, lineCount(node.title, TITLE))];
+    if (node.body) {
+      rows.push(BODY.line * Math.min(BODY.max, lineCount(node.body, BODY)));
+    }
+    const chips = chipRows(cardChips(node, codes));
+    if (chips) {
+      rows.push(chips * CHIP.h + (chips - 1) * CHIP.gap);
+    }
+    return PADDING + rows.reduce((sum, h) => sum + h, 0) + GAP * (rows.length - 1);
+  }
+  function estimateDecisionCardHeight(items) {
+    const itemLines = items.map((item) => lineCount(item, DECISION, INNER_W - DECISION.indent));
+    const list = itemLines.reduce((sum, n) => sum + n * DECISION.line, 0) + DECISION.gap * (items.length - 1);
+    return PADDING + DECISION.heading + GAP + list;
+  }
+
+  // scripts/viewer/src/layout/bands.mjs
+  var BAND_GAP = 48;
+  var BAND_PAD = 24;
+  var BAND_TITLE = 32;
+  function placeBands(flow, { mainBottom, detourGap, pathOrder, sources, main, columns, stageHeaders, heights }) {
+    const exceptions = placeExceptions(flow, {
+      pathOrder,
+      sources,
+      main,
+      columns,
+      heights,
+      top: mainBottom + detourGap + BAND_TITLE
+    });
+    const exceptionBand = exceptions.size ? bandAround("exception", [...exceptions.values()]) : null;
+    const cards = decisionCards(flow, stageHeaders, {
+      top: (exceptionBand ? bottomOf(exceptionBand) + BAND_GAP : mainBottom + detourGap) + BAND_TITLE
+    });
+    const decisionBand = cards.length ? { ...bandAround("decision", cards), cards } : null;
+    return { exceptions, bands: [exceptionBand, decisionBand].filter(Boolean) };
+  }
+  function placeExceptions(flow, { pathOrder, sources, main, columns, heights, top }) {
+    const pathIndex = (id) => pathOrder.includes(id) ? pathOrder.indexOf(id) : pathOrder.length;
+    const hangFrom = (s) => {
+      const [first] = sources.get(s.id).filter((from) => main.has(from)).sort((a, b) => pathIndex(a) - pathIndex(b));
+      return first ? main.get(first).column : columns.findIndex((c) => c.stage === s.stage);
+    };
+    const wanted = flow.screens.filter(isException).map((s) => ({ id: s.id, column: hangFrom(s) })).sort((a, b) => columns[a.column].x - columns[b.column].x);
+    const step = CARD_W + SUB_GAP;
+    const placed = /* @__PURE__ */ new Map();
+    const blockerAt = (x) => [...placed.values()].find((box) => Math.abs(box.x - x) < step);
+    for (const { id, column } of wanted) {
+      let x = columns[column].x;
+      for (let blocker = blockerAt(x); blocker; blocker = blockerAt(x)) {
+        x = blocker.x + step;
+      }
+      placed.set(id, { x, y: top, w: CARD_W, h: heights.get(id), column, band: "exception" });
+    }
+    return placed;
+  }
+  function decisionCards(flow, stageHeaders, { top }) {
+    return stageHeaders.map((header, stage) => ({
+      stage,
+      items: flow.screens.filter((s) => s.stage === stage).flatMap((s) => s.decisions || []),
+      x: header.x,
+      y: top,
+      w: CARD_W
+    })).filter((card) => card.items.length).map((card) => ({ ...card, h: estimateDecisionCardHeight(card.items) }));
+  }
+  function bandAround(type, cards) {
+    const x = Math.min(...cards.map((c) => c.x)) - BAND_PAD;
+    const y = cards[0].y - BAND_TITLE;
+    const right = Math.max(...cards.map((c) => c.x + c.w)) + BAND_PAD;
+    const h = Math.max(...cards.map(bottomOf)) + BAND_PAD - y;
+    return { type, x, y, w: right - x, h };
+  }
+
+  // scripts/viewer/src/layout/edge-labels.mjs
+  var LABEL_SIZE = 15;
+  var LABEL_PADDING = 16;
+  var LABEL_H = 24;
+  var LABEL_MARGIN = 12;
+  var labelWidth = (label) => textWidth(label, LABEL_SIZE) + LABEL_PADDING;
+  function branchLabels(node, targetIds) {
+    const labels = /* @__PURE__ */ new Map();
+    for (const { to, label } of node.actions.filter((a) => targetIds.has(a.to))) {
+      labels.set(to, labels.has(to) ? `${labels.get(to)} / ${label}` : label);
+    }
+    return labels;
+  }
+
+  // scripts/viewer/src/layout/columns.mjs
+  function placeColumns(flow) {
+    const rank = rankNodes(flow);
+    const columns = [];
+    const columnOf = /* @__PURE__ */ new Map();
+    flow.stages.forEach((_, stage) => {
+      const nodes = flow.screens.filter((s) => s.stage === stage && !isException(s));
+      const ranks = [...new Set(nodes.map((s) => rank.get(s.id)))].sort((a, b) => a - b);
+      const first = columns.length;
+      for (let sub = 0; sub < Math.max(1, ranks.length); sub++) {
+        columns.push({ stage, sub, x: 0 });
+      }
+      for (const s of nodes) {
+        columnOf.set(s.id, first + ranks.indexOf(rank.get(s.id)));
+      }
+    });
+    const labelRoom = labelRoomAfter(flow, columnOf);
+    columns.forEach((column, i) => {
+      const prev = columns[i - 1];
+      if (!prev) {
+        column.x = MARGIN;
+        return;
+      }
+      const gap = prev.stage === column.stage ? SUB_GAP : STAGE_GAP;
+      column.x = prev.x + CARD_W + Math.max(gap, labelRoom.get(i - 1) ?? 0);
+    });
+    const stageHeaders = flow.stages.map((label, stage) => {
+      const own = columns.filter((c) => c.stage === stage);
+      const x = own[0].x;
+      return { label, x, y: MARGIN, w: own[own.length - 1].x + CARD_W - x, h: HEADER_H };
+    });
+    return { columns, stageHeaders, columnOf };
+  }
+  function labelRoomAfter(flow, columnOf) {
+    const room = /* @__PURE__ */ new Map();
+    for (const s of flow.screens.filter((s2) => s2.kind === "decision" && columnOf.has(s2.id))) {
+      const column = columnOf.get(s.id);
+      const ahead = new Set([...columnOf].filter(([, c]) => c > column).map(([id]) => id));
+      const widths = [...branchLabels(s, ahead).values()].map((label) => labelWidth(label));
+      room.set(column, Math.max(room.get(column) ?? 0, ...widths.map((w) => w + 2 * LABEL_MARGIN)));
+    }
+    return room;
+  }
+
+  // scripts/viewer/src/layout/rows.mjs
+  var ROW_GAP = 24;
+  function stackColumns(flow, columnOf, heights, primaryNodes) {
+    const byColumn = /* @__PURE__ */ new Map();
+    for (const s of flow.screens.filter((s2) => columnOf.has(s2.id))) {
+      const column = columnOf.get(s.id);
+      byColumn.set(column, [...byColumn.get(column) ?? [], s]);
+    }
+    const tops = /* @__PURE__ */ new Map();
+    for (const nodes of byColumn.values()) {
+      for (const [id, top] of stackColumn(nodes, heights, primaryNodes)) {
+        tops.set(id, top);
+      }
+    }
+    return tops;
+  }
+  function stackColumn(nodes, heights, primaryNodes) {
+    if (primaryNodes.size === 0) {
+      return stackAround(nodes[0], nodes.slice(1), heights);
+    }
+    const onPath = nodes.filter((s) => primaryNodes.has(s.id));
+    if (onPath.length > 1) {
+      return stackCentered(nodes, heights);
+    }
+    const [anchor] = onPath;
+    return stackAround(
+      anchor,
+      nodes.filter((s) => s !== anchor),
+      heights
+    );
+  }
+  function stackAround(anchor, others, heights) {
+    let above = anchor ? -heights.get(anchor.id) / 2 : 0;
+    let below = -above;
+    const tops = anchor ? [[anchor.id, above]] : [];
+    others.forEach((s, i) => {
+      const h = heights.get(s.id);
+      if (i % 2 === 0) {
+        above -= h + ROW_GAP;
+        tops.push([s.id, above]);
+      } else {
+        tops.push([s.id, below + ROW_GAP]);
+        below += ROW_GAP + h;
+      }
+    });
+    return tops;
+  }
+  function stackCentered(nodes, heights) {
+    const total = nodes.reduce((sum, s) => sum + heights.get(s.id), ROW_GAP * (nodes.length - 1));
+    let top = -total / 2;
+    return nodes.map((s) => {
+      const at = top;
+      top += heights.get(s.id) + ROW_GAP;
+      return [s.id, at];
+    });
+  }
+
+  // scripts/viewer/src/layout/board.mjs
+  function layoutBoard(flow, { detourTop = DETOUR_GAP, detourBottom = DETOUR_GAP } = {}) {
+    const primary = primaryPath(flow);
+    const sources = exceptionSources(flow);
+    const heights = cardHeights(flow);
+    const { columns, stageHeaders, columnOf } = placeColumns(flow);
+    const rowTops = stackColumns(flow, columnOf, heights, primary.nodes);
+    const firstRow = MARGIN + HEADER_H + detourTop;
+    const spineY = firstRow - Math.min(0, ...rowTops.values());
+    const main = /* @__PURE__ */ new Map();
+    for (const [id, top] of rowTops) {
+      const column = columnOf.get(id);
+      const box = { x: columns[column].x, y: spineY + top, w: CARD_W, h: heights.get(id) };
+      main.set(id, { ...box, column, band: "main" });
+    }
+    const mainBoxes = [...main.values()];
+    const mainArea = {
+      top: Math.min(firstRow, ...mainBoxes.map((box) => box.y)),
+      bottom: Math.max(firstRow, ...mainBoxes.map(bottomOf))
+    };
+    const { exceptions, bands } = placeBands(flow, {
+      mainBottom: mainArea.bottom,
+      detourGap: detourBottom,
+      pathOrder: primary.order,
+      sources,
+      main,
+      columns,
+      stageHeaders,
+      heights
+    });
+    const right = Math.max(...[...stageHeaders, ...bands].map((box) => box.x + box.w));
+    const bottom = bands.length ? bottomOf(bands[bands.length - 1]) : mainArea.bottom + detourBottom;
+    const boxes = new Map([...main, ...exceptions]);
+    return {
+      nodes: new Map(flow.screens.map((s) => [s.id, boxes.get(s.id)])),
+      columns,
+      stageHeaders,
+      mainArea,
+      bands,
+      spineY,
+      size: { w: right + MARGIN, h: bottom + MARGIN }
+    };
+  }
+  function cardHeights(flow) {
+    const codes = exceptionCodes(flow);
+    return new Map(flow.screens.map((s) => [s.id, estimateCardHeight(s, codes.get(s.id))]));
+  }
+
+  // scripts/viewer/src/layout/route-space.mjs
+  var SLOT_GAP = 6;
+  var CLEARANCE = 4;
+  var LANE_GAP = 14;
+  function channelSlots(columns) {
+    const taken = /* @__PURE__ */ new Map();
+    const sides = (c) => {
+      const left = c < 0 ? columns[0].x - MARGIN : columns[c].x + CARD_W;
+      const right = c + 1 < columns.length ? columns[c + 1].x : left + MARGIN;
+      return [left, right];
+    };
+    const center = (c) => {
+      const [left, right] = sides(c);
+      return (left + right) / 2;
+    };
+    const claim = (c) => {
+      const i = taken.get(c) ?? 0;
+      taken.set(c, i + 1);
+      const [left, right] = sides(c);
+      const x = center(c) + Math.ceil(i / 2) * SLOT_GAP * (i % 2 ? 1 : -1);
+      return Math.min(right - CLEARANCE, Math.max(left + CLEARANCE, x));
+    };
+    const besideTaken = /* @__PURE__ */ new Map();
+    const claimBeside = (c) => {
+      const i = (besideTaken.get(c) ?? 0) + 1;
+      besideTaken.set(c, i);
+      return Math.min(center(c), sides(c)[0] + i * SLOT_GAP);
+    };
+    return { center, claim, claimBeside };
+  }
+  function detourLanes(mainArea) {
+    const lanes = { top: [], bottom: [] };
+    const yOf = (side, k) => side === "top" ? mainArea.top - LANE_GAP * (k + 1) : mainArea.bottom + LANE_GAP * (k + 1);
+    const claim = (side, xa, xb) => {
+      const run = [Math.min(xa, xb), Math.max(xa, xb)];
+      if (run[0] === run[1]) {
+        return yOf(side, 0);
+      }
+      const stack = lanes[side];
+      let k = stack.findIndex((lane) => lane.every((other) => apart(run, other)));
+      if (k < 0) {
+        k = stack.push([]) - 1;
+      }
+      stack[k].push(run);
+      return yOf(side, k);
+    };
+    const used = () => ({ top: lanes.top.length, bottom: lanes.bottom.length });
+    return { claim, used };
+  }
+  var apart = ([lo, hi], [otherLo, otherHi]) => hi + SLOT_GAP < otherLo || otherHi + SLOT_GAP < lo;
+
+  // scripts/viewer/src/layout/path-geometry.mjs
+  var segmentsOf = (points) => points.slice(1).map((p, i) => [points[i], p]);
+  function crossesAny(points, boxes) {
+    return segmentsOf(points).some(
+      ([[x1, y1], [x2, y2]]) => boxes.some(
+        (box) => Math.min(x1, x2) < box.x + box.w && Math.max(x1, x2) > box.x && Math.min(y1, y2) < box.y + box.h && Math.max(y1, y2) > box.y
+      )
+    );
+  }
+  function simplify(points) {
+    const kept = points.filter(
+      (p, i) => i === 0 || p[0] !== points[i - 1][0] || p[1] !== points[i - 1][1]
+    );
+    return kept.filter((p, i) => {
+      const prev = kept[i - 1];
+      const next = kept[i + 1];
+      const straight = prev && next && (prev[0] === p[0] && p[0] === next[0] || prev[1] === p[1] && p[1] === next[1]);
+      return !straight;
+    });
+  }
+  function horizontalRuns(points) {
+    return segmentsOf(points).filter(([a, b]) => a[1] === b[1] && a[0] !== b[0]).map(([a, b]) => a[0] < b[0] ? [a, b] : [b, a]).reverse().sort(([a, b], [c, d]) => d[0] - c[0] - (b[0] - a[0]));
+  }
+  var boxesOverlap = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+  // scripts/viewer/src/layout/routes.mjs
+  function routeEdges(flow, layout) {
+    const edges = boardEdges(flow, layout);
+    const decisionCards2 = layout.bands.flatMap((band) => band.cards || []);
+    const lanes = detourLanes(layout.mainArea);
+    const space = {
+      boxes: [...layout.nodes.values(), ...decisionCards2],
+      mainArea: layout.mainArea,
+      spineY: layout.spineY,
+      channels: channelSlots(layout.columns),
+      lanes
+    };
+    const byReach = [...edges].sort((a, b) => reach2(a) - reach2(b));
+    const points = new Map(byReach.map((edge) => [edge.id, routeOf(edge, space)]));
+    const taken = [...space.boxes];
+    return {
+      edges: edges.map(({ source, target, ...edge }) => ({
+        ...edge,
+        points: points.get(edge.id),
+        ...edge.label !== void 0 && labelPlace(edge.label, points.get(edge.id), taken)
+      })),
+      lanes: lanes.used()
+    };
+  }
+  function labelPlace(label, points, taken) {
+    const w = labelWidth(label);
+    const half = (w + LABEL_MARGIN) / 2;
+    for (const [[left, y], [right]] of horizontalRuns(points)) {
+      if (right - left < w + LABEL_MARGIN) continue;
+      for (const x of [(left + right) / 2, left + half, right - half]) {
+        const box = { x: x - w / 2, y: y - LABEL_H / 2, w, h: LABEL_H };
+        if (!taken.some((other) => boxesOverlap(box, other))) {
+          taken.push(box);
+          return { labelAt: [x, y] };
+        }
+      }
+    }
+    return {};
+  }
+  function toPathD(points) {
+    const steps = points.slice(1).map(([x, y], i) => {
+      const [px, py] = points[i];
+      if (py === y) {
+        return `H${x}`;
+      }
+      return px === x ? `V${y}` : `L${x} ${y}`;
+    });
+    return [`M${points[0][0]} ${points[0][1]}`, ...steps].join(" ");
+  }
+  function boardEdges(flow, layout) {
+    const byId = screensById(flow);
+    const back = backEdges(flow);
+    const { steps } = primaryPath(flow);
+    const actionsOf = /* @__PURE__ */ new Map();
+    for (const from of flow.screens) {
+      for (const action of from.actions.filter((a) => byId.has(a.to))) {
+        const key = edgeKey(from.id, action.to);
+        actionsOf.set(key, [...actionsOf.get(key) ?? [], { from, action }]);
+      }
+    }
+    return [...actionsOf.values()].map((parallel) => {
+      const { from } = parallel[0];
+      const to = byId.get(parallel[0].action.to);
+      const ids = parallel.map(({ action }) => `${from.id}.${action.id}`);
+      return {
+        id: ids[0],
+        ids,
+        from: from.id,
+        to: to.id,
+        kind: edgeKind(from, to, back.has(edgeKey(from.id, to.id))),
+        primary: ids.some((id) => steps.has(id)),
+        dormant: Boolean(from.dormant || to.dormant),
+        ...from.kind === "decision" && { label: branchLabels(from, /* @__PURE__ */ new Set([to.id])).get(to.id) },
+        source: layout.nodes.get(from.id),
+        target: layout.nodes.get(to.id)
+      };
+    });
+  }
+  function edgeKind(from, to, isBack) {
+    if (isException(from)) {
+      return "from-exception";
+    }
+    if (isException(to)) {
+      return "exception";
+    }
+    return isBack ? "back" : "forward";
+  }
+  var centerX = (box) => box.x + box.w / 2;
+  var centerY = (box) => box.y + box.h / 2;
+  var reach2 = ({ source, target }) => Math.abs(centerX(source) - centerX(target));
+  function routeOf(edge, space) {
+    const { kind, source, target } = edge;
+    if (kind === "forward" && target.column > source.column) {
+      const channel = [source.column, target.column - 1].find(
+        (c) => !crossesAny(throughChannel(edge, space.channels.center(c)), space.boxes)
+      );
+      if (channel !== void 0) {
+        const turns = centerY(source) !== centerY(target);
+        const besideDecision = edge.label !== void 0 && channel === source.column;
+        const slot = besideDecision ? space.channels.claimBeside : space.channels.claim;
+        const x = turns ? slot(channel) : space.channels.center(channel);
+        return throughChannel(edge, x);
+      }
+    }
+    return detour(edge, space);
+  }
+  function throughChannel({ source, target }, x) {
+    return simplify([
+      [source.x + source.w, centerY(source)],
+      [x, centerY(source)],
+      [x, centerY(target)],
+      [target.x, centerY(target)]
+    ]);
+  }
+  function detour({ kind, source, target }, space) {
+    const nearTop = (centerY(source) + centerY(target)) / 2 <= space.spineY;
+    const side = kind === "exception" || kind === "from-exception" || !nearTop ? "bottom" : "top";
+    const out = cardToLane(source, "source", side, space);
+    const into = cardToLane(target, "target", side, space);
+    const outX = out[out.length - 1][0];
+    const intoX = into[into.length - 1][0];
+    const laneY = space.lanes.claim(side, outX, intoX);
+    return simplify([...out, [outX, laneY], [intoX, laneY], ...[...into].reverse()]);
+  }
+  var sendX = (box) => box.x + box.w * (box.band === "exception" ? 0.75 : 0.5);
+  var takeX = (box) => box.x + box.w * (box.band === "exception" ? 0.5 : 0.75);
+  function cardToLane(box, end, side, space) {
+    const x = end === "source" ? sendX(box) : takeX(box);
+    const borderY = side === "top" || box.band === "exception" ? box.y : bottomOf(box);
+    const areaEdgeY = side === "top" ? space.mainArea.top : space.mainArea.bottom;
+    const straightOut = [
+      [x, borderY],
+      [x, areaEdgeY]
+    ];
+    if (!crossesAny(straightOut, space.boxes)) {
+      return [[x, borderY]];
+    }
+    return end === "source" ? [
+      [box.x + box.w, centerY(box)],
+      [space.channels.claim(box.column), centerY(box)]
+    ] : [
+      [box.x, centerY(box)],
+      [space.channels.claim(box.column - 1), centerY(box)]
+    ];
+  }
+
+  // scripts/viewer/src/layout/board-scene.mjs
+  function layoutAndRoute(flow) {
+    const layout = layoutBoard(flow);
+    const { edges, lanes } = routeEdges(flow, layout);
+    const gaps = { detourTop: gapFor(lanes.top), detourBottom: gapFor(lanes.bottom) };
+    if (gaps.detourTop === DETOUR_GAP && gaps.detourBottom === DETOUR_GAP) {
+      return { layout, edges };
+    }
+    const widened = layoutBoard(flow, gaps);
+    return { layout: widened, edges: routeEdges(flow, widened).edges };
+  }
+  var gapFor = (lanes) => Math.max(DETOUR_GAP, (lanes + 2) * LANE_GAP);
+
+  // scripts/viewer/src/layout/wireframe.mjs
+  var PAD = 70;
+  var GAP2 = { x: 220, y: 200 };
+  var BOX_SIZES = {
+    step: [260, 140],
+    system: [260, 140],
+    wait: [260, 140],
+    decision: [240, 170],
+    end: [200, 100],
+    message: [340, 320],
+    email: [460, 440],
+    document: [420, 594]
+  };
+  function deviceSize(device) {
+    if (device && typeof device === "object") return [device.width, device.height];
+    return DEVICES[device] || null;
+  }
+  function deviceLabel(node, flow) {
+    const d = node.device ?? flow.device ?? "mobile";
+    return typeof d === "object" ? `${d.width}\xD7${d.height}` : d;
+  }
+  function nodeStyle(node) {
+    const kind = kindOf(node);
+    if (kind === "screen") return "frame";
+    if (["message", "email", "document"].includes(kind)) return "card";
+    return "box";
+  }
+  function nodeSize(node, flow) {
+    if (nodeStyle(node) === "frame") {
+      return deviceSize(node.device) || deviceSize(flow.device) || DEVICES.mobile;
+    }
+    return BOX_SIZES[kindOf(node)];
+  }
+  function layoutWireframe(flow) {
+    const nodes = /* @__PURE__ */ new Map();
+    const stages = [];
+    let y = PAD + 40;
+    let width = 0;
+    flow.stages.forEach((label, stage) => {
+      const row = flow.screens.filter((s) => s.stage === stage);
+      const sizes = row.map((s) => nodeSize(s, flow));
+      const rowHeight = Math.max(120, ...sizes.map(([, h]) => h));
+      let x = PAD + 40;
+      row.forEach((s, i) => {
+        const [w, h] = sizes[i];
+        nodes.set(s.id, { x, y, w, h });
+        x += w + GAP2.x;
+      });
+      const stageWidth = Math.max(300, x - GAP2.x - PAD + 40);
+      stages.push({ label, x: PAD, y: y - 60, w: stageWidth, h: rowHeight + 100 });
+      width = Math.max(width, PAD + stageWidth);
+      y += rowHeight + GAP2.y + 60;
+    });
+    return { nodes, stages, size: { w: width + PAD, h: y } };
+  }
+
+  // scripts/viewer/src/layout/scene.mjs
+  var last = { flow: null, view: null, scene: null };
+  function sceneOf({ flow, view }) {
+    if (last.flow !== flow || last.view !== view) {
+      last = { flow, view, scene: layoutFor(flow, view) };
+    }
+    return last.scene;
+  }
+  function layoutFor(flow, view) {
+    if (view === "wireframe") return layoutWireframe(flow);
+    const { layout, edges } = layoutAndRoute(flow);
+    return { nodes: layout.nodes, size: layout.size, layout, edges };
+  }
+
   // scripts/viewer/src/selectors.mjs
   var findNode = (flow, id) => flow.screens.find((s) => s.id === id);
   var findScenario = (flow, id) => (flow.scenarios || []).find((s) => s.id === id);
@@ -1569,13 +1564,13 @@
   var boxStyle = ({ x, y, w, h }) => `left:${x}px;top:${y}px;width:${w}px;height:${h}px`;
 
   // scripts/viewer/src/components/bands.mjs
-  function render(bands, stages) {
+  function render(bands, stages, T2) {
     const decisionCard = (card) => html`<div class="decision-card" style="${boxStyle(card)}">
     <h4>${stages[card.stage]}</h4>
     <ul>${card.items.map((item) => html`<li>${item}</li>`)}</ul>
   </div>`;
     const band = (b) => html`<section class="band ${b.type}" style="${boxStyle(b)}">
-    <h3>${b.label}</h3></section>${(b.cards || []).map(decisionCard)}`;
+    <h3>${T2.bands[b.type]}</h3></section>${(b.cards || []).map(decisionCard)}`;
     return bands.map(band);
   }
 
@@ -1606,6 +1601,7 @@
     reqs: "\uC694\uAD6C\uC0AC\uD56D",
     proposals: "\uAC1C\uC120 \uC81C\uC548 (\uD654\uBA74\uC5D0\uB9CC \uC801\uC6A9)",
     decisions: "\uBBF8\uC815 \uACB0\uC815",
+    bands: { exception: "\uC774\uD0C8\uD588\uC744 \uB54C \uD655\uC778\uD560 \uC77C", decision: "\uBBF8\uC815 \uACB0\uC815" },
     brief: "\uAE30\uD68D \uADFC\uAC70",
     notes: "\uC870\uAC74\xB7\uBD84\uAE30",
     actions: "\uBC84\uD2BC\xB7\uBD84\uAE30\uC640 \uC5F0\uACB0",
@@ -1680,6 +1676,7 @@
     reqs: "Requirements",
     proposals: "Proposed fixes (preview only)",
     decisions: "Open decisions",
+    bands: { exception: "What to check after a drop-off", decision: "Open decisions" },
     brief: "Planning intent",
     notes: "Conditions & branches",
     actions: "Buttons, branches & links",
@@ -1848,7 +1845,7 @@
     );
     const stageHeader = (header, i) => html`<div class="stage-head" style="${boxStyle(header)}"><b>${i + 1}</b>${header.label}</div>`;
     return html`
-    ${render(layout.bands, flow.stages)}
+    ${render(layout.bands, flow.stages, T2)}
     ${layout.stageHeaders.map(stageHeader)}
     ${render2(edges, layout.size, path, flow)}
     ${flow.screens.map(card)}`;

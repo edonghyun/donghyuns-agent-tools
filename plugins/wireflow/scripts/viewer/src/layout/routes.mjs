@@ -4,8 +4,7 @@
 // the exception band and edges out of them climb back, both through the lanes below. No segment
 // passes through a card. Channel slots come from route-space.mjs, path helpers from path-geometry.mjs.
 
-import { primaryPath } from '../../../lib/board.mjs';
-import { backEdges, edgeKey, isException, screensById } from '../../../lib/graph.mjs';
+import { backEdges, edgeKey, isException, primaryPath, screensById } from '../../../lib/index.mjs';
 import { branchLabels, LABEL_H, LABEL_MARGIN, labelWidth } from './edge-labels.mjs';
 import { bottomOf } from './geometry.mjs';
 import { boxesOverlap, crossesAny, horizontalRuns, simplify } from './path-geometry.mjs';
@@ -105,7 +104,7 @@ function boardEdges(flow, layout) {
       ids,
       from: from.id,
       to: to.id,
-      kind: kindOf(from, to, back.has(edgeKey(from.id, to.id))),
+      kind: edgeKind(from, to, back.has(edgeKey(from.id, to.id))),
       primary: ids.some((id) => steps.has(id)),
       dormant: Boolean(from.dormant || to.dormant),
       ...(from.kind === 'decision' && { label: branchLabels(from, new Set([to.id])).get(to.id) }),
@@ -115,7 +114,7 @@ function boardEdges(flow, layout) {
   });
 }
 
-function kindOf(from, to, isBack) {
+function edgeKind(from, to, isBack) {
   if (isException(from)) {
     return 'from-exception';
   }

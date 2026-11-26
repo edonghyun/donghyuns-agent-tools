@@ -31,7 +31,7 @@ export function render({ layout, edges }, { flow, scenario, selected }, T) {
   const stageHeader = (header, i) =>
     html`<div class="stage-head" style="${boxStyle(header)}"><b>${i + 1}</b>${header.label}</div>`;
   return html`
-    ${bands.render(layout.bands, flow.stages)}
+    ${bands.render(layout.bands, flow.stages, T)}
     ${layout.stageHeaders.map(stageHeader)}
     ${boardEdges.render(edges, layout.size, path, flow)}
     ${flow.screens.map(card)}`;

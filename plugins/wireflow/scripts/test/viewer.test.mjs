@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { render as renderEdges } from '../viewer/src/components/edges.mjs';
 import { render as renderNode } from '../viewer/src/components/frame-node.mjs';
@@ -125,4 +126,14 @@ test('frame buttons mark missing links, guards, and scenario steps', () => {
   assert.match(out, /class="act primary guard-off on-path" data-action="go"/);
   assert.match(out, /<span class="step">2<\/span>/);
   assert.match(out, /class="act secondary missing" data-action="nowhere"/);
+});
+
+test('the viewer imports the model only through lib/index.mjs', () => {
+  const src = new URL('../viewer/src/', import.meta.url);
+  const offenders = readdirSync(src, { recursive: true })
+    .filter((file) => file.endsWith('.mjs'))
+    .filter((file) =>
+      /from '[^']*\/lib\/(?!index\.mjs')/.test(readFileSync(new URL(file, src), 'utf8')),
+    );
+  assert.deepEqual(offenders, []);
 });

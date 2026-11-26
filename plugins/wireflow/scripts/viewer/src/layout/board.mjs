@@ -2,7 +2,7 @@
 // exception band and a decision band below them. Pure: the same flow always gives the same boxes.
 // Columns come from columns.mjs, rows from rows.mjs, and bands from bands.mjs.
 
-import { exceptionCodes, exceptionSources, primaryPath } from '../../../lib/board.mjs';
+import { exceptionCodes, exceptionSources, primaryPath } from '../../../lib/index.mjs';
 import { placeBands } from './bands.mjs';
 import { estimateCardHeight } from './card-size.mjs';
 import { placeColumns } from './columns.mjs';
@@ -21,7 +21,7 @@ export { CARD_W, DETOUR_GAP, STAGE_GAP, SUB_GAP } from './geometry.mjs';
  * - `mainArea`: `{top, bottom}` of the main cards. `detourTop` above it and `detourBottom` below
  *   it are free of cards, for edges that detour around the main area. Both default to
  *   `DETOUR_GAP`; board-scene.mjs widens them when the detours need more lanes.
- * - `bands`: `{type: 'exception'|'decision', label, x, y, w, h}`, only those with cards, in that
+ * - `bands`: `{type: 'exception'|'decision', x, y, w, h}`, only those with cards, in that
  *   order. The decision band also has `cards: [{stage, items, x, y, w, h}]`.
  * - `spineY`: the y the primary path runs along. `size`: `{w, h}` of the whole board.
  */

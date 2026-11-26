@@ -1,17 +1,12 @@
 // Board bands below the main area: the exception band, then the decision band.
 
-import { isException } from '../../../lib/graph.mjs';
+import { isException } from '../../../lib/index.mjs';
 import { estimateDecisionCardHeight } from './card-size.mjs';
 import { bottomOf, CARD_W, SUB_GAP } from './geometry.mjs';
 
 const BAND_GAP = 48; // between the two bands
 const BAND_PAD = 24; // inside a band, around its cards
 const BAND_TITLE = 32; // inside a band, above its cards
-
-const BAND_LABELS = {
-  ko: { exception: '이탈했을 때 확인할 일', decision: '미정 결정' },
-  en: { exception: 'What to check after a drop-off', decision: 'Open decisions' },
-};
 
 /**
  * The exception boxes and the bands below `mainBottom`. A band with no cards is left out, so
@@ -23,7 +18,6 @@ export function placeBands(
   flow,
   { mainBottom, detourGap, pathOrder, sources, main, columns, stageHeaders, heights },
 ) {
-  const labels = BAND_LABELS[flow.locale === 'en' ? 'en' : 'ko'];
   const exceptions = placeExceptions(flow, {
     pathOrder,
     sources,
@@ -32,13 +26,11 @@ export function placeBands(
     heights,
     top: mainBottom + detourGap + BAND_TITLE,
   });
-  const exceptionBand = exceptions.size
-    ? bandAround('exception', labels, [...exceptions.values()])
-    : null;
+  const exceptionBand = exceptions.size ? bandAround('exception', [...exceptions.values()]) : null;
   const cards = decisionCards(flow, stageHeaders, {
     top: (exceptionBand ? bottomOf(exceptionBand) + BAND_GAP : mainBottom + detourGap) + BAND_TITLE,
   });
-  const decisionBand = cards.length ? { ...bandAround('decision', labels, cards), cards } : null;
+  const decisionBand = cards.length ? { ...bandAround('decision', cards), cards } : null;
   return { exceptions, bands: [exceptionBand, decisionBand].filter(Boolean) };
 }
 
@@ -89,11 +81,11 @@ function decisionCards(flow, stageHeaders, { top }) {
     .map((card) => ({ ...card, h: estimateDecisionCardHeight(card.items) }));
 }
 
-/** A band's box: its title above the cards and padding around them. */
-function bandAround(type, labels, cards) {
+/** A band's box: room for its title above the cards and padding around them. */
+function bandAround(type, cards) {
   const x = Math.min(...cards.map((c) => c.x)) - BAND_PAD;
   const y = cards[0].y - BAND_TITLE;
   const right = Math.max(...cards.map((c) => c.x + c.w)) + BAND_PAD;
   const h = Math.max(...cards.map(bottomOf)) + BAND_PAD - y;
-  return { type, label: labels[type], x, y, w: right - x, h };
+  return { type, x, y, w: right - x, h };
 }

@@ -2,7 +2,7 @@
 // text widths, and the same flow always gives the same boxes. The sizes below mirror
 // styles/board.css: change the two together.
 
-import { cardChips } from '../../../lib/board.mjs';
+import { cardChips } from '../../../lib/index.mjs';
 import { CARD_W } from './geometry.mjs';
 import { textWidth } from './text-width.mjs';
 
