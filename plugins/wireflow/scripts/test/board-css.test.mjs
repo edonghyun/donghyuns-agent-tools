@@ -1,17 +1,19 @@
-// The layout sizes cards and edge labels without measuring the DOM; these tests hold board.css
-// to the sizes it assumes.
+// Style rules the viewer relies on: the sizes the board layout assumes without measuring the
+// DOM, and badges that stay whole.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { CARD_SIZES } from '../viewer/src/layout/card-size.mjs';
 import { LABEL_H, LABEL_PADDING, LABEL_SIZE } from '../viewer/src/layout/edge-labels.mjs';
 
-const css = readFileSync(new URL('../viewer/src/styles/board.css', import.meta.url), 'utf8');
+const sheet = (name) =>
+  readFileSync(new URL(`../viewer/src/styles/${name}`, import.meta.url), 'utf8');
+const board = sheet('board.css');
 
 /** The declarations of the rule whose selector is exactly `selector`, as {property: value}. */
-function rule(selector) {
+function rule(selector, css = board) {
   const start = css.indexOf(`\n${selector} {`);
-  assert.ok(start >= 0, `board.css has no "${selector}" rule`);
+  assert.ok(start >= 0, `no "${selector}" rule`);
   const body = css.slice(css.indexOf('{', start) + 1, css.indexOf('}', start));
   return Object.fromEntries(
     body
@@ -50,4 +52,9 @@ test('board.css edge labels match the label box routing places', () => {
   assert.equal(label.padding, '1px 7px');
   assert.equal(LABEL_PADDING, 7 + 7 + 2);
   assert.equal(LABEL_H, Number.parseFloat(label['line-height']) + 2 + 2);
+});
+
+test('an origin badge never breaks across lines', () => {
+  // In the drawer the badge ends a long meta line; split, its pill border drew as two halves.
+  assert.equal(rule('.badge', sheet('base.css'))['white-space'], 'nowrap');
 });

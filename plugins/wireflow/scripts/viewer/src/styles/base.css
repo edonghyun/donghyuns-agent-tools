@@ -107,6 +107,7 @@ body:not([data-mode="play"]) #player {
   border-radius: 999px;
   padding: 0 8px;
   color: var(--muted);
+  white-space: nowrap;
 }
 .badge.source {
   color: var(--ok);
