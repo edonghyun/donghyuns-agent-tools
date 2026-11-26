@@ -18,19 +18,20 @@ export { CARD_W, DETOUR_GAP, STAGE_GAP, SUB_GAP } from './geometry.mjs';
  *   'exception'. `column` indexes `columns`. For an exception it is the column the card hangs
  *   from, its first source's, and the card may sit to its right after a collision: route by `x`.
  * - `columns`: `{stage, sub, x}` left to right. `stageHeaders`: `{label, x, y, w, h}` per stage.
- * - `mainArea`: `{top, bottom}` of the main cards. `DETOUR_GAP` above and below it is free of
- *   cards, for edges that detour around the main area.
+ * - `mainArea`: `{top, bottom}` of the main cards. `detourTop` above it and `detourBottom` below
+ *   it are free of cards, for edges that detour around the main area. Both default to
+ *   `DETOUR_GAP`; board-scene.mjs widens them when the detours need more lanes.
  * - `bands`: `{type: 'exception'|'decision', label, x, y, w, h}`, only those with cards, in that
  *   order. The decision band also has `cards: [{stage, items, x, y, w, h}]`.
  * - `spineY`: the y the primary path runs along. `size`: `{w, h}` of the whole board.
  */
-export function layoutBoard(flow) {
+export function layoutBoard(flow, { detourTop = DETOUR_GAP, detourBottom = DETOUR_GAP } = {}) {
   const primary = primaryPath(flow);
   const sources = exceptionSources(flow);
   const heights = cardHeights(flow, sources);
   const { columns, stageHeaders, columnOf } = placeColumns(flow);
   const rowTops = stackColumns(flow, columnOf, heights, primary.nodes);
-  const firstRow = MARGIN + HEADER_H + DETOUR_GAP;
+  const firstRow = MARGIN + HEADER_H + detourTop;
   const spineY = firstRow - Math.min(0, ...rowTops.values());
 
   const main = new Map();
@@ -46,6 +47,7 @@ export function layoutBoard(flow) {
   };
   const { exceptions, bands } = placeBands(flow, {
     mainBottom: mainArea.bottom,
+    detourGap: detourBottom,
     pathOrder: primary.order,
     sources,
     main,
@@ -55,7 +57,7 @@ export function layoutBoard(flow) {
   });
 
   const right = Math.max(...[...stageHeaders, ...bands].map((box) => box.x + box.w));
-  const bottom = bands.length ? bottomOf(bands[bands.length - 1]) : mainArea.bottom + DETOUR_GAP;
+  const bottom = bands.length ? bottomOf(bands[bands.length - 1]) : mainArea.bottom + detourBottom;
   const boxes = new Map([...main, ...exceptions]);
   return {
     nodes: new Map(flow.screens.map((s) => [s.id, boxes.get(s.id)])),

@@ -97,6 +97,25 @@ test('beside one primary node, the others stack above then below the spine', () 
   assert.ok(y.y > bottomOf(b), 'y below b');
 });
 
+test('with a primary path, a column without a primary node leaves the spine row free', () => {
+  // b, y and z are off the path a → c, so their column stacks above, below, then above again.
+  const flow = flowOf(
+    [
+      ['a', 0, ['b', 'c']],
+      ['b', 1, ['c']],
+      ['y', 1, []],
+      ['z', 1, []],
+      ['c', 2, []],
+    ],
+    ['a', 'c'],
+  );
+  const { nodes, spineY } = layoutBoard(flow);
+  const [b, y, z] = ['b', 'y', 'z'].map((id) => nodes.get(id));
+  assert.ok(bottomOf(b) < spineY, 'b above the spine');
+  assert.ok(y.y > spineY, 'y below the spine');
+  assert.ok(bottomOf(z) < b.y, 'z above b');
+});
+
 test('a column with two primary nodes centers its stack on the spine, neither node on it', () => {
   // a → b → a → c → d: the primary path visits both b and c, which share a column.
   const flow = flowOf(
@@ -291,6 +310,8 @@ test('the hakwon-like fixture is valid, passes check, and lays out without overl
   }
   // subject, project and both share a column and are all on the primary path.
   assert.ok(['subject', 'project', 'both'].every((id) => center(nodes.get(id)) !== spineY));
+  // skip is off the primary path, alone in its column, so it stays off the spine.
+  assert.ok(bottomOf(nodes.get('skip')) < spineY, 'skip above the spine');
   assert.equal(nodes.get('stage-stop').x, nodes.get('unit-stop').x + CARD_W + SUB_GAP);
   assert.equal(nodes.get('hold').x, nodes.get('parent').x);
   assert.deepEqual(
@@ -361,4 +382,13 @@ test('without exceptions, the decision band keeps DETOUR_GAP below the main area
     ['decision'],
   );
   assert.ok(bands[0].y >= mainArea.bottom + DETOUR_GAP);
+});
+
+test('detour gaps can grow on either side of the main area', () => {
+  const flow = hakwonLikeFlow();
+  const board = layoutBoard(flow, { detourTop: 120, detourBottom: 90 });
+  const headerBottom = Math.max(...board.stageHeaders.map(bottomOf));
+  assert.equal(board.mainArea.top, headerBottom + 120);
+  assert.equal(board.bands[0].y, board.mainArea.bottom + 90);
+  assert.deepEqual(layoutBoard(flow, {}), layoutBoard(flow), 'both default to DETOUR_GAP');
 });

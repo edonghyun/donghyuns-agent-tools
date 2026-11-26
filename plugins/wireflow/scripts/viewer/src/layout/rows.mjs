@@ -3,9 +3,11 @@
 const ROW_GAP = 24; // between cards stacked in one column
 
 /**
- * Each non-exception node's top edge, measured from the spine at 0. A column's spine node is
- * centered on the spine and the others stack around it, alternating above and below, above first.
- * A column without a spine node centers its whole stack on the spine.
+ * Each non-exception node's top edge, measured from the spine at 0. A column's only primary node
+ * is centered on the spine and the others stack around it, alternating above and below, above
+ * first. A column with no primary node stacks the same way around an empty spine row, which
+ * stays free for primary edges passing through. A column with several primary nodes centers its
+ * whole stack on the spine. Without a primary path, each column's first node takes the spine.
  */
 export function stackColumns(flow, columnOf, heights, primaryNodes) {
   const byColumn = new Map();
@@ -15,34 +17,34 @@ export function stackColumns(flow, columnOf, heights, primaryNodes) {
   }
   const tops = new Map();
   for (const nodes of byColumn.values()) {
-    const anchor = spineNode(nodes, primaryNodes);
-    const stacked = anchor
-      ? stackAround(
-          anchor,
-          nodes.filter((s) => s !== anchor),
-          heights,
-        )
-      : stackCentered(nodes, heights);
-    for (const [id, top] of stacked) {
+    for (const [id, top] of stackColumn(nodes, heights, primaryNodes)) {
       tops.set(id, top);
     }
   }
   return tops;
 }
 
-/** The node a column centers on the spine: its only primary node, or with no primary path, its first. */
-function spineNode(nodes, primaryNodes) {
+function stackColumn(nodes, heights, primaryNodes) {
   if (primaryNodes.size === 0) {
-    return nodes[0];
+    return stackAround(nodes[0], nodes.slice(1), heights);
   }
   const onPath = nodes.filter((s) => primaryNodes.has(s.id));
-  return onPath.length === 1 ? onPath[0] : undefined;
+  if (onPath.length > 1) {
+    return stackCentered(nodes, heights);
+  }
+  const [anchor] = onPath;
+  return stackAround(
+    anchor,
+    nodes.filter((s) => s !== anchor),
+    heights,
+  );
 }
 
+/** `anchor`, if there is one, centered on the spine, and `others` alternating above and below it. */
 function stackAround(anchor, others, heights) {
-  let above = -heights.get(anchor.id) / 2;
+  let above = anchor ? -heights.get(anchor.id) / 2 : 0;
   let below = -above;
-  const tops = [[anchor.id, above]];
+  const tops = anchor ? [[anchor.id, above]] : [];
   others.forEach((s, i) => {
     const h = heights.get(s.id);
     if (i % 2 === 0) {
