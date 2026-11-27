@@ -74,6 +74,7 @@ const KO = {
     code: '예외 코드',
   },
   legend: { primary: '기본 경로', exception: '예외', dormant: '문만 열어둠' },
+  legendTitle: '범례',
   stageJump: '단계로 이동',
   kinds: {
     screen: '화면',
@@ -155,6 +156,7 @@ const EN = {
     code: 'Exception code',
   },
   legend: { primary: 'Primary path', exception: 'Exception', dormant: 'Door left open' },
+  legendTitle: 'Legend',
   stageJump: 'Jump to stage',
   kinds: {
     screen: 'Screen',

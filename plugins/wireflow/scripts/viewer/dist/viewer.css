@@ -221,13 +221,6 @@ body:not([data-mode="play"]) #player {
   border-radius: 6px;
   background: var(--card);
 }
-.tools .jump {
-  max-width: 200px;
-  padding: 3px 6px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--card);
-}
 
 /* The stage the camera moves the canvas in, the wireframe's stage rows, tags and edges. */
 #stage {
@@ -685,7 +678,6 @@ body:not([data-mode="play"]) #player {
 /* The legend under the bar: actor colors, then edge and card styles. */
 .legend {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 6px 16px;
   padding: 8px 16px;
@@ -715,6 +707,52 @@ body:not([data-mode="play"]) #player {
   height: 11px;
   border: 1.5px dashed #9aa3b2;
   border-radius: 3px;
+}
+
+.stage-nav {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  overflow-x: auto;
+}
+.stage-nav button {
+  white-space: nowrap;
+  background: transparent;
+  border-color: transparent;
+  font-size: 15px;
+}
+.stage-nav button:hover {
+  background: white;
+  border-color: var(--line);
+}
+.stage-nav button b {
+  color: var(--path);
+  margin-right: 4px;
+}
+.stage-nav button + button::before {
+  content: "→";
+  margin-right: 14px;
+  color: var(--muted);
+}
+.board-key {
+  position: relative;
+}
+.board-key summary {
+  cursor: pointer;
+}
+.board-key > div {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: 90vw;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 6px;
 }
 
 /* Nodes as the wireframe draws them: device frames, cards, and boxes, with their buttons. */

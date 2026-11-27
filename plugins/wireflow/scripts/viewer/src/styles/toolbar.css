@@ -61,10 +61,3 @@
   border-radius: 6px;
   background: var(--card);
 }
-.tools .jump {
-  max-width: 200px;
-  padding: 3px 6px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--card);
-}

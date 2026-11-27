@@ -100,9 +100,13 @@ export function mount(stage, store) {
 }
 
 /** The whole scene, centered across and near the top. */
-function fitAll(stage, { size }) {
+function fitAll(stage, { size, layout }) {
   const { width, height } = stage.getBoundingClientRect();
   const k = Math.min(width / size.w, height / size.h, 1) * 0.95;
+  if (layout && k < 0.55) {
+    const first = layout.stageHeaders[0];
+    return { k: 0.55, x: 20 - first.x * 0.55, y: 20 - first.y * 0.55 };
+  }
   return { k, x: (width - size.w * k) / 2, y: 20 };
 }
 

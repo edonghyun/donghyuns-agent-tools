@@ -1363,7 +1363,7 @@
       view: resolveView(FLOW2),
       tab: "canvas",
       mode: "overview",
-      scenario: "",
+      scenario: resolveView(FLOW2) === "board" ? findScenario(FLOW2, FLOW2.primary)?.id ?? "" : "",
       selected: null,
       camera: { x: 40, y: 80, k: 0.3 },
       play: null,
@@ -1547,9 +1547,13 @@
       { passive: false }
     );
   }
-  function fitAll(stage, { size }) {
+  function fitAll(stage, { size, layout }) {
     const { width, height } = stage.getBoundingClientRect();
     const k = Math.min(width / size.w, height / size.h, 1) * 0.95;
+    if (layout && k < 0.55) {
+      const first = layout.stageHeaders[0];
+      return { k: 0.55, x: 20 - first.x * 0.55, y: 20 - first.y * 0.55 };
+    }
     return { k, x: (width - size.w * k) / 2, y: 20 };
   }
   function focusOn(stage, box) {
@@ -1690,6 +1694,7 @@
       code: "\uC608\uC678 \uCF54\uB4DC"
     },
     legend: { primary: "\uAE30\uBCF8 \uACBD\uB85C", exception: "\uC608\uC678", dormant: "\uBB38\uB9CC \uC5F4\uC5B4\uB460" },
+    legendTitle: "\uBC94\uB840",
     stageJump: "\uB2E8\uACC4\uB85C \uC774\uB3D9",
     kinds: {
       screen: "\uD654\uBA74",
@@ -1770,6 +1775,7 @@
       code: "Exception code"
     },
     legend: { primary: "Primary path", exception: "Exception", dormant: "Door left open" },
+    legendTitle: "Legend",
     stageJump: "Jump to stage",
     kinds: {
       screen: "Screen",
@@ -2200,11 +2206,16 @@
   }
   function renderLegend(flow, T2) {
     const actor = ({ name, color }) => html`<span class="key"><i class="swatch" style="background:${color}"></i>${name}</span>`;
-    return html`
+    return html`<nav class="stage-nav" aria-label="${T2.stageJump}">
+    ${flow.stages.map(
+      (label, stage) => html`<button ${onClick({ type: "focusStage", stage })}>
+      <b>${stage + 1}</b> ${label}</button>`
+    )}
+    </nav><details class="board-key"><summary>${T2.legendTitle}</summary><div>
     ${actorList(flow).map(actor)}
     <span class="key"><i class="line primary"></i>${T2.legend.primary}</span>
     <span class="key"><i class="line exception"></i>${T2.legend.exception}</span>
-    <span class="key"><i class="mini dormant"></i>${T2.legend.dormant}</span>`;
+    <span class="key"><i class="mini dormant"></i>${T2.legend.dormant}</span></div></details>`;
   }
 
   // scripts/viewer/src/components/log-page.mjs
@@ -2645,21 +2656,12 @@
     el.addEventListener("change", (e) => {
       const { name, value } = e.target;
       if (name === "scenario") store2.dispatch({ type: "setScenario", id: value });
-      if (name === "stage" && value !== "") {
-        store2.dispatch({ type: "focusStage", stage: Number(value) });
-        e.target.value = "";
-      }
     });
   }
-  function render13({ flow, view, tab, scenario, mode, selected, requests }, T2) {
+  function render13({ flow, scenario, mode, selected, requests }, T2) {
     const playing = mode === "play";
     const option = (s) => html`<option value="${s.id}" ${s.id === scenario && html`selected`}>${s.title}</option>`;
-    const stageJump = view === "board" && tab === "canvas" && html`<select name="stage" class="jump" aria-label="${T2.stageJump}">
-      <option value="">${T2.stageJump}</option>
-      ${flow.stages.map((label, i) => html`<option value="${i}">${i + 1}. ${label}</option>`)}
-    </select>`;
     return html`
-    ${stageJump}
     <label class="pick"><span>${T2.path}</span><select name="scenario">
       <option value="">${T2.allActions}</option>${(flow.scenarios || []).map(option)}
     </select></label>

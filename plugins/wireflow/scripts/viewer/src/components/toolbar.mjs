@@ -16,27 +16,14 @@ export function mount(el, store, T) {
   el.addEventListener('change', (e) => {
     const { name, value } = e.target;
     if (name === 'scenario') store.dispatch({ type: 'setScenario', id: value });
-    if (name === 'stage' && value !== '') {
-      store.dispatch({ type: 'focusStage', stage: Number(value) });
-      // A jump, not a setting: back to its prompt, so the same stage can be picked again.
-      e.target.value = '';
-    }
   });
 }
 
-function render({ flow, view, tab, scenario, mode, selected, requests }, T) {
+function render({ flow, scenario, mode, selected, requests }, T) {
   const playing = mode === 'play';
   const option = (s) =>
     html`<option value="${s.id}" ${s.id === scenario && html`selected`}>${s.title}</option>`;
-  const stageJump =
-    view === 'board' &&
-    tab === 'canvas' &&
-    html`<select name="stage" class="jump" aria-label="${T.stageJump}">
-      <option value="">${T.stageJump}</option>
-      ${flow.stages.map((label, i) => html`<option value="${i}">${i + 1}. ${label}</option>`)}
-    </select>`;
   return html`
-    ${stageJump}
     <label class="pick"><span>${T.path}</span><select name="scenario">
       <option value="">${T.allActions}</option>${(flow.scenarios || []).map(option)}
     </select></label>

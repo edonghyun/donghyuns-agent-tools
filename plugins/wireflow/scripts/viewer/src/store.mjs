@@ -61,7 +61,7 @@ function initialState(FLOW, META, requests) {
     view: resolveView(FLOW),
     tab: 'canvas',
     mode: 'overview',
-    scenario: '',
+    scenario: resolveView(FLOW) === 'board' ? (findScenario(FLOW, FLOW.primary)?.id ?? '') : '',
     selected: null,
     camera: { x: 40, y: 80, k: 0.3 },
     play: null,
