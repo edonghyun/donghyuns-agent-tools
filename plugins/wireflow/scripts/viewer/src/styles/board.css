@@ -306,7 +306,7 @@
   outline-offset: 4px;
 }
 .card.dim {
-  opacity: 0.3;
+  box-shadow: none;
 }
 
 /* Chips, on cards and in the drawer. On a card a chip never wraps; one too wide is cut short. */
